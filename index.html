@@ -11735,7 +11735,22 @@ function bindPhotoDrag(box) {
 }
 
             function showThemeDetail(pageType) {
+            
+                // ===== 修复：全局面板如果被误放进气泡面板里，就自动移出来 =====
+    const globalPanelFix = document.getElementById('themePanelGlobal');
+    const bubblePanelFix = document.getElementById('themePanelBubble');
+
+    if (
+        globalPanelFix &&
+        bubblePanelFix &&
+        globalPanelFix.parentElement === bubblePanelFix
+    ) {
+        bubblePanelFix.insertAdjacentElement('afterend', globalPanelFix);
+    }
+    // ===== 修复结束 =====
+            
     const homeView = document.getElementById('themeHomeView');
+    
     const detailView = document.getElementById('themeDetailView');
     const titleEl = document.getElementById('themeDetailTitle');
 
