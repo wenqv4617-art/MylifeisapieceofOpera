@@ -4399,7 +4399,7 @@
             <span id="temperatureValue">0.8</span>
         </div>
     </div>
-    <div class="form-group"><label>Max Tokens</label><input type="number" id="maxTokensInput" value="800" min="100" max="4000"></div>
+    <div class="form-group"><label>Max Tokens</label><input type="number" id="maxTokensInput" value="4000" min="100" max="16000"></div>
     <div class="form-group"><label>Top P</label>
         <div class="slider-container">
             <input type="range" id="topPSlider" min="0" max="1" step="0.05" value="1.0">
@@ -6294,7 +6294,7 @@
                 if (!await DB.getSetting('lastSummaryEndSegment')) await DB.setSetting('lastSummaryEndSegment', 0);
                 if (!await DB.getSetting('llmBaseUrl')) await DB.setSetting('llmBaseUrl', 'https://api.openai.com/v1');
                 if (!await DB.getSetting('temperature')) await DB.setSetting('temperature', '0.8');
-                if (!await DB.getSetting('maxTokens')) await DB.setSetting('maxTokens', '800');
+                if (!await DB.getSetting('maxTokens')) await DB.setSetting('maxTokens', '18000');
                 if (!await DB.getSetting('topP')) await DB.setSetting('topP', '1.0');
                 if (!await DB.getSetting('contextRounds')) await DB.setSetting('contextRounds', 4);
                 if (!await DB.getSetting('gg_wallet_balance')) await DB.setSetting('gg_wallet_balance', 0);
@@ -6665,6 +6665,15 @@ window.showStatus = showStatus;
                     if (!response.ok) { const errorText = await response.text(); throw new Error(
                             `HTTP ${response.status}: ${errorText.slice(0, 200)}`); }
                     const data = await response.json();
+
+const finishReason = data.choices?.[0]?.finish_reason;
+if (finishReason === 'length') {
+    console.warn('[callLLM] 输出被截断：finish_reason = length');
+    recordApiError(
+        '✂️ OUTPUT_TRUNCATED',
+        '输出达到 max_tokens 上限，被截断了。请调高 API 设置里的 Max Tokens。'
+    );
+}
 
 // 宽容提取内容
 let content = "";
@@ -7189,7 +7198,7 @@ ${userRule}
                     } catch (e) {}
                 }
 
-                offlineControl.maxChars = Math.max(100, Math.min(8000, parseInt(offlineControl.maxChars) || 1200));
+                offlineControl.maxChars = Math.max(100, Math.min(20000, parseInt(offlineControl.maxChars) || 1200));
 
                 const offlinePerspectiveRules = buildOfflinePerspectiveRules(
                     offlineControl,
@@ -9170,7 +9179,19 @@ window.openConversation = openConversation;
                 }
 
                 try {
-                    const reply = await callLLM(messages);
+                    let llmOptions = {};
+
+if (mode === 'offline') {
+    const cd = await DB.get('convDetails', convId);
+    const offlineMaxChars = parseInt(cd?.offlineControl?.maxChars || 1200);
+
+    llmOptions.maxTokens = Math.min(
+        16000,
+        Math.max(2000, Math.ceil(offlineMaxChars * 1.5))
+    );
+}
+
+const reply = await callLLM(messages, llmOptions);
 
                     if (mode === 'offline') {
                         const innerVoiceMatch = reply.match(/---心声开始---([\s\S]*?)---心声结束---/);
@@ -9746,7 +9767,20 @@ ${contextText}
                 showStatus('🤖 正在生成回复...', 'info');
                 recordApiPending();
                 try {
-                    const reply = await callLLM(messages);
+                    let llmOptions = {};
+
+if (mode === 'offline') {
+    const cd = await DB.get('convDetails', convId);
+    const offlineMaxChars = parseInt(cd?.offlineControl?.maxChars || 1200);
+
+    // 中文 1 字不等于 1 token，这里给宽松估算
+    llmOptions.maxTokens = Math.min(
+        16000,
+        Math.max(2000, Math.ceil(offlineMaxChars * 1.5))
+    );
+}
+
+const reply = await callLLM(messages, llmOptions);
 
                     if (mode === 'offline') {
                         const innerVoiceMatch = reply.match(/---心声开始---([\s\S]*?)---心声结束---/);
