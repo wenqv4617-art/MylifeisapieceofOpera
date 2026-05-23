@@ -827,3 +827,126 @@
     background: #fff;
     border-top: 1px solid #eee;
 }
+
+/* ========== Top Notification Banners [NEW] ========== */
+.h-notification-container {
+    position: absolute;
+    top: 16px;
+    left: 8px;
+    right: 8px;
+    z-index: 10050;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none; /* 穿透空白处，允许点击背景 */
+}
+
+.h-notification-card {
+    pointer-events: auto; /* 保证卡片本身能接受手势事件 */
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 205, 194, 0.6);
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    transform: translateY(-50px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    user-select: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.h-notification-card.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.h-notification-card.slide-out {
+    transform: translateX(110%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.h-notification-card.slide-out-left {
+    transform: translateX(-110%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.h-notification-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: bold;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+}
+
+.h-notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.h-notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.h-notification-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.h-notification-app-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #8ba3c7;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.h-notification-app-icon {
+    width: 12px;
+    height: 12px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.h-notification-app-icon svg {
+    width: 12px;
+    height: 12px;
+    color: currentColor;
+}
+
+.h-notification-body {
+    font-size: 13px;
+    color: #4a5568;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-all;
+}

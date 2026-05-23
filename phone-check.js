@@ -880,6 +880,7 @@ async function recordPhoneIntrusion(payload) {
     async function clearSingleDiary(idx){if(!confirm('确定删除这篇日记？'))return;const data=await getPhoneData(currentPhoneCharId);if(data?.diaryEntries){data.diaryEntries.splice(idx,1);await savePhoneData(data);}closePhoneDetail();await renderPhoneDiary();await renderPhoneDesktop();}
     async function clearBrowserSearchCache(){const t=document.getElementById('phoneDetailTitle')?.textContent;if(!t)return;const data=await getPhoneData(currentPhoneCharId);if(data?.browserPosts){delete data.browserPosts[t];await savePhoneData(data);}closePhoneDetail();}
 
+
     console.log('📱 查手机模块脚本就绪');
 
     // ===== 新增：自动初始化（回退方案） =====
@@ -898,5 +899,340 @@ async function recordPhoneIntrusion(payload) {
             }
         }, 500);
     }
+
+    // ==================== [NEW] 全局通知管理模块 ====================
+    const SVG_MSG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>`;
+    const SVG_GROUP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a3 3 0 0 1 0 5.75"></path></svg>`;
+
+    const notificationQueue = [];
+    let isProcessingQueue = false;
+
+    function queueNotification(notification) {
+        notificationQueue.push(notification);
+        processQueue();
+    }
+
+    function processQueue() {
+        if (isProcessingQueue || notificationQueue.length === 0) return;
+        isProcessingQueue = true;
+
+        const next = notificationQueue.shift();
+        displayNotificationCard(next);
+
+        // 连续多个通知卡片滑入的优雅间隔时间（1秒）
+        setTimeout(() => {
+            isProcessingQueue = false;
+            processQueue();
+        }, 1000);
+    }
+
+    function formatNotificationBody(content, type) {
+        if (!content) return '';
+        let text = String(content);
+
+        if (type === 'emoticon') {
+            if (text.startsWith('{')) {
+                try {
+                    const p = JSON.parse(text);
+                    return `[表情] ${p.text || ''}`;
+                } catch (e) {}
+            }
+            return `[表情]`;
+        }
+        if (type === 'image') return `[图片] ${text}`;
+        if (type === 'voice') return `[语音] ${text}`;
+        if (type === 'html_card') return `[卡片] 网页卡片`;
+        if (type === 'transfer') {
+            if (text.includes('gg-transfer-card')) {
+                const match = text.match(/¥([\d.]+)/);
+                return `[微信转账] ¥${match ? match[1] : '金额'}`;
+            }
+            return `[转账]`;
+        }
+        if (type === 'redpacket') {
+            if (text.includes('gg-redpacket-card')) {
+                const msgMatch = text.match(/<div class="gg-redpacket-msg">([^<]+)<\/div>/);
+                return `[微信红包] ${msgMatch ? msgMatch[1] : '恭喜发财'}`;
+            }
+            return `[红包]`;
+        }
+        if (type === 'offline_invite') return `[线下邀约] ${text}`;
+
+        return text;
+    }
+
+    function displayNotificationCard(notif) {
+        const phoneMock = document.querySelector('.phone-mock');
+        if (!phoneMock) return;
+
+        let container = phoneMock.querySelector('.h-notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'h-notification-container';
+            phoneMock.appendChild(container);
+        }
+
+        const card = document.createElement('div');
+        card.className = 'h-notification-card';
+
+        const appIcon = notif.type === 'group' ? SVG_GROUP : SVG_MSG;
+        const appLabel = notif.type === 'group' ? '群聊' : '讯息';
+
+        const avatarChar = (notif.fallbackCharName || '?').charAt(0);
+        const avatarColor = window.getAvatarColor ? window.getAvatarColor(notif.fallbackCharName) : '#72c9bf';
+        const avatarStyle = notif.avatar ? `background-image: url('${notif.avatar}'); background-color: transparent;` : `background-color: ${avatarColor};`;
+
+        card.innerHTML = `
+            <div class="h-notification-avatar" style="${avatarStyle}">
+                ${notif.avatar ? '' : avatarChar}
+            </div>
+            <div class="h-notification-content">
+                <div class="h-notification-header">
+                    <div class="h-notification-title">${window.escapeHtml ? window.escapeHtml(notif.title) : notif.title}</div>
+                    <div class="h-notification-app-info">
+                        <span class="h-notification-app-icon">${appIcon}</span>
+                        <span>${appLabel}</span>
+                    </div>
+                </div>
+                <div class="h-notification-body">${window.escapeHtml ? window.escapeHtml(notif.body) : notif.body}</div>
+            </div>
+        `;
+
+        container.appendChild(card);
+
+        requestAnimationFrame(() => {
+            card.classList.add('show');
+        });
+
+        card.addEventListener('click', (e) => {
+            if (card.dataset.dragged === 'true') return;
+            dismissCard(card);
+
+            if (notif.type === 'group') {
+                if (window.openGroupConversation) {
+                    window.openGroupConversation(notif.id);
+                }
+            } else {
+                if (window.openConversation) {
+                    window.openConversation(notif.id);
+                }
+            }
+        });
+
+        bindSwipeDismiss(card, () => {
+            card.remove();
+            if (container.children.length === 0) {
+                container.remove();
+            }
+        });
+
+        const autoDismissTimeout = setTimeout(() => {
+            dismissCard(card);
+        }, 5000);
+
+        function dismissCard(c) {
+            clearTimeout(autoDismissTimeout);
+            c.classList.add('slide-out');
+            setTimeout(() => {
+                c.remove();
+                if (container.children.length === 0) {
+                    container.remove();
+                }
+            }, 300);
+        }
+    }
+
+    function bindSwipeDismiss(card, onDismiss) {
+        let startX = 0;
+        let currentX = 0;
+        let startTime = 0;
+        let isDragging = false;
+
+        card.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startTime = Date.now();
+            isDragging = true;
+            card.dataset.dragged = 'false';
+            card.style.transition = 'none';
+        }, { passive: true });
+
+        card.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentX = e.touches[0].clientX - startX;
+            if (Math.abs(currentX) > 8) {
+                card.dataset.dragged = 'true';
+            }
+            card.style.transform = `translateX(${currentX}px)`;
+            const opacity = Math.max(0, 1 - Math.abs(currentX) / 250);
+            card.style.opacity = opacity;
+        }, { passive: true });
+
+        card.addEventListener('touchend', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            card.style.transition = '';
+
+            const diffX = currentX;
+            const duration = Date.now() - startTime;
+
+            if (Math.abs(diffX) > 100 || (Math.abs(diffX) > 30 && duration < 250)) {
+                const direction = diffX > 0 ? 'right' : 'left';
+                card.classList.add(direction === 'right' ? 'slide-out' : 'slide-out-left');
+                setTimeout(onDismiss, 300);
+            } else {
+                card.style.transform = '';
+                card.style.opacity = '';
+            }
+            currentX = 0;
+        });
+
+        let isMouseDown = false;
+        card.addEventListener('mousedown', (e) => {
+            startX = e.clientX;
+            startTime = Date.now();
+            isMouseDown = true;
+            card.dataset.dragged = 'false';
+            card.style.transition = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isMouseDown) return;
+            currentX = e.clientX - startX;
+            if (Math.abs(currentX) > 8) {
+                card.dataset.dragged = 'true';
+            }
+            card.style.transform = `translateX(${currentX}px)`;
+            const opacity = Math.max(0, 1 - Math.abs(currentX) / 250);
+            card.style.opacity = opacity;
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (!isMouseDown) return;
+            isMouseDown = false;
+            card.style.transition = '';
+
+            const diffX = currentX;
+            const duration = Date.now() - startTime;
+
+            if (Math.abs(diffX) > 100 || (Math.abs(diffX) > 30 && duration < 250)) {
+                const direction = diffX > 0 ? 'right' : 'left';
+                card.classList.add(direction === 'right' ? 'slide-out' : 'slide-out-left');
+                setTimeout(onDismiss, 300);
+            } else {
+                card.style.transform = '';
+                card.style.opacity = '';
+            }
+            currentX = 0;
+        });
+    }
+
+    async function triggerSingleChatNotification(obj) {
+        try {
+            const conv = await window.DB.get('conversations', obj.conversationId);
+            if (!conv) return;
+            const char = await window.DB.get('characters', conv.charId);
+            const detail = await window.DB.get('convDetails', obj.conversationId);
+
+            const name = detail?.charName || char?.name || '联系人';
+            const avatar = detail?.charAvatar || char?.avatar || '';
+
+            let contentText = formatNotificationBody(obj.content, obj.messageType);
+
+            queueNotification({
+                title: name,
+                body: contentText,
+                avatar: avatar,
+                type: 'single',
+                id: obj.conversationId,
+                fallbackCharName: name
+            });
+        } catch (e) {
+            console.error('Failed to trigger single chat notification:', e);
+        }
+    }
+
+    async function triggerGroupChatNotification(obj) {
+        try {
+            const group = await window.DB.get('groupChats', obj.groupId);
+            if (!group) return;
+
+            let senderName = obj.senderName || '群成员';
+            let avatar = '';
+
+            for (const mid of group.memberIds) {
+                const ch = await window.DB.get('characters', mid);
+                if (ch && ch.name === senderName) {
+                    const md = group.members?.find(m => String(m.id) === String(mid));
+                    avatar = md?.avatar || ch.avatar || '';
+                    break;
+                }
+            }
+            if (!avatar) {
+                const npcs = await window.DB.queryByIndex('groupNPCs', 'groupId', obj.groupId);
+                const npc = npcs.find(n => n.name === senderName);
+                if (npc) {
+                    avatar = npc.avatar || '';
+                }
+            }
+
+            let contentText = formatNotificationBody(obj.content, obj.messageType);
+
+            queueNotification({
+                title: group.name || '新群聊消息',
+                body: `${senderName}: ${contentText}`,
+                avatar: avatar,
+                type: 'group',
+                id: obj.groupId,
+                fallbackCharName: senderName
+            });
+        } catch (e) {
+            console.error('Failed to trigger group chat notification:', e);
+        }
+    }
+
+    function setupDatabaseNotificationHook() {
+        if (!window.DB) {
+            setTimeout(setupDatabaseNotificationHook, 200);
+            return;
+        }
+
+        const originalPut = window.DB.put;
+        window.DB.put = async function(store, obj) {
+            const result = await originalPut.apply(this, arguments);
+
+            if (store === 'chats') {
+                if (obj && obj.role === 'assistant' && obj.messageType !== 'innerVoice') {
+                    const now = Date.now();
+                    const msgTime = obj.timestamp || now;
+                    // 在15秒内写入的新消息被视为实时收到的新回复
+                    if (Math.abs(now - msgTime) < 15000) {
+                        const isActive = document.getElementById('page-conversation')?.classList.contains('active');
+                        const isSameConv = window.currentConversationId === obj.conversationId;
+                        if (!isActive || !isSameConv) {
+                            triggerSingleChatNotification(obj);
+                        }
+                    }
+                }
+            }
+
+            if (store === 'groupMessages') {
+                if (obj && (obj.role === 'assistant' || obj.senderId === 'char') && obj.messageType !== 'system') {
+                    const now = Date.now();
+                    const msgTime = obj.timestamp || now;
+                    if (Math.abs(now - msgTime) < 15000) {
+                        const isActive = document.getElementById('page-group-conversation')?.classList.contains('active');
+                        const isSameGroup = window.currentGroupId === obj.groupId;
+                        if (!isActive || !isSameGroup) {
+                            triggerGroupChatNotification(obj);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        };
+    }
+
+    setupDatabaseNotificationHook();
 
 })();
