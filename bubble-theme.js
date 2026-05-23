@@ -1,40 +1,46 @@
 /* ================================================================
- * bubble-theme.js - 对话气泡与全局样式系统 (完全升级版)
+ * bubble-theme.js - 对话气泡与全局样式系统
  * 功能：
- * 1) 气泡样式 DIY、图标替换、会话/群聊挂载
- * 2) 🖥️ 桌面全局主题：独立 CSS、手势滑动预览、独创桌面存档
- * 3) 💬 聊天应用全局主题：独立 CSS、多页高保真 Tab 切换预览、独立聊天室存档
+ * 1) CSS 输入 + 预览（模拟对话框）
+ * 2) CSS 存档：保存/命名/编辑/删除
+ * 3) 挂载：单聊 conversation / 群聊 group 分别挂载
+ * 4) 全局样式管理：可同时自定义首页第一/第二页、聊天室 UI 并持久化
+ * 依赖：
+ * window.DB, window.escapeHtml, window.showStatus
  * ================================================================ */
 
 (function () {
   "use strict";
-  console.log("🎨 联合美化主题模块 (气泡 + 分离式双全局) 加载完成");
+  console.log("🎨 bubble-theme & global-theme 联合模块加载");
 
   const STORE_NAME = "bubbleThemes";
   const STYLE_PREFIX = "bt-style-";
   const PREVIEW_STYLE_ID = "bt-preview-style";
 
-  const ICON_SCHEMA = [
-    { key: "expandMenuBtn", label: "" },
-    { key: "convSendBtn", label: "" },
-    { key: "convFetchBtn", label: "" },
-    { key: "userImage", label: "" },
-    { key: "userVoice", label: "" },
-    { key: "emoticon", label: "" },
-    { key: "innerVoice", label: "" },
-    { key: "voiceCall", label: "" },
-    { key: "sendDiary", label: "" },
-    { key: "toggleMode", label: "" },
-    { key: "transfer", label: "" },
-    { key: "sendRedPacket", label: "" },
-    { key: "openSummary", label: "" },
-    { key: "openDetail", label: "" },
-    { key: "checkPhone", label: "" },
-    { key: "focus", label: "" },
-    { key: "coupleSpace", label: "" }
-  ];
+  // B (新代码)
+const ICON_SCHEMA = [
+  { key: "expandMenuBtn", label: "" },
+  { key: "convSendBtn", label: "" },
+  { key: "convFetchBtn", label: "" },
 
-  const DEFAULT_ICON_MAP = {
+  { key: "userImage", label: "" },
+  { key: "userVoice", label: "" },
+  { key: "emoticon", label: "" },
+  { key: "innerVoice", label: "" },
+  { key: "voiceCall", label: "" },
+  { key: "sendDiary", label: "" },
+  { key: "toggleMode", label: "" },
+  { key: "transfer", label: "" },
+  { key: "sendRedPacket", label: "" },
+  { key: "openSummary", label: "" },
+  { key: "openDetail", label: "" },
+  { key: "checkPhone", label: "" },
+  { key: "focus", label: "" },
+  { key: "coupleSpace", label: "" }
+];
+
+  // B (新代码)
+const DEFAULT_ICON_MAP = {
     expandMenuBtn: { type: "svg", value: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
     convSendBtn: { type: "svg", value: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>' },
     convFetchBtn: { type: "svg", value: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>' },
@@ -52,7 +58,7 @@
     checkPhone: { type: "svg", value: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>' },
     focus: { type: "svg", value: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>' },
     coupleSpace: { type: "svg", value: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' }
-  };
+};
 
   let currentEditingIconMap = JSON.parse(JSON.stringify(DEFAULT_ICON_MAP));
 
@@ -120,7 +126,7 @@
   function isSvgMarkup(v) {
     if (!v) return false;
     return String(v).trim().startsWith("<svg");
-  }
+}
 
   function scopeCss(cssText, scopeSelector) {
     if (!cssText || !cssText.trim()) return "";
@@ -128,12 +134,14 @@
     let text = cssText.replace(/\/\*[\s\S]*?\*\//g, "");
     const preserved = [];
 
+    // 先完整保护 @keyframes，避免被 split("}") 拆坏
     text = text.replace(/@keyframes\s+[^{]+\{[\s\S]*?\n\}/g, function(match) {
         const token = "__BT_KEYFRAMES_" + preserved.length + "__";
         preserved.push(match);
         return token;
     });
 
+    // 兼容无换行结尾的 keyframes
     text = text.replace(/@keyframes\s+[^{]+\{(?:[^{}]|\{[^{}]*\})*\}/g, function(match) {
         const token = "__BT_KEYFRAMES_" + preserved.length + "__";
         preserved.push(match);
@@ -181,38 +189,56 @@
     });
 
     return out;
-  }
+}
 
   function buildPreviewHtml() {
-    const imageSvg = DEFAULT_ICON_MAP.userImage.value;
-    const micSvg = DEFAULT_ICON_MAP.userVoice.value;
-    const phoneSvg = DEFAULT_ICON_MAP.voiceCall.value;
-    const quoteSvg = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11H6a2 2 0 0 0-2 2v5h6v-7z"/><path d="M20 11h-4a2 2 0 0 0-2 2v5h6v-7z"/><path d="M6 11V8a4 4 0 0 1 4-4"/><path d="M16 11V8a4 4 0 0 1 4-4"/></svg>';
+  const imageSvg = DEFAULT_ICON_MAP.userImage.value;
+  const micSvg = DEFAULT_ICON_MAP.userVoice.value;
+  const phoneSvg = DEFAULT_ICON_MAP.voiceCall.value;
+  const quoteSvg = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11H6a2 2 0 0 0-2 2v5h6v-7z"/><path d="M20 11h-4a2 2 0 0 0-2 2v5h6v-7z"/><path d="M6 11V8a4 4 0 0 1 4-4"/><path d="M16 11V8a4 4 0 0 1 4-4"/></svg>';
 
-    return [
-      '<div class="chat-header">',
-      '  <div class="chat-header-left"><button class="back-btn">←</button><h2 style="font-size:18px;">预览会话</h2></div>',
-      '  <div class="header-actions"><button class="header-btn">···</button></div>',
-      '</div>',
-      '<div class="chat-messages" style="height:260px;overflow:auto;">',
-      '  <div class="group-system-msg">— 系统消息：示例系统提示 —</div>',
-      '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble">这是对方文字气泡</div></div>',
-      '  <div class="message-row self"><div class="bubble">这是我的文字气泡</div><div class="message-avatar" style="background:#c88;">U</div></div>',
-      '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble image-bubble"><span class="image-icon">' + imageSvg + '</span></div></div>',
-      '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble voice-bubble"><div class="voice-bubble-header"><span class="voice-icon">' + micSvg + '</span><span class="voice-duration">7"</span></div></div></div>',
-      '  <div class="message-row self"><div class="bubble voice-bubble"><div class="voice-bubble-header"><span class="voice-icon">' + micSvg + '</span><span class="voice-duration">7"</span></div></div><div class="message-avatar" style="background:#c88;">U</div></div>',
-      '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble call-record-bubble"><span class="call-record-icon">' + phoneSvg + '</span><span>语音通话已结束1分20秒</span></div></div>',
-      '  <div class="message-row self"><div class="bubble quoted-bubble"><div>这是带引年的回复正文</div><div class="quote-ref-footer"><div class="quote-ref-footer-title"><span>' + quoteSvg + '</span><span>引用</span></div><div class="quote-ref-footer-content">对方：这是被引用的那条消息</div></div></div><div class="message-avatar" style="background:#c88;">U</div></div>',
-      '</div>',
-      '<div class="chat-input-area">',
-      '  <div class="mini-btn"><span data-icon-key="expandMenuBtn"></span></div>',
-      '  <div class="input-wrapper"><input type="text" placeholder="输入框预览"></div>',
-      '  <div class="mini-btn"><span data-icon-key="convSendBtn"></span></div>',
-      '  <div class="mini-btn"><span data-icon-key="convFetchBtn"></span></div>',
-      '</div>'
-    ].join("");
-  }
+  return [
+    '<div class="chat-header">',
+    '  <div class="chat-header-left"><button class="back-btn">←</button><h2 style="font-size:18px;">预览会话</h2></div>',
+    '  <div class="header-actions"><button class="header-btn">···</button></div>',
+    '</div>',
 
+    '<div class="expand-menu active" id="previewExpandMenu" style="display:flex;">',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="userImage"></span><span class="expand-menu-label">图片</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="userVoice"></span><span class="expand-menu-label">语音</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="emoticon"></span><span class="expand-menu-label">表情</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="innerVoice"></span><span class="expand-menu-label">心声</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="voiceCall"></span><span class="expand-menu-label">通话</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="sendDiary"></span><span class="expand-menu-label">日记</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="toggleMode"></span><span class="expand-menu-label">见面</span></div>',
+    '  <div class="expand-menu-item"><span class="expand-menu-icon" data-icon-key="transfer"></span><span class="expand-menu-label">转账</span></div>',
+    '</div>',
+
+    '<div class="chat-messages" style="height:260px;overflow:auto;">',
+    '  <div class="group-system-msg">— 系统消息：示例系统提示 —</div>',
+
+    '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble">这是对方文字气泡</div></div>',
+    '  <div class="message-row self"><div class="bubble">这是我的文字气泡</div><div class="message-avatar" style="background:#c88;">U</div></div>',
+
+    '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble image-bubble"><span class="image-icon">' + imageSvg + '</span></div></div>',
+
+'  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble voice-bubble"><div class="voice-bubble-header"><span class="voice-icon">' + micSvg + '</span><span class="voice-duration">7"</span></div></div></div>',
+
+'  <div class="message-row self"><div class="bubble voice-bubble"><div class="voice-bubble-header"><span class="voice-icon">' + micSvg + '</span><span class="voice-duration">7"</span></div></div><div class="message-avatar" style="background:#c88;">U</div></div>',
+
+    '  <div class="message-row other"><div class="message-avatar" style="background:#7aa;">C</div><div class="bubble call-record-bubble"><span class="call-record-icon">' + phoneSvg + '</span><span>语音通话已结束1分20秒</span></div></div>',
+
+    '  <div class="message-row self"><div class="bubble quoted-bubble"><div>这是带引用的回复正文</div><div class="quote-ref-footer"><div class="quote-ref-footer-title"><span>' + quoteSvg + '</span><span>引用</span></div><div class="quote-ref-footer-content">对方：这是被引用的那条消息</div></div></div><div class="message-avatar" style="background:#c88;">U</div></div>',
+    '</div>',
+
+    '<div class="chat-input-area">',
+    '  <div class="mini-btn"><span data-icon-key="expandMenuBtn"></span></div>',
+    '  <div class="input-wrapper"><input type="text" placeholder="输入框预览"></div>',
+    '  <div class="mini-btn"><span data-icon-key="convSendBtn"></span></div>',
+    '  <div class="mini-btn"><span data-icon-key="convFetchBtn"></span></div>',
+    '</div>'
+  ].join("");
+}
   function setIconNode(el, iconDef) {
     if (!el || !iconDef) return;
     const value = iconDef.value || "";
@@ -225,7 +251,7 @@
     } else {
       el.textContent = value || "";
     }
-  }
+}
 
   function applyIconMapToPreview() {
     const root = document.getElementById("bubbleThemePreviewRoot");
@@ -238,6 +264,7 @@
   }
 
   function applyIconMapToConversationDOM(iconMap) {
+    // 输入栏3个
     const plus = document.querySelector("#expandMenuBtn");
     const send = document.querySelector("#convSendBtn");
     const fetch = document.querySelector("#convFetchBtn");
@@ -262,6 +289,7 @@
       fetch.appendChild(span);
     }
 
+    // 展开栏
     document.querySelectorAll("#expandMenu .expand-menu-item").forEach(item => {
       const action = item.getAttribute("data-action");
       const iconEl = item.querySelector(".expand-menu-icon");
@@ -314,6 +342,7 @@
       fetch.appendChild(span);
     }
 
+    // 群展开栏 action 名称不同
     document.querySelectorAll("#groupExpandMenu .expand-menu-item").forEach(item => {
       const action = item.getAttribute("data-action");
       const iconEl = item.querySelector(".expand-menu-icon");
@@ -339,8 +368,7 @@
   async function getAllThemes(type = "bubble") {
     const list = await window.DB.getAll(STORE_NAME);
     return (list || []).filter(t => {
-      if (type === "global_desktop") return t.type === "global_desktop" || t.type === "global"; // 兼容旧版global
-      if (type === "global_chatroom") return t.type === "global_chatroom";
+      if (type === "global") return t.type === "global";
       return !t.type || t.type === "bubble";
     }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
@@ -426,17 +454,18 @@
     box.innerHTML = ICON_SCHEMA.map(item => {
       const def = currentEditingIconMap[item.key] || DEFAULT_ICON_MAP[item.key];
       let preview;
-      if (def.type === "svg" || isSvgMarkup(def.value)) {
-        preview = `<span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;">${def.value}</span>`;
-      } else if (def.type === "image" || isImageValue(def.value)) {
-        preview = `<img src="${esc(def.value)}" style="width:20px;height:20px;object-fit:contain;">`;
-      } else {
-        preview = `<span>${esc(def.value)}</span>`;
-      }
+if (def.type === "svg" || isSvgMarkup(def.value)) {
+    preview = `<span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;">${def.value}</span>`;
+} else if (def.type === "image" || isImageValue(def.value)) {
+    preview = `<img src="${esc(def.value)}" style="width:20px;height:20px;object-fit:contain;">`;
+} else {
+    preview = `<span>${esc(def.value)}</span>`;
+}
       return `<div class="theme-icon-edit-row" data-icon-key="${item.key}" style="padding:10px 8px;margin-bottom:6px;">
         <div class="theme-icon-preview" style="width:40px;height:40px;border-radius:10px;background:#f8f8f8;">${preview}</div>
         <div class="theme-icon-info">
           <div class="theme-icon-name">${esc(item.label)}</div>
+
         </div>
         <div class="theme-icon-actions">
           <button class="theme-icon-action-btn bt-icon-text">文本/URL</button>
@@ -553,385 +582,178 @@
   }
 
   // ================================================================
-  // 🖥️ 全局双系统：桌面 (Desktop) 核心业务
+  // 全局样式 UI 系统 (新增加)
   // ================================================================
-  const DESKTOP_PREVIEW_STYLE_ID = "gt-desktop-preview-style";
-  const DESKTOP_APPLIED_STYLE_ID = "gt-desktop-style-applied";
+  const GLOBAL_PREVIEW_STYLE_ID = "gt-preview-style";
+  const GLOBAL_APPLIED_STYLE_ID = "gt-style-applied";
 
-  function buildDesktopPreviewHtml() {
+  function buildGlobalPreviewHtml() {
     return `
-      <div class="home-main" style="width:100%; height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; user-select:none;">
-        <div class="home-pages-track" id="prevPagesTrack" style="width:200%; height:100%; display:flex; transition:transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform:translateX(0);">
-          
-          <!-- 第一页 -->
-          <div class="home-page" id="prevPage1" style="width:50%; height:100%; display:flex; flex-direction:column; padding:16px 12px; gap:10px; flex-shrink:0;">
-            <div style="height:12px;"></div>
-            <div class="namecard" style="border-radius:12px; overflow:hidden; background:#fff; height:125px; display:flex; flex-direction:column; box-shadow:0 4px 12px rgba(0,0,0,0.05); position:relative;">
-              <div class="namecard-upper" style="height:55px; background:#ebdcc5;"></div>
-              <div class="namecard-avatar" style="width:36px; height:36px; border-radius:50%; background:#8ba3c7; border:2.5px solid #fff; position:absolute; left:50%; top:55px; transform:translate(-50%, -50%);"></div>
-              <div class="namecard-lower" style="padding-top:20px; text-align:center;">
-                <div class="namecard-title" style="font-size:12px; font-weight:700; color:#4a5568;">晨曦海岸</div>
-                <div class="namecard-body" style="font-size:9px; color:#8ba3c7; margin-top:2px;">每一帧都是壁纸级的风景</div>
-              </div>
-            </div>
-            <div style="height:4px;"></div>
-            <div style="display:flex; gap:10px; height:90px;">
-              <div class="page1-photo" style="flex:1; border-radius:10px; background:#ebdcc5;"></div>
-              <div class="page1-apps" style="flex:1; display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-content:center;">
-                <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                  <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#8ba3c7; display:flex; align-items:center; justify-content:center; font-size:14px;">💬</div>
-                  <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">聊天室</div>
-                </div>
-                <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                  <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#8ba3c7; display:flex; align-items:center; justify-content:center; font-size:14px;">📖</div>
-                  <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">世界书</div>
-                </div>
-                <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                  <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#8ba3c7; display:flex; align-items:center; justify-content:center; font-size:14px;">💾</div>
-                  <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">数据</div>
-                </div>
-                <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                  <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#8ba3c7; display:flex; align-items:center; justify-content:center; font-size:14px;">⚙️</div>
-                  <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">设置</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 第二页 -->
-          <div class="home-page" id="prevPage2" style="width:50%; height:100%; display:flex; flex-direction:column; padding:16px 12px; gap:10px; flex-shrink:0;">
-            <div style="height:12px;"></div>
-            <div class="polaroid-fan" style="height:110px; position:relative; display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
-              <div class="polaroid-card" style="width:75px; height:90px; background:#fff; padding:4px; box-shadow:0 3px 8px rgba(0,0,0,0.1); border-radius:4px; transform:rotate(-8deg); position:absolute; left:40px;">
-                <div class="polaroid-photo" style="width:100%; height:62px; background:#dfdfdf; border-radius:2px;"></div>
-                <div class="polaroid-bottom" style="font-size:8px; text-align:center; margin-top:4px; color:#8ba3c7;">Polaroid</div>
-              </div>
-              <div class="polaroid-card" style="width:75px; height:90px; background:#fff; padding:4px; box-shadow:0 3px 8px rgba(0,0,0,0.12); border-radius:4px; transform:rotate(4deg); position:absolute; right:40px;">
-                <div class="polaroid-photo" style="width:100%; height:62px; background:#ebdcc5; border-radius:2px;"></div>
-                <div class="polaroid-bottom" style="font-size:8px; text-align:center; margin-top:4px; color:#8ba3c7;">Polaroid</div>
-              </div>
-            </div>
-            <div class="page2-photo" style="height:64px; border-radius:10px; background:#dcdcd8; margin-bottom:4px;"></div>
-            <div class="page2-apps" style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; justify-items:center;">
-              <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#7aa; display:flex; align-items:center; justify-content:center; font-size:14px;">🌟</div>
-                <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">重逢</div>
-              </div>
-              <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#7aa; display:flex; align-items:center; justify-content:center; font-size:14px;">🗣️</div>
-                <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">论坛</div>
-              </div>
-              <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#7aa; display:flex; align-items:center; justify-content:center; font-size:14px;">🛍️</div>
-                <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">逛逛</div>
-              </div>
-              <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#7aa; display:flex; align-items:center; justify-content:center; font-size:14px;">📊</div>
-                <div class="app-icon-label" style="font-size:8px; color:#4a5568; font-weight:500;">记账</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <!-- Indicator dots -->
-        <div class="page-indicator" style="position:absolute; bottom:8px; left:0; width:100%; display:flex; justify-content:center; gap:6px; z-index:10; pointer-events:auto;">
-          <div class="page-dot active" id="prevDot1" style="width:6px; height:6px; border-radius:50%; background:#d7e4ee; opacity:1; cursor:pointer; transition:all 0.2s;"></div>
-          <div class="page-dot" id="prevDot2" style="width:6px; height:6px; border-radius:50%; background:#d7e4ee; opacity:0.4; cursor:pointer; transition:all 0.2s;"></div>
-        </div>
+      <div class="gt-preview-header" style="display:flex; border-bottom:1px solid #e7e2d8; margin-bottom:10px;">
+        <button class="gt-tab active" id="gtTabDesktop" style="flex:1; padding:8px 0; font-size:12px; font-weight:600; background:none; border:none; border-bottom:2px solid #8ba3c7; cursor:pointer; color:#4a5568; display:flex; align-items:center; justify-content:center; gap:4px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="display:block;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          桌面
+        </button>
+        <button class="gt-tab" id="gtTabChat" style="flex:1; padding:8px 0; font-size:12px; font-weight:500; background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; color:#a0a8a2; display:flex; align-items:center; justify-content:center; gap:4px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="display:block;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          聊天室
+        </button>
       </div>
-    `;
-  }
-
-  function bindDesktopPreviewEvents(root) {
-    const track = root.querySelector('#prevPagesTrack');
-    const dot1 = root.querySelector('#prevDot1');
-    const dot2 = root.querySelector('#prevDot2');
-    if (!track || !dot1 || !dot2) return;
-
-    function setPage(pageNum) {
-      if (pageNum === 1) {
-        track.style.transform = 'translateX(0)';
-        dot1.style.opacity = '1';
-        dot2.style.opacity = '0.4';
-      } else {
-        track.style.transform = 'translateX(-50%)';
-        dot2.style.opacity = '1';
-        dot1.style.opacity = '0.4';
-      }
-    }
-
-    dot1.addEventListener('click', () => setPage(1));
-    dot2.addEventListener('click', () => setPage(2));
-
-    // Touch Swipe sliding
-    let startX = 0;
-    track.addEventListener('touchstart', e => {
-      startX = e.touches[0].clientX;
-    }, { passive: true });
-
-    track.addEventListener('touchend', e => {
-      const diff = e.changedTouches[0].clientX - startX;
-      if (diff > 45) {
-        setPage(1);
-      } else if (diff < -45) {
-        setPage(2);
-      }
-    }, { passive: true });
-
-    // Mouse drag swipe
-    let isDown = false;
-    track.addEventListener('mousedown', e => {
-      isDown = true;
-      startX = e.clientX;
-    });
-    track.addEventListener('mouseup', e => {
-      if (!isDown) return;
-      isDown = false;
-      const diff = e.clientX - startX;
-      if (diff > 45) setPage(1);
-      else if (diff < -45) setPage(2);
-    });
-  }
-
-  function runDesktopPreview() {
-    const input = document.getElementById("desktopCssInput");
-    if (!input) return;
-    const cssText = input.value || "";
-    const scoped = scopeCss(cssText, '[data-desktop-scope="preview_desktop"]');
-    getStyleEl(DESKTOP_PREVIEW_STYLE_ID).textContent = scoped;
-    toast("桌面效果预览已更新", "success");
-  }
-
-  function clearDesktopPreview() {
-    removeStyleEl(DESKTOP_PREVIEW_STYLE_ID);
-    const input = document.getElementById("desktopCssInput");
-    if (input) input.value = "";
-    toast("桌面预览已重置", "info");
-  }
-
-  // ================================================================
-  // 💬 全局双系统：聊天室 (Chatroom & App) 核心业务
-  // ================================================================
-  const CHATROOM_PREVIEW_STYLE_ID = "gt-chatroom-preview-style";
-  const CHATROOM_APPLIED_STYLE_ID = "gt-chatroom-style-applied";
-
-  function buildChatroomPreviewHtml() {
-    return `
-      <div style="width:100%; height:100%; display:flex; flex-direction:column; background:#f8f8f8; position:relative; overflow:hidden; user-select:none;">
-        
-        <!-- Live Tab Pages Content -->
-        <div id="prevAppContent" style="flex:1; width:100%; overflow-y:auto; overflow-x:hidden; position:relative; background:#f8f8f8;">
-          
-          <!-- 1. 聊天列表页 (page-chat) -->
-          <div id="prevPageChat" class="page active" style="display:flex; flex-direction:column; width:100%; height:100%;">
-            <div class="chat-header" style="background:#faf9f6; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:0.5px solid #d4ccbe;">
-              <div class="chat-header-left" style="display:flex; align-items:center; gap:6px;">
-                <button class="back-btn" style="background:none; border:none; font-size:16px;">←</button>
-                <h2 style="font-size:16px; margin:0; font-weight:600; color:#4a5568;">𝓜𝓮𝓼𝓼𝓪𝓰𝓮</h2>
-              </div>
-              <div class="header-actions"><button class="header-btn" style="font-size:12px; color:#8ba3c7; background:none; border:none;">𝑁𝑒𝑤</button></div>
-            </div>
-            <div id="conversationListContainer" style="background:#fff; flex:1; overflow-y:auto; min-height:100%;">
-              <div class="conversation-item" style="display:flex; align-items:center; padding:10px 12px; border-bottom:0.5px solid #efefef;">
-                <div class="conversation-avatar" style="width:34px; height:34px; border-radius:6px; background:#f39c12; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; margin-right:10px;">林</div>
-                <div class="conversation-info" style="flex:1;">
-                  <div class="conversation-title" style="font-size:13px; font-weight:500; color:#4a5568; margin-bottom:2px;">林栖</div>
-                  <div class="conversation-last-message" style="font-size:11px; color:#888;">其实呢，最近新进了一些书...</div>
+      <div class="gt-preview-body" style="height:260px; overflow:auto; position:relative;">
+        <div class="gt-pane active" id="gtPaneDesktop" style="display:block; height:100%;">
+          <div class="home-main" style="height:100%; display:flex; flex-direction:column; background:#f8f6f2; padding:10px;">
+            <div class="home-pages-track" style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+              <div class="home-page" style="width:100%; height:auto; padding:0; display:flex; flex-direction:column; gap:8px;">
+                <div class="namecard" style="height:110px; background:#fff; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05); position:relative; overflow:hidden;">
+                  <div class="namecard-upper" style="height:55%; background:#e2d8cd;"></div>
+                  <div class="namecard-avatar" style="width:36px; height:36px; border-radius:50%; background:#c9c1b6; position:absolute; left:50%; top:55%; transform:translate(-50%, -50%); border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
+                  <div class="namecard-lower" style="position:absolute; bottom:0; width:100%; height:30%; text-align:center;">
+                    <div class="namecard-title" style="font-size:11px; font-weight:bold; color:#4a5568;">晨曦海岸</div>
+                  </div>
                 </div>
-                <div class="conversation-time" style="font-size:9px; color:#aaa;">14:32</div>
-              </div>
-              <div class="conversation-item" style="display:flex; align-items:center; padding:10px 12px; border-bottom:0.5px solid #efefef;">
-                <div class="conversation-avatar" style="width:34px; height:34px; border-radius:6px; background:#3498db; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; margin-right:10px;">夜</div>
-                <div class="conversation-info" style="flex:1;">
-                  <div class="conversation-title" style="font-size:13px; font-weight:500; color:#4a5568; margin-bottom:2px;">夜影</div>
-                  <div class="conversation-last-message" style="font-size:11px; color:#888;">今晚加班，不用等我了。</div>
-                </div>
-                <div class="conversation-time" style="font-size:9px; color:#aaa;">昨天</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. 联系人列表 (page-contacts) -->
-          <div id="prevPageContacts" class="page" style="display:none; flex-direction:column; width:100%; height:100%;">
-            <div class="contacts-header" style="background:#faf9f6; padding:8px 12px; border-bottom:0.5px solid #c9bfae; display:flex; align-items:center; justify-content:space-between;">
-              <h2 style="font-size:16px; margin:0; font-weight:600; color:#4a5568;">𝓒𝓸𝓷𝓽𝓪𝓬𝓽𝓼</h2>
-              <button class="add-btn" style="background:#d7e4ee; color:#fff; border:none; padding:3px 10px; border-radius:12px; font-size:11px;">𝑁𝑒𝑤</button>
-            </div>
-            <div class="contact-list" style="background:#fff; flex:1; overflow-y:auto; min-height:100%;">
-              <div class="contact-item" style="display:flex; align-items:center; padding:10px 12px; border-bottom:0.5px solid #efefef;">
-                <div class="avatar" style="width:32px; height:32px; border-radius:6px; background:#2ecc71; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; margin-right:10px;">林</div>
-                <div class="contact-info" style="flex:1;">
-                  <div class="contact-name" style="font-size:13px; font-weight:500; color:#4a5568; margin-bottom:2px;">林栖 <span class="contact-badge" style="background:#d7e4ee; color:#fff; padding:1px 4px; border-radius:6px; font-size:8px;">知己</span></div>
-                  <div class="contact-persona" style="font-size:11px; color:#888;">温和内敛的图书管理员</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. 朋友圈 (page-moments) -->
-          <div id="prevPageMoments" class="page" style="display:none; flex-direction:column; width:100%; height:100%; background:#fff;">
-            <div class="chat-header" style="background:#faf9f6; padding:8px 12px; border-bottom:0.5px solid #d4ccbe; display:flex; align-items:center;">
-              <h2 style="font-size:16px; margin:0; font-weight:600; color:#4a5568; text-align:center; width:100%;">朋友圈</h2>
-            </div>
-            <div class="moments-container" style="padding:12px; display:flex; flex-direction:column; gap:16px; overflow-y:auto;">
-              <div class="moments-post" style="border-bottom:1px solid #efefef; padding-bottom:12px; display:flex; gap:10px;">
-                <div class="moments-avatar" style="width:32px; height:32px; border-radius:6px; background:#f39c12; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0;">林</div>
-                <div class="moments-main" style="flex:1;">
-                  <div class="moments-author" style="font-size:13px; font-weight:600; color:#4a5568; margin-bottom:4px;">林栖</div>
-                  <div class="moments-content" style="font-size:12px; color:#333; line-height:1.5; margin-bottom:6px;">今天整理了仓库旧书，翻到一本带干枯枫叶书签的书。岁月很温柔。🍁</div>
-                  <div class="moments-meta" style="font-size:9px; color:#a0a8a2; display:flex; justify-content:space-between; align-items:center;">
-                    <span>2小时前</span>
-                    <span style="color:#8ba3c7; cursor:pointer;">赞 · 评论</span>
+                <div class="page1-row2" style="display:flex; gap:6px; height:70px;">
+                  <div class="page1-photo" style="flex:1; background:#e2d8cd; border-radius:8px;"></div>
+                  <div class="page1-apps" style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:4px; align-items:center; justify-items:center;">
+                    <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                      <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#8ba3c7; display:flex; align-items:center; justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+                      </div>
+                      <div class="app-icon-label" style="font-size:8px; transform:scale(0.9); color:#4a5568;">聊天室</div>
+                    </div>
+                    <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                      <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#7aa; display:flex; align-items:center; justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                      </div>
+                      <div class="app-icon-label" style="font-size:8px; transform:scale(0.9); color:#4a5568;">世界书</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- 4. 我的面具 (page-profile) -->
-          <div id="prevPageProfile" class="page" style="display:none; flex-direction:column; width:100%; height:100%;">
-            <div class="profile-header" style="background:#faf9f6; padding:16px 12px; display:flex; align-items:center; gap:12px; border-bottom:0.5px solid #c9bfae;">
-              <div class="profile-avatar" style="width:44px; height:44px; border-radius:8px; background:#3498db; color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600;">👤</div>
-              <div class="profile-meta">
-                <div class="profile-name" style="font-size:14px; font-weight:600; color:#4a5568;">真实的我</div>
-                <div class="profile-bio" style="font-size:11px; color:#8ba3c7; margin-top:2px;">我就是我自己</div>
-              </div>
-            </div>
-            <div class="menu-list" style="margin-top:12px; background:#fff; border-top:0.5px solid #eee; border-bottom:0.5px solid #eee;">
-              <div class="menu-item" style="display:flex; align-items:center; padding:12px; border-bottom:0.5px solid #eee; font-size:13px; color:#333;">
-                <span class="menu-icon" style="margin-right:10px; font-size:16px;">🎭</span><span class="menu-text">切换面具</span>
-              </div>
-            </div>
-          </div>
-
         </div>
-
-        <!-- Tab bar simulator -->
-        <div class="tab-bar" id="prevTabBar" style="height:50px; background:#ffffff; border-top:0.5px solid #d6d6d6; display:flex; align-items:center; justify-content:space-around; z-index:100; flex-shrink:0;">
-          <div class="tab-item active" data-prev-tab="chat" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:#8ba3c7; cursor:pointer;">
-            <span class="tab-icon" style="font-size:16px; line-height:1;">💬</span>
-            <span>聊天</span>
-          </div>
-          <div class="tab-item" data-prev-tab="contacts" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:#6b6b6b; cursor:pointer;">
-            <span class="tab-icon" style="font-size:16px; line-height:1;">👥</span>
-            <span>联系人</span>
-          </div>
-          <div class="tab-item" data-prev-tab="moments" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:#6b6b6b; cursor:pointer;">
-            <span class="tab-icon" style="font-size:16px; line-height:1;">🌸</span>
-            <span>朋友圈</span>
-          </div>
-          <div class="tab-item" data-prev-tab="profile" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:#6b6b6b; cursor:pointer;">
-            <span class="tab-icon" style="font-size:16px; line-height:1;">👤</span>
-            <span>我的</span>
+        <div class="gt-pane" id="gtPaneChat" style="display:none; height:100%;">
+          <div id="conversationListContainer" style="background:#fff; height:100%; padding:8px 0; display:flex; flex-direction:column; gap:6px;">
+            <div class="conversation-item" style="display:flex; align-items:center; padding:8px 12px; border-bottom:0.5px solid #f5f5f5;">
+              <div class="conversation-avatar" style="width:32px; height:32px; border-radius:6px; background:#f39c12; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin-right:10px;">林</div>
+              <div class="conversation-info" style="flex:1;">
+                <div class="conversation-title" style="font-size:13px; font-weight:600; color:#4a5568; margin-bottom:2px;">林栖</div>
+                <div class="conversation-last-message" style="font-size:11px; color:#a0a8a2;">其实呢，最近新进了一些书...</div>
+              </div>
+            </div>
+            <div class="conversation-item" style="display:flex; align-items:center; padding:8px 12px; border-bottom:0.5px solid #f5f5f5;">
+              <div class="conversation-avatar" style="width:32px; height:32px; border-radius:6px; background:#3498db; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin-right:10px;">夜</div>
+              <div class="conversation-info" style="flex:1;">
+                <div class="conversation-title" style="font-size:13px; font-weight:600; color:#4a5568; margin-bottom:2px;">夜影</div>
+                <div class="conversation-last-message" style="font-size:11px; color:#a0a8a2;">今晚加班，别等我了。</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     `;
   }
 
-  function bindChatroomPreviewEvents(root) {
-    const tabs = root.querySelectorAll('#prevTabBar [data-prev-tab]');
-    const pages = {
-      chat: root.querySelector('#prevPageChat'),
-      contacts: root.querySelector('#prevPageContacts'),
-      moments: root.querySelector('#prevPageMoments'),
-      profile: root.querySelector('#prevPageProfile')
-    };
+  function initGlobalThemePanel() {
+    const root = document.getElementById("globalThemePreviewRoot");
+    if (!root) return;
+    root.setAttribute("data-global-scope", "preview");
+    root.innerHTML = buildGlobalPreviewHtml();
+    
+    // 绑定面板切换
+    const tabDesktop = document.getElementById("gtTabDesktop");
+    const tabChat = document.getElementById("gtTabChat");
+    const paneDesktop = document.getElementById("gtPaneDesktop");
+    const paneChat = document.getElementById("gtPaneChat");
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => {
-          t.classList.remove('active');
-          t.style.color = '#6b6b6b';
-        });
-        tab.classList.add('active');
-        tab.style.color = '#8ba3c7';
-
-        const target = tab.dataset.prevTab;
-        Object.keys(pages).forEach(k => {
-          if (pages[k]) {
-            pages[k].style.display = (k === target) ? 'flex' : 'none';
-          }
-        });
+    if (tabDesktop && tabChat && paneDesktop && paneChat) {
+      tabDesktop.addEventListener("click", () => {
+        tabDesktop.classList.add("active");
+        tabDesktop.style.borderBottom = "2px solid #8ba3c7";
+        tabDesktop.style.color = "#4a5568";
+        tabChat.classList.remove("active");
+        tabChat.style.borderBottom = "2px solid transparent";
+        tabChat.style.color = "#a0a8a2";
+        paneDesktop.style.display = "block";
+        paneChat.style.display = "none";
       });
-    });
+      tabChat.addEventListener("click", () => {
+        tabChat.classList.add("active");
+        tabChat.style.borderBottom = "2px solid #8ba3c7";
+        tabChat.style.color = "#4a5568";
+        tabDesktop.classList.remove("active");
+        tabDesktop.style.borderBottom = "2px solid transparent";
+        tabDesktop.style.color = "#a0a8a2";
+        paneChat.style.display = "block";
+        paneDesktop.style.display = "none";
+      });
+    }
+
+    renderGlobalArchiveList();
   }
 
-  function runChatroomPreview() {
-    const input = document.getElementById("chatroomCssInput");
+  function runGlobalPreview() {
+    const input = document.getElementById("globalCssInput");
     if (!input) return;
     const cssText = input.value || "";
-    const scoped = scopeCss(cssText, '[data-chatroom-scope="preview_chatroom"]');
-    getStyleEl(CHATROOM_PREVIEW_STYLE_ID).textContent = scoped;
-    toast("聊天应用效果预览已更新", "success");
+    const scoped = scopeCss(cssText, '[data-global-scope="preview"]');
+    getStyleEl(GLOBAL_PREVIEW_STYLE_ID).textContent = scoped;
+    toast("预览已更新", "success");
   }
 
-  function clearChatroomPreview() {
-    removeStyleEl(CHATROOM_PREVIEW_STYLE_ID);
-    const input = document.getElementById("chatroomCssInput");
+  function clearGlobalPreview() {
+    removeStyleEl(GLOBAL_PREVIEW_STYLE_ID);
+    const input = document.getElementById("globalCssInput");
     if (input) input.value = "";
-    toast("聊天应用预览已重置", "info");
+    toast("预览已清除", "info");
   }
 
-  // ================================================================
-  // 💾 统一存档业务逻辑 (桌面 & 聊天室 分离存档)
-  // ================================================================
-  async function saveGlobalSnapshot(subType) {
-    const inputId = subType === "desktop" ? "desktopCssInput" : "chatroomCssInput";
-    const input = document.getElementById(inputId);
+  async function saveGlobalSnapshot() {
+    const input = document.getElementById("globalCssInput");
     const cssText = (input?.value || "").trim();
     if (!cssText) {
       toast("请输入 CSS 后再保存", "error");
       return;
     }
-    const label = subType === "desktop" ? "桌面全局样式" : "应用与聊天室全局样式";
-    const name = prompt(`请输入${label}存档名称：`, `我的${label}`);
+    const name = prompt("请输入全局样式存档名称：", "我的全局样式");
     if (!name || !name.trim()) return;
 
     const theme = {
       id: uid(),
       name: name.trim(),
       cssText,
-      type: "global_" + subType,
+      type: "global",
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
     await window.DB.put(STORE_NAME, theme);
-    await renderGlobalArchiveList(subType);
-    toast(`${label}已保存到样式存档`, "success");
+    await renderGlobalArchiveList();
+    toast("全局样式存档已保存", "success");
   }
 
-  async function applyGlobalTheme(themeId, subType) {
+  async function applyGlobalTheme(themeId) {
     const theme = await window.DB.get(STORE_NAME, themeId);
     if (!theme) return;
 
-    const settingKey = subType === "desktop" ? "activeDesktopThemeId" : "activeChatroomThemeId";
-    const styleId = subType === "desktop" ? DESKTOP_APPLIED_STYLE_ID : CHATROOM_APPLIED_STYLE_ID;
-
-    await window.DB.setSetting(settingKey, themeId);
-    getStyleEl(styleId).textContent = theme.cssText || "";
-    toast(`已生效${subType === "desktop" ? "桌面" : "聊天应用"}样式: ` + theme.name, "success");
-    await renderGlobalArchiveList(subType);
+    // 持久化当前全局主题 ID
+    await window.DB.setSetting("activeGlobalThemeId", themeId);
+    getStyleEl(GLOBAL_APPLIED_STYLE_ID).textContent = theme.cssText || "";
+    toast("已应用全局样式 " + theme.name, "success");
+    await renderGlobalArchiveList();
   }
 
-  async function removeActiveGlobalTheme(subType) {
-    const settingKey = subType === "desktop" ? "activeDesktopThemeId" : "activeChatroomThemeId";
-    const styleId = subType === "desktop" ? DESKTOP_APPLIED_STYLE_ID : CHATROOM_APPLIED_STYLE_ID;
-
-    await window.DB.setSetting(settingKey, "");
-    removeStyleEl(styleId);
-    toast(`已卸载${subType === "desktop" ? "桌面" : "聊天应用"}样式`, "info");
-    await renderGlobalArchiveList(subType);
+  async function removeActiveGlobalTheme() {
+    await window.DB.setSetting("activeGlobalThemeId", "");
+    removeStyleEl(GLOBAL_APPLIED_STYLE_ID);
+    toast("已卸载全局样式", "info");
+    await renderGlobalArchiveList();
   }
 
-  async function renderGlobalArchiveList(subType) {
-    const boxId = subType === "desktop" ? "desktopThemeArchiveList" : "chatroomThemeArchiveList";
-    const box = document.getElementById(boxId);
+  async function renderGlobalArchiveList() {
+    const box = document.getElementById("globalThemeArchiveList");
     if (!box) return;
-
-    const list = await getAllThemes("global_" + subType);
-    const settingKey = subType === "desktop" ? "activeDesktopThemeId" : "activeChatroomThemeId";
-    const activeId = await window.DB.getSetting(settingKey, "");
+    const list = await getAllThemes("global");
+    const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
 
     if (!list.length) {
       box.innerHTML = '<div class="bubble-theme-empty">暂无样式存档</div>';
@@ -940,11 +762,6 @@
 
     box.innerHTML = list.map(t => {
       const isActive = t.id === activeId;
-      const loadClass = subType === "desktop" ? "gt-desktop-load" : "gt-chatroom-load";
-      const applyClass = subType === "desktop" ? "gt-desktop-apply" : "gt-chatroom-apply";
-      const unloadClass = subType === "desktop" ? "gt-desktop-unload" : "gt-chatroom-unload";
-      const delClass = subType === "desktop" ? "gt-desktop-del" : "gt-chatroom-del";
-
       return `<div class="bubble-theme-row" data-id="${t.id}" style="${isActive ? 'border-color:#8ba3c7; background:#f0f6f1;' : ''}">
         <div class="bubble-theme-row-main">
           <div class="bubble-theme-row-name">${esc(t.name)} ${isActive ? '<span style="font-size:11px; color:#4a7a4e; margin-left:6px; font-weight:bold;">应用中</span>' : ''}</div>
@@ -952,31 +769,23 @@
         </div>
         <div class="bubble-theme-row-actions">
           ${isActive 
-            ? `<button class="small-btn ${unloadClass}" style="color:#c0392b;">卸载</button>` 
-            : `<button class="small-btn ${applyClass}">应用</button>`
+            ? `<button class="small-btn gt-unload" style="color:#c0392b;">卸载</button>` 
+            : `<button class="small-btn gt-apply">应用</button>`
           }
-          <button class="small-btn ${loadClass}">载入</button>
-          <button class="small-btn ${delClass}" style="color:#c0392b;">删除</button>
+          <button class="small-btn gt-load">载入编辑</button>
+          <button class="small-btn gt-del" style="color:#c0392b;">删除</button>
         </div>
       </div>`;
     }).join("");
   }
 
-  // 启动自动读取生效样式
   async function applyActiveGlobalThemeOnStartup() {
     try {
-      const activeDesktopId = await window.DB.getSetting("activeDesktopThemeId", "");
-      if (activeDesktopId) {
-        const theme = await window.DB.get(STORE_NAME, activeDesktopId);
+      const activeThemeId = await window.DB.getSetting("activeGlobalThemeId", "");
+      if (activeThemeId) {
+        const theme = await window.DB.get(STORE_NAME, activeThemeId);
         if (theme && theme.cssText) {
-          getStyleEl(DESKTOP_APPLIED_STYLE_ID).textContent = theme.cssText;
-        }
-      }
-      const activeChatroomId = await window.DB.getSetting("activeChatroomThemeId", "");
-      if (activeChatroomId) {
-        const theme = await window.DB.get(STORE_NAME, activeChatroomId);
-        if (theme && theme.cssText) {
-          getStyleEl(CHATROOM_APPLIED_STYLE_ID).textContent = theme.cssText;
+            getStyleEl(GLOBAL_APPLIED_STYLE_ID).textContent = theme.cssText;
         }
       }
     } catch (e) {
@@ -984,9 +793,6 @@
     }
   }
 
-  // ================================================================
-  // ⚙️ 统一事件绑定及面板初始化
-  // ================================================================
   function bindDelegatedEventsOnce() {
     if (window.__btDelegatedBound) return;
     window.__btDelegatedBound = true;
@@ -994,129 +800,105 @@
     document.addEventListener("click", async (e) => {
       const t = e.target;
 
-      // 气泡模块 DIY
+      // 气泡预览/全局预览
       if (t.id === "bubblePreviewBtn") return runPreview();
       if (t.id === "bubbleClearPreviewBtn") return clearPreview();
       if (t.id === "bubbleSaveSnapshotBtn") return saveSnapshot();
+      if (t.id === "globalPreviewBtn") return runGlobalPreview();
+      if (t.id === "globalClearPreviewBtn") return clearGlobalPreview();
+      if (t.id === "globalSaveSnapshotBtn") return saveGlobalSnapshot();
 
-      // 双全局 DIY 按钮
-      if (t.id === "desktopPreviewBtn") return runDesktopPreview();
-      if (t.id === "desktopClearPreviewBtn") return clearDesktopPreview();
-      if (t.id === "desktopSaveSnapshotBtn") return saveGlobalSnapshot("desktop");
-
-      if (t.id === "chatroomPreviewBtn") return runChatroomPreview();
-      if (t.id === "chatroomClearPreviewBtn") return clearChatroomPreview();
-      if (t.id === "chatroomSaveSnapshotBtn") return saveGlobalSnapshot("chatroom");
-
-      // 气泡样式列表点击代理
-      const row = t.closest(".bubble-theme-row");
-      if (row) {
-        const id = row.getAttribute("data-id");
-
-        // 气泡存档控制
-        if (t.classList.contains("bt-load")) {
+      // 全局样式快照点击代理
+      const gtRow = t.closest(".bubble-theme-row");
+      if (gtRow && gtRow.querySelector(".gt-load, .gt-apply, .gt-unload, .gt-del")) {
+        const id = gtRow.getAttribute("data-id");
+        if (t.classList.contains("gt-load")) {
           const theme = await window.DB.get(STORE_NAME, id);
           if (!theme) return;
-          document.getElementById("bubbleCssInput").value = theme.cssText || "";
-          currentEditingIconMap = normalizeIconMap(theme.iconMap);
-          renderIconEditor();
-          initPreviewBox();
-          toast("已载入气泡存档", "success");
+          document.getElementById("globalCssInput").value = theme.cssText || "";
+          toast("已载入存档到编辑器", "success");
           return;
         }
-        if (t.classList.contains("bt-edit")) {
-          const theme = await window.DB.get(STORE_NAME, id);
-          if (!theme) return;
-          const name = prompt("新名称：", theme.name || "");
-          if (!name || !name.trim()) return;
-          theme.name = name.trim();
-          theme.updatedAt = Date.now();
-          await window.DB.put(STORE_NAME, theme);
-          await renderArchiveList();
-          await renderMountThemeSelect();
-          toast("已重命名", "success");
+        if (t.classList.contains("gt-apply")) {
+          await applyGlobalTheme(id);
           return;
         }
-        if (t.classList.contains("bt-del")) {
-          if (!confirm("确定删除这个气泡样式存档吗？")) return;
+        if (t.classList.contains("gt-unload")) {
+          await removeActiveGlobalTheme();
+          return;
+        }
+        if (t.classList.contains("gt-del")) {
+          if (!confirm("确定删除这个全局样式存档吗？")) return;
+          const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
+          if (id === activeId) {
+            await removeActiveGlobalTheme();
+          }
           await window.DB.delete(STORE_NAME, id);
-          // 解绑单聊/群聊关联
-          const cds = await window.DB.getAll("convDetails");
-          for (const d of cds) {
-            if (d.bubbleThemeId === id) { d.bubbleThemeId = ""; await window.DB.put("convDetails", d); }
-          }
-          const gs = await window.DB.getAll("groupChats");
-          for (const g of gs) {
-            if (g.bubbleThemeId === id) { g.bubbleThemeId = ""; await window.DB.put("groupChats", g); }
-          }
-          await renderArchiveList();
-          await renderMountThemeSelect();
-          await renderMountTargetList();
-          toast("已删除并解除挂载", "success");
-          return;
-        }
-
-        // 🖥️ 桌面主题列表动作
-        if (t.classList.contains("gt-desktop-load")) {
-          const theme = await window.DB.get(STORE_NAME, id);
-          if (theme) {
-            document.getElementById("desktopCssInput").value = theme.cssText || "";
-            toast("已载入桌面样式到编辑器", "success");
-          }
-          return;
-        }
-        if (t.classList.contains("gt-desktop-apply")) {
-          await applyGlobalTheme(id, "desktop");
-          return;
-        }
-        if (t.classList.contains("gt-desktop-unload")) {
-          await removeActiveGlobalTheme("desktop");
-          return;
-        }
-        if (t.classList.contains("gt-desktop-del")) {
-          if (confirm("确定删除这个桌面样式吗？")) {
-            const activeId = await window.DB.getSetting("activeDesktopThemeId", "");
-            if (id === activeId) await removeActiveGlobalTheme("desktop");
-            await window.DB.delete(STORE_NAME, id);
-            await renderGlobalArchiveList("desktop");
-            toast("桌面样式已删除", "success");
-          }
-          return;
-        }
-
-        // 💬 聊天室主题列表动作
-        if (t.classList.contains("gt-chatroom-load")) {
-          const theme = await window.DB.get(STORE_NAME, id);
-          if (theme) {
-            document.getElementById("chatroomCssInput").value = theme.cssText || "";
-            toast("已载入聊天室样式到编辑器", "success");
-          }
-          return;
-        }
-        if (t.classList.contains("gt-chatroom-apply")) {
-          await applyGlobalTheme(id, "chatroom");
-          return;
-        }
-        if (t.classList.contains("gt-chatroom-unload")) {
-          await removeActiveGlobalTheme("chatroom");
-          return;
-        }
-        if (t.classList.contains("gt-chatroom-del")) {
-          if (confirm("确定删除这个聊天室样式吗？")) {
-            const activeId = await window.DB.getSetting("activeChatroomThemeId", "");
-            if (id === activeId) await removeActiveGlobalTheme("chatroom");
-            await window.DB.delete(STORE_NAME, id);
-            await renderGlobalArchiveList("chatroom");
-            toast("聊天室样式已删除", "success");
-          }
+          await renderGlobalArchiveList();
+          toast("已删除存档", "success");
           return;
         }
       }
 
-      // 气泡挂载事件
+      const row = t.closest(".bubble-theme-row");
+      if (row && t.classList.contains("bt-load")) {
+        const id = row.getAttribute("data-id");
+        const theme = await window.DB.get(STORE_NAME, id);
+        if (!theme) return;
+        document.getElementById("bubbleCssInput").value = theme.cssText || "";
+        currentEditingIconMap = normalizeIconMap(theme.iconMap);
+        renderIconEditor();
+        initPreviewBox();
+        toast("已载入存档", "success");
+        return;
+      }
+
+      if (row && t.classList.contains("bt-edit")) {
+        const id = row.getAttribute("data-id");
+        const theme = await window.DB.get(STORE_NAME, id);
+        if (!theme) return;
+        const name = prompt("新名称：", theme.name || "");
+        if (!name || !name.trim()) return;
+        theme.name = name.trim();
+        theme.updatedAt = Date.now();
+        await window.DB.put(STORE_NAME, theme);
+        await renderArchiveList();
+        await renderMountThemeSelect();
+        toast("已重命名", "success");
+        return;
+      }
+
+      if (row && t.classList.contains("bt-del")) {
+        const id = row.getAttribute("data-id");
+        if (!confirm("确定删除这个样式存档吗？")) return;
+        await window.DB.delete(STORE_NAME, id);
+
+        const cds = await window.DB.getAll("convDetails");
+        for (const d of cds) {
+          if (d.bubbleThemeId === id) {
+            d.bubbleThemeId = "";
+            await window.DB.put("convDetails", d);
+          }
+        }
+
+        const gs = await window.DB.getAll("groupChats");
+        for (const g of gs) {
+          if (g.bubbleThemeId === id) {
+            g.bubbleThemeId = "";
+            await window.DB.put("groupChats", g);
+          }
+        }
+
+        await renderArchiveList();
+        await renderMountThemeSelect();
+        await renderMountTargetList();
+        toast("已删除并解除挂载", "success");
+        return;
+      }
+
       if (t.classList.contains("bt-mount-conv")) {
         const themeId = document.getElementById("bubbleThemeMountSelect")?.value || "";
-        if (!themeId) return toast("请先选择气泡存档", "error");
+        if (!themeId) return toast("请先选择样式存档", "error");
         const convId = parseInt(t.getAttribute("data-conv-id"));
         if (!convId) return;
 
@@ -1128,13 +910,13 @@
         if (window.currentConversationId === convId) {
           await applyBubbleThemeForConversation(convId);
         }
-        toast("✅ 已成功挂载到该单聊", "success");
+        toast("✅ 已挂载到单聊", "success");
         return;
       }
 
       if (t.classList.contains("bt-mount-group")) {
         const themeId = document.getElementById("bubbleThemeMountSelect")?.value || "";
-        if (!themeId) return toast("请先选择气泡存档", "error");
+        if (!themeId) return toast("请先选择样式存档", "error");
         const groupId = parseInt(t.getAttribute("data-group-id"));
         if (!groupId) return;
 
@@ -1146,16 +928,15 @@
         if (window.currentGroupId === groupId) {
           await applyBubbleThemeForGroup(groupId);
         }
-        toast("✅ 已成功挂载到该群聊", "success");
+        toast("✅ 已挂载到群聊", "success");
         return;
       }
 
-      // 图标编辑自定义动作
       const iconRow = t.closest("[data-icon-key]");
       if (iconRow && t.classList.contains("bt-icon-text")) {
         const key = iconRow.getAttribute("data-icon-key");
         const old = currentEditingIconMap[key]?.value || "";
-        const v = prompt("输入自定义 emoji / 文本 / 矢量图 SVG / 链接：", old);
+        const v = prompt("输入 emoji / 文本 / URL(svg也可)：", old);
         if (v === null) return;
         const value = v.trim();
         if (!value) return;
@@ -1180,7 +961,6 @@
       }
     });
 
-    // 监听本地选择本地图标上传
     document.addEventListener("change", async (e) => {
       const t = e.target;
       if (!t.classList.contains("bt-icon-file")) return;
@@ -1199,6 +979,7 @@
         initPreviewBox();
       };
       reader.readAsDataURL(file);
+
       t.value = "";
     });
   }
@@ -1211,46 +992,6 @@
     await renderArchiveList();
     await renderMountThemeSelect();
     await renderMountTargetList();
-  }
-
-  // 初始化全局样式双面板
-  async function initGlobalThemePanel() {
-    const desktopRoot = document.getElementById("desktopThemePreviewRoot");
-    const chatroomRoot = document.getElementById("chatroomThemePreviewRoot");
-
-    if (desktopRoot) {
-      desktopRoot.setAttribute("data-desktop-scope", "preview_desktop");
-      desktopRoot.innerHTML = buildDesktopPreviewHtml();
-      bindDesktopPreviewEvents(desktopRoot);
-    }
-
-    if (chatroomRoot) {
-      chatroomRoot.setAttribute("data-chatroom-scope", "preview_chatroom");
-      chatroomRoot.innerHTML = buildChatroomPreviewHtml();
-      bindChatroomPreviewEvents(chatroomRoot);
-    }
-
-    // 载入当前已生效的 CSS 设定，填充编辑区
-    const activeDesktopId = await window.DB.getSetting("activeDesktopThemeId", "");
-    const activeChatroomId = await window.DB.getSetting("activeChatroomThemeId", "");
-
-    if (activeDesktopId) {
-      const theme = await window.DB.get(STORE_NAME, activeDesktopId);
-      if (theme && document.getElementById("desktopCssInput")) {
-        document.getElementById("desktopCssInput").value = theme.cssText || "";
-        runDesktopPreview();
-      }
-    }
-    if (activeChatroomId) {
-      const theme = await window.DB.get(STORE_NAME, activeChatroomId);
-      if (theme && document.getElementById("chatroomCssInput")) {
-        document.getElementById("chatroomCssInput").value = theme.cssText || "";
-        runChatroomPreview();
-      }
-    }
-
-    await renderGlobalArchiveList("desktop");
-    await renderGlobalArchiveList("chatroom");
   }
 
   window.bubbleThemeModule = {
