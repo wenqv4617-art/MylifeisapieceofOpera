@@ -1,17 +1,17 @@
 /* ================================================================
- * bubble-theme.js - 对话气泡样式主题系统
+ * bubble-theme.js - 对话气泡与全局样式系统
  * 功能：
  * 1) CSS 输入 + 预览（模拟对话框）
  * 2) CSS 存档：保存/命名/编辑/删除
  * 3) 挂载：单聊 conversation / 群聊 group 分别挂载
- * 4) 作用域隔离：仅对目标对话页生效，不污染全局
+ * 4) 全局样式管理：可同时自定义首页第一/第二页、聊天室 UI 并持久化
  * 依赖：
  * window.DB, window.escapeHtml, window.showStatus
  * ================================================================ */
 
 (function () {
   "use strict";
-  console.log("🎨 bubble-theme 模块加载（icon+css）");
+  console.log("🎨 bubble-theme & global-theme 联合模块加载");
 
   const STORE_NAME = "bubbleThemes";
   const STYLE_PREFIX = "bt-style-";
@@ -365,15 +365,18 @@ const DEFAULT_ICON_MAP = {
     });
   }
 
-  async function getAllThemes() {
+  async function getAllThemes(type = "bubble") {
     const list = await window.DB.getAll(STORE_NAME);
-    return (list || []).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-}
+    return (list || []).filter(t => {
+      if (type === "global") return t.type === "global";
+      return !t.type || t.type === "bubble";
+    }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
 
   async function renderArchiveList() {
     const box = document.getElementById("bubbleThemeArchiveList");
     if (!box) return;
-    const list = await getAllThemes();
+    const list = await getAllThemes("bubble");
 
     if (!list.length) {
       box.innerHTML = '<div class="bubble-theme-empty">暂无样式存档</div>';
@@ -398,7 +401,7 @@ const DEFAULT_ICON_MAP = {
   async function renderMountThemeSelect() {
     const sel = document.getElementById("bubbleThemeMountSelect");
     if (!sel) return;
-    const list = await getAllThemes();
+    const list = await getAllThemes("bubble");
 
     if (!list.length) {
       sel.innerHTML = `<option value="">暂无存档</option>`;
@@ -578,6 +581,218 @@ if (def.type === "svg" || isSvgMarkup(def.value)) {
     applyIconMapToGroupDOM(normalizeIconMap(theme.iconMap));
   }
 
+  // ================================================================
+  // 全局样式 UI 系统 (新增加)
+  // ================================================================
+  const GLOBAL_PREVIEW_STYLE_ID = "gt-preview-style";
+  const GLOBAL_APPLIED_STYLE_ID = "gt-style-applied";
+
+  function buildGlobalPreviewHtml() {
+    return `
+      <div class="gt-preview-header" style="display:flex; border-bottom:1px solid #e7e2d8; margin-bottom:10px;">
+        <button class="gt-tab active" id="gtTabDesktop" style="flex:1; padding:8px 0; font-size:12px; font-weight:600; background:none; border:none; border-bottom:2px solid #8ba3c7; cursor:pointer; color:#4a5568; display:flex; align-items:center; justify-content:center; gap:4px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="display:block;"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          桌面
+        </button>
+        <button class="gt-tab" id="gtTabChat" style="flex:1; padding:8px 0; font-size:12px; font-weight:500; background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; color:#a0a8a2; display:flex; align-items:center; justify-content:center; gap:4px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="display:block;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          聊天室
+        </button>
+      </div>
+      <div class="gt-preview-body" style="height:260px; overflow:auto; position:relative;">
+        <div class="gt-pane active" id="gtPaneDesktop" style="display:block; height:100%;">
+          <div class="home-main" style="height:100%; display:flex; flex-direction:column; background:#f8f6f2; padding:10px;">
+            <div class="home-pages-track" style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+              <div class="home-page" style="width:100%; height:auto; padding:0; display:flex; flex-direction:column; gap:8px;">
+                <div class="namecard" style="height:110px; background:#fff; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05); position:relative; overflow:hidden;">
+                  <div class="namecard-upper" style="height:55%; background:#e2d8cd;"></div>
+                  <div class="namecard-avatar" style="width:36px; height:36px; border-radius:50%; background:#c9c1b6; position:absolute; left:50%; top:55%; transform:translate(-50%, -50%); border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
+                  <div class="namecard-lower" style="position:absolute; bottom:0; width:100%; height:30%; text-align:center;">
+                    <div class="namecard-title" style="font-size:11px; font-weight:bold; color:#4a5568;">晨曦海岸</div>
+                  </div>
+                </div>
+                <div class="page1-row2" style="display:flex; gap:6px; height:70px;">
+                  <div class="page1-photo" style="flex:1; background:#e2d8cd; border-radius:8px;"></div>
+                  <div class="page1-apps" style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:4px; align-items:center; justify-items:center;">
+                    <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                      <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#8ba3c7; display:flex; align-items:center; justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+                      </div>
+                      <div class="app-icon-label" style="font-size:8px; transform:scale(0.9); color:#4a5568;">聊天室</div>
+                    </div>
+                    <div class="app-icon-item" style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                      <div class="app-icon-box" style="width:28px; height:28px; border-radius:8px; background:#7aa; display:flex; align-items:center; justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                      </div>
+                      <div class="app-icon-label" style="font-size:8px; transform:scale(0.9); color:#4a5568;">世界书</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="gt-pane" id="gtPaneChat" style="display:none; height:100%;">
+          <div id="conversationListContainer" style="background:#fff; height:100%; padding:8px 0; display:flex; flex-direction:column; gap:6px;">
+            <div class="conversation-item" style="display:flex; align-items:center; padding:8px 12px; border-bottom:0.5px solid #f5f5f5;">
+              <div class="conversation-avatar" style="width:32px; height:32px; border-radius:6px; background:#f39c12; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin-right:10px;">林</div>
+              <div class="conversation-info" style="flex:1;">
+                <div class="conversation-title" style="font-size:13px; font-weight:600; color:#4a5568; margin-bottom:2px;">林栖</div>
+                <div class="conversation-last-message" style="font-size:11px; color:#a0a8a2;">其实呢，最近新进了一些书...</div>
+              </div>
+            </div>
+            <div class="conversation-item" style="display:flex; align-items:center; padding:8px 12px; border-bottom:0.5px solid #f5f5f5;">
+              <div class="conversation-avatar" style="width:32px; height:32px; border-radius:6px; background:#3498db; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin-right:10px;">夜</div>
+              <div class="conversation-info" style="flex:1;">
+                <div class="conversation-title" style="font-size:13px; font-weight:600; color:#4a5568; margin-bottom:2px;">夜影</div>
+                <div class="conversation-last-message" style="font-size:11px; color:#a0a8a2;">今晚加班，别等我了。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initGlobalThemePanel() {
+    const root = document.getElementById("globalThemePreviewRoot");
+    if (!root) return;
+    root.setAttribute("data-global-scope", "preview");
+    root.innerHTML = buildGlobalPreviewHtml();
+    
+    // 绑定面板切换
+    const tabDesktop = document.getElementById("gtTabDesktop");
+    const tabChat = document.getElementById("gtTabChat");
+    const paneDesktop = document.getElementById("gtPaneDesktop");
+    const paneChat = document.getElementById("gtPaneChat");
+
+    if (tabDesktop && tabChat && paneDesktop && paneChat) {
+      tabDesktop.addEventListener("click", () => {
+        tabDesktop.classList.add("active");
+        tabDesktop.style.borderBottom = "2px solid #8ba3c7";
+        tabDesktop.style.color = "#4a5568";
+        tabChat.classList.remove("active");
+        tabChat.style.borderBottom = "2px solid transparent";
+        tabChat.style.color = "#a0a8a2";
+        paneDesktop.style.display = "block";
+        paneChat.style.display = "none";
+      });
+      tabChat.addEventListener("click", () => {
+        tabChat.classList.add("active");
+        tabChat.style.borderBottom = "2px solid #8ba3c7";
+        tabChat.style.color = "#4a5568";
+        tabDesktop.classList.remove("active");
+        tabDesktop.style.borderBottom = "2px solid transparent";
+        tabDesktop.style.color = "#a0a8a2";
+        paneChat.style.display = "block";
+        paneDesktop.style.display = "none";
+      });
+    }
+
+    renderGlobalArchiveList();
+  }
+
+  function runGlobalPreview() {
+    const input = document.getElementById("globalCssInput");
+    if (!input) return;
+    const cssText = input.value || "";
+    const scoped = scopeCss(cssText, '[data-global-scope="preview"]');
+    getStyleEl(GLOBAL_PREVIEW_STYLE_ID).textContent = scoped;
+    toast("预览已更新", "success");
+  }
+
+  function clearGlobalPreview() {
+    removeStyleEl(GLOBAL_PREVIEW_STYLE_ID);
+    const input = document.getElementById("globalCssInput");
+    if (input) input.value = "";
+    toast("预览已清除", "info");
+  }
+
+  async function saveGlobalSnapshot() {
+    const input = document.getElementById("globalCssInput");
+    const cssText = (input?.value || "").trim();
+    if (!cssText) {
+      toast("请输入 CSS 后再保存", "error");
+      return;
+    }
+    const name = prompt("请输入全局样式存档名称：", "我的全局样式");
+    if (!name || !name.trim()) return;
+
+    const theme = {
+      id: uid(),
+      name: name.trim(),
+      cssText,
+      type: "global",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    await window.DB.put(STORE_NAME, theme);
+    await renderGlobalArchiveList();
+    toast("全局样式存档已保存", "success");
+  }
+
+  async function applyGlobalTheme(themeId) {
+    const theme = await window.DB.get(STORE_NAME, themeId);
+    if (!theme) return;
+
+    // 持久化当前全局主题 ID
+    await window.DB.setSetting("activeGlobalThemeId", themeId);
+    getStyleEl(GLOBAL_APPLIED_STYLE_ID).textContent = theme.cssText || "";
+    toast("已应用全局样式 " + theme.name, "success");
+    await renderGlobalArchiveList();
+  }
+
+  async function removeActiveGlobalTheme() {
+    await window.DB.setSetting("activeGlobalThemeId", "");
+    removeStyleEl(GLOBAL_APPLIED_STYLE_ID);
+    toast("已卸载全局样式", "info");
+    await renderGlobalArchiveList();
+  }
+
+  async function renderGlobalArchiveList() {
+    const box = document.getElementById("globalThemeArchiveList");
+    if (!box) return;
+    const list = await getAllThemes("global");
+    const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
+
+    if (!list.length) {
+      box.innerHTML = '<div class="bubble-theme-empty">暂无样式存档</div>';
+      return;
+    }
+
+    box.innerHTML = list.map(t => {
+      const isActive = t.id === activeId;
+      return `<div class="bubble-theme-row" data-id="${t.id}" style="${isActive ? 'border-color:#8ba3c7; background:#f0f6f1;' : ''}">
+        <div class="bubble-theme-row-main">
+          <div class="bubble-theme-row-name">${esc(t.name)} ${isActive ? '<span style="font-size:11px; color:#4a7a4e; margin-left:6px; font-weight:bold;">应用中</span>' : ''}</div>
+          <div class="bubble-theme-row-time">${new Date(t.updatedAt || Date.now()).toLocaleString("zh-CN")}</div>
+        </div>
+        <div class="bubble-theme-row-actions">
+          ${isActive 
+            ? `<button class="small-btn gt-unload" style="color:#c0392b;">卸载</button>` 
+            : `<button class="small-btn gt-apply">应用</button>`
+          }
+          <button class="small-btn gt-load">载入编辑</button>
+          <button class="small-btn gt-del" style="color:#c0392b;">删除</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  async function applyActiveGlobalThemeOnStartup() {
+    try {
+      const activeThemeId = await window.DB.getSetting("activeGlobalThemeId", "");
+      if (activeThemeId) {
+        const theme = await window.DB.get(STORE_NAME, activeThemeId);
+        if (theme && theme.cssText) {
+            getStyleEl(GLOBAL_APPLIED_STYLE_ID).textContent = theme.cssText;
+        }
+      }
+    } catch (e) {
+      console.error("加载全局主题失败:", e);
+    }
+  }
+
   function bindDelegatedEventsOnce() {
     if (window.__btDelegatedBound) return;
     window.__btDelegatedBound = true;
@@ -585,9 +800,45 @@ if (def.type === "svg" || isSvgMarkup(def.value)) {
     document.addEventListener("click", async (e) => {
       const t = e.target;
 
+      // 气泡预览/全局预览
       if (t.id === "bubblePreviewBtn") return runPreview();
       if (t.id === "bubbleClearPreviewBtn") return clearPreview();
       if (t.id === "bubbleSaveSnapshotBtn") return saveSnapshot();
+      if (t.id === "globalPreviewBtn") return runGlobalPreview();
+      if (t.id === "globalClearPreviewBtn") return clearGlobalPreview();
+      if (t.id === "globalSaveSnapshotBtn") return saveGlobalSnapshot();
+
+      // 全局样式快照点击代理
+      const gtRow = t.closest(".bubble-theme-row");
+      if (gtRow && gtRow.querySelector(".gt-load, .gt-apply, .gt-unload, .gt-del")) {
+        const id = gtRow.getAttribute("data-id");
+        if (t.classList.contains("gt-load")) {
+          const theme = await window.DB.get(STORE_NAME, id);
+          if (!theme) return;
+          document.getElementById("globalCssInput").value = theme.cssText || "";
+          toast("已载入存档到编辑器", "success");
+          return;
+        }
+        if (t.classList.contains("gt-apply")) {
+          await applyGlobalTheme(id);
+          return;
+        }
+        if (t.classList.contains("gt-unload")) {
+          await removeActiveGlobalTheme();
+          return;
+        }
+        if (t.classList.contains("gt-del")) {
+          if (!confirm("确定删除这个全局样式存档吗？")) return;
+          const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
+          if (id === activeId) {
+            await removeActiveGlobalTheme();
+          }
+          await window.DB.delete(STORE_NAME, id);
+          await renderGlobalArchiveList();
+          toast("已删除存档", "success");
+          return;
+        }
+      }
 
       const row = t.closest(".bubble-theme-row");
       if (row && t.classList.contains("bt-load")) {
@@ -748,6 +999,11 @@ if (def.type === "svg" || isSvgMarkup(def.value)) {
     applyBubbleThemeForConversation,
     applyBubbleThemeForGroup,
     scopeCss
+  };
+
+  window.globalThemeModule = {
+    initGlobalThemePanel,
+    applyActiveGlobalThemeOnStartup
   };
 
   bindDelegatedEventsOnce();

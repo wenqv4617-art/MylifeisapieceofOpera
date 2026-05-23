@@ -4598,6 +4598,14 @@
 ">
                             <div style="font-size: 17px; font-weight: 600; color: #4a5568;">气泡</div>
                         </div>
+                        
+                        <div class="theme-entry-card clickable" data-theme-page="global" style="
+    background: white; border-radius: 16px; padding: 20px; margin-bottom: 12px;
+    display: flex; align-items: center; border: 1px solid #d4cdc2;
+    cursor: pointer;
+">
+    <div style="font-size: 17px; font-weight: 600; color: #4a5568;">全局</div>
+</div>
 
                         <div class="theme-entry-card clickable" data-theme-page="lockscreen" style="
     background: white; border-radius: 16px; padding: 20px; margin-bottom: 12px;
@@ -4845,6 +4853,81 @@
       style="width:100%;padding:8px;border:1px solid #d4cdc2;border-radius:8px;margin-bottom:8px;"></select>
     <div id="bubbleThemeTargetList"></div>
   </div>
+  
+  <div id="themePanelGlobal" style="display:none;">
+  <div class="theme-section" style="margin-top: 0;">
+    <div class="theme-section-title">全局样式 (CSS)</div>
+    <div class="theme-section-desc">使用 CSS 自定义桌面（第一页和第二页）、聊天室的整体风格。</div>
+    <textarea id="globalCssInput"
+      style="width:100%;min-height:180px;border:1px solid #d4cdc2;border-radius:10px;padding:10px;"
+      placeholder="/* ====================================
+   全局 CSS 样式设计（仅供参考）
+===================================== */
+
+/* ===== 桌面整体背景 ===== */
+.home-main {
+  background: #fdfaf2 !important;
+}
+
+/* ===== 第一页名片组件 ===== */
+.namecard {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04) !important;
+}
+.namecard-upper {
+  background: #dcd3c5 !important;
+}
+.namecard-lower {
+  background: rgba(255,255,255,0.85) !important;
+}
+.namecard-title {
+  color: #5c4e3c !important;
+}
+
+/* ===== 应用图标与标签 ===== */
+.app-icon-box {
+  border-radius: 16px !important;
+}
+.app-icon-label {
+  color: #6b5c49 !important;
+  font-weight: 600 !important;
+}
+
+/* ===== 聊天列表页面 ===== */
+#conversationListContainer {
+  background: #fdfaf2 !important;
+}
+.conversation-item {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  margin: 8px 12px !important;
+  border: 1px solid #efeae0 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+}
+.conversation-title {
+  color: #5c4e3c !important;
+}"></textarea>
+
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <button class="small-btn" id="globalPreviewBtn">预览</button>
+      <button class="small-btn" id="globalSaveSnapshotBtn">保存快照</button>
+      <button class="small-btn" id="globalClearPreviewBtn">清除预览</button>
+    </div>
+  </div>
+
+  <div class="theme-section">
+    <div class="theme-section-title">预览区</div>
+    <div id="globalThemePreviewRoot" data-global-scope="preview"
+      style="border:1px solid #e0dcd5;border-radius:12px;overflow:hidden;background:#f8f8f8;min-height:380px;"></div>
+  </div>
+
+  <div class="theme-section">
+    <div class="theme-section-title">全局样式存档</div>
+    <div id="globalThemeArchiveList"></div>
+  </div>
+</div>
+  
 </div>
                     </div>
                 </div>
@@ -11652,43 +11735,50 @@ function bindPhotoDrag(box) {
 }
 
             function showThemeDetail(pageType) {
-                const homeView = document.getElementById('themeHomeView');
-                const detailView = document.getElementById('themeDetailView');
-                const titleEl = document.getElementById('themeDetailTitle');
+    const homeView = document.getElementById('themeHomeView');
+    const detailView = document.getElementById('themeDetailView');
+    const titleEl = document.getElementById('themeDetailTitle');
 
-                if (homeView) homeView.style.display = 'none';
-                if (detailView) detailView.style.display = 'block';
+    if (homeView) homeView.style.display = 'none';
+    if (detailView) detailView.style.display = 'block';
 
-                ['themePanelWallpaper', 'themePanelIcon', 'themePanelBubble'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
+    ['themePanelWallpaper', 'themePanelIcon', 'themePanelBubble', 'themePanelLockscreen', 'themePanelGlobal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 
-                if (pageType === 'wallpaper') {
-                    if (titleEl) titleEl.textContent = '壁纸';
-                    const panel = document.getElementById('themePanelWallpaper');
-                    if (panel) panel.style.display = '';
-                    renderThemeWallpaperOptions();
-                } else if (pageType === 'icon') {
-                    if (titleEl) titleEl.textContent = '图标';
-                    const panel = document.getElementById('themePanelIcon');
-                    if (panel) panel.style.display = '';
-                    renderThemeIconList();
-                } else if (pageType === 'bubble') {
-    if (titleEl) titleEl.textContent = '气泡';
-    const panel = document.getElementById('themePanelBubble');
-    if (panel) panel.style.display = '';
-    if (window.bubbleThemeModule?.initBubbleThemePanel) {
-        window.bubbleThemeModule.initBubbleThemePanel();
+    if (pageType === 'wallpaper') {
+        if (titleEl) titleEl.textContent = '壁纸';
+        const panel = document.getElementById('themePanelWallpaper');
+        if (panel) panel.style.display = '';
+        renderThemeWallpaperOptions();
+    } else if (pageType === 'icon') {
+        if (titleEl) titleEl.textContent = '图标';
+        const panel = document.getElementById('themePanelIcon');
+        if (panel) panel.style.display = '';
+        renderThemeIconList();
+    } else if (pageType === 'bubble') {
+        if (titleEl) titleEl.textContent = '气泡';
+        const panel = document.getElementById('themePanelBubble');
+        if (panel) panel.style.display = '';
+        if (window.bubbleThemeModule?.initBubbleThemePanel) {
+            window.bubbleThemeModule.initBubbleThemePanel();
+        }
+    } else if (pageType === 'global') {
+        if (titleEl) titleEl.textContent = '全局';
+        const panel = document.getElementById('themePanelGlobal');
+        if (panel) panel.style.display = '';
+        if (window.globalThemeModule?.initGlobalThemePanel) {
+            window.globalThemeModule.initGlobalThemePanel();
+        }
+    } else if (pageType === 'lockscreen') {
+        if (titleEl) titleEl.textContent = '锁屏';
+        const panel = document.getElementById('themePanelLockscreen');
+        if (panel) panel.style.display = '';
+        renderThemeLockscreenPanel();
+        bindLockscreenPanelEvents();
     }
-} else if (pageType === 'lockscreen') {
-    if (titleEl) titleEl.textContent = '锁屏';
-    const panel = document.getElementById('themePanelLockscreen');
-    if (panel) panel.style.display = '';
-    renderThemeLockscreenPanel();
-    bindLockscreenPanelEvents();
 }
-            }
 
             let _lsPanelEventsBound = false;
             function bindLockscreenPanelEvents() {
@@ -12535,6 +12625,13 @@ async function getRelevantSummaries(convId, recentMessages, maxCount) {
     try {
     await openDB();
     await initDefaults();
+    
+    // 自动应用保存的全局 UI 样式
+        if (window.globalThemeModule?.applyActiveGlobalThemeOnStartup) {
+            await window.globalThemeModule.applyActiveGlobalThemeOnStartup();
+
+    }
+    
     } catch (e) {
         console.error('DB初始化失败:', e);
         db = null;
