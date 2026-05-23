@@ -633,40 +633,43 @@
   }
 
   async function renderGlobalArchiveList() {
-    const box = document.getElementById("globalThemeArchiveList");
-    if (!box) return;
+  const box = document.getElementById("globalThemeArchiveList");
+  if (!box) return;
 
-    const list = await getAllThemes("global");
-    const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
+  const list = await getAllThemes("global");
+  const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
 
-    if (!list.length) {
-      box.innerHTML = '<div class="bubble-theme-empty">暂无样式存档</div>';
-      return;
-    }
+  if (!list.length) {
+    box.innerHTML = '<div class="bubble-theme-empty">暂无样式存档</div>';
+    return;
+  }
 
-    box.innerHTML = list.map(t => {
-      const isActive = t.id === activeId;
+  box.innerHTML = list.map(theme => {
+    const isActive = theme.id === activeId;
 
-      return `<div class="bubble-theme-row" data-id="${t.id}" style="${isActive ? 'border-color:#8ba3c7;background:#f0f6f1;' : ''}">
+    return `
+      <div class="bubble-theme-row global-theme-row ${isActive ? 'active' : ''}" data-id="${theme.id}">
         <div class="bubble-theme-row-main">
           <div class="bubble-theme-row-name">
-            ${esc(t.name)}
-            ${isActive ? '<span style="font-size:11px;color:#4a7a4e;margin-left:6px;font-weight:bold;">应用中</span>' : ''}
+            ${esc(theme.name)}
+            ${isActive ? '<span class="global-theme-active-tag">应用中</span>' : ''}
           </div>
-          <div class="bubble-theme-row-time">${new Date(t.updatedAt || Date.now()).toLocaleString("zh-CN")}</div>
+          <div class="bubble-theme-row-time">
+            ${new Date(theme.updatedAt || Date.now()).toLocaleString("zh-CN")}
+          </div>
         </div>
+
         <div class="bubble-theme-row-actions">
-          ${isActive
-            ? `<button class="small-btn gt-unload" style="color:#c0392b;">卸载</button>`
-            : `<button class="small-btn gt-apply">应用</button>`
-          }
+          <button class="small-btn gt-apply ${isActive ? 'is-active' : ''}" ${isActive ? 'disabled' : ''}>
+            ${isActive ? '已应用' : '应用'}
+          </button>
           <button class="small-btn gt-load">载入</button>
-          <button class="small-btn gt-rename">重命名</button>
-          <button class="small-btn gt-del" style="color:#c0392b;">删除</button>
+          <button class="small-btn gt-del">删除</button>
         </div>
-      </div>`;
-    }).join("");
-  }
+      </div>
+    `;
+  }).join("");
+}
 
   async function applyActiveGlobalThemeOnStartup() {
     try {
@@ -698,63 +701,51 @@
       if (t.id === "globalSaveSnapshotBtn") return saveGlobalSnapshot();
       if (t.id === "globalRestoreDefaultBtn") return restoreGlobalDefault();
 
-      // 全局样式存档点击代理
-      const gtRow = t.closest(".bubble-theme-row");
-      if (gtRow && gtRow.querySelector(".gt-load, .gt-apply, .gt-unload, .gt-rename, .gt-del")) {
-        const id = gtRow.getAttribute("data-id");
+      // 全局样式存档点击代理：应用 / 载入 / 删除
+const gtRow = t.closest(".global-theme-row");
 
-        if (t.classList.contains("gt-load")) {
-          const theme = await window.DB.get(STORE_NAME, id);
-          if (!theme) return;
+if (gtRow) {
+  const id = gtRow.getAttribute("data-id");
+  if (!id) return;
 
-          const input = document.getElementById("globalCssInput");
-          if (input) input.value = theme.cssText || "";
+  if (t.classList.contains("gt-apply")) {
+    if (t.disabled || t.classList.contains("is-active")) return;
 
-          toast("已载入存档", "success");
-          return;
-        }
+    await applyGlobalTheme(id);
+    return;
+  }
 
-        if (t.classList.contains("gt-apply")) {
-          await applyGlobalTheme(id);
-          return;
-        }
+  if (t.classList.contains("gt-load")) {
+    const theme = await window.DB.get(STORE_NAME, id);
+    if (!theme) return;
 
-        if (t.classList.contains("gt-unload")) {
-          await removeActiveGlobalTheme();
-          return;
-        }
+    const input = document.getElementById("globalCssInput");
+    if (input) {
+      input.value = theme.cssText || "";
+      input.scrollTop = 0;
+    }
 
-        if (t.classList.contains("gt-rename")) {
-          const theme = await window.DB.get(STORE_NAME, id);
-          if (!theme) return;
+    toast("已载入存档到输入框", "success");
+    return;
+  }
 
-          const name = prompt("请输入新名称：", theme.name || "");
-          if (!name || !name.trim()) return;
+  if (t.classList.contains("gt-del")) {
+    if (!confirm("确定删除这个全局样式存档吗？")) return;
 
-          theme.name = name.trim();
-          theme.updatedAt = Date.now();
+    const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
 
-          await window.DB.put(STORE_NAME, theme);
-          await renderGlobalArchiveList();
-          toast("已重命名", "success");
-          return;
-        }
+    if (id === activeId) {
+      await window.DB.setSetting("activeGlobalThemeId", "");
+      removeStyleEl(GLOBAL_APPLIED_STYLE_ID);
+    }
 
-        if (t.classList.contains("gt-del")) {
-          if (!confirm("确定删除这个全局样式存档吗？")) return;
+    await window.DB.delete(STORE_NAME, id);
+    await renderGlobalArchiveList();
 
-          const activeId = await window.DB.getSetting("activeGlobalThemeId", "");
-          if (id === activeId) {
-            await window.DB.setSetting("activeGlobalThemeId", "");
-            removeStyleEl(GLOBAL_APPLIED_STYLE_ID);
-          }
-
-          await window.DB.delete(STORE_NAME, id);
-          await renderGlobalArchiveList();
-          toast("已删除存档", "success");
-          return;
-        }
-      }
+    toast("已删除存档", "success");
+    return;
+  }
+}
 
       const row = t.closest(".bubble-theme-row");
       if (row && t.classList.contains("bt-load")) {
