@@ -11474,7 +11474,7 @@ if (window.momentsModule?.getAutoRule) {
     if (homeView) homeView.style.display = '';
     if (detailView) detailView.style.display = 'none';
 
-    ['themePanelWallpaper', 'themePanelIcon', 'themePanelBubble', 'themePanelLockscreen'].forEach(id => {
+    ['themePanelWallpaper', 'themePanelIcon', 'themePanelBubble', 'themePanelLockscreen', 'themePanelGlobal'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
@@ -12622,21 +12622,18 @@ async function getRelevantSummaries(convId, recentMessages, maxCount) {
 
 
             async function init() {
-    try {
-    await openDB();
-    await initDefaults();
-    
-    // 自动应用保存的全局 UI 样式
-        if (window.globalThemeModule?.applyActiveGlobalThemeOnStartup) {
-            await window.globalThemeModule.applyActiveGlobalThemeOnStartup();
-
-    }
-    
-    } catch (e) {
-        console.error('DB初始化失败:', e);
-        db = null;
-        // 失败了也要继续，让页面可用
-    }
+try {
+await openDB();
+await initDefaults();
+// 自动应用保存的全局 UI 样式
+if (window.globalThemeModule?.applyActiveGlobalThemeOnStartup) {
+    await window.globalThemeModule.applyActiveGlobalThemeOnStartup();
+}
+} catch (e) {
+    console.error('DB初始化失败:', e);
+    db = null;
+    // 失败了也要继续，让页面可用
+}
     document.querySelector('.app-main').style.display = 'none';
                 mainTabBar.style.display = 'none';
                 // 应用壁纸到首页桌面
