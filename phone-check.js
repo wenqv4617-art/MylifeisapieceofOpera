@@ -900,7 +900,7 @@ async function recordPhoneIntrusion(payload) {
         }, 500);
     }
 
-    // ==================== [NEW] 全局通知管理模块 ====================
+    // ==================== [NEW] 全局通知管理模块（重构高精版） ====================
     const SVG_MSG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>`;
     const SVG_GROUP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a3 3 0 0 1 0 5.75"></path></svg>`;
 
@@ -919,7 +919,6 @@ async function recordPhoneIntrusion(payload) {
         const next = notificationQueue.shift();
         displayNotificationCard(next);
 
-        // 连续多个通知卡片滑入的优雅间隔时间（1秒）
         setTimeout(() => {
             isProcessingQueue = false;
             processQueue();
@@ -1004,70 +1003,61 @@ async function recordPhoneIntrusion(payload) {
             card.classList.add('show');
         });
 
-        card.addEventListener('click', (e) => {
-            if (card.dataset.dragged === 'true') return;
-            dismissCard(card);
-
-            if (notif.type === 'group') {
-                if (window.openGroupConversation) {
-                    window.openGroupConversation(notif.id);
-                }
-            } else {
-                if (window.openConversation) {
-                    window.openConversation(notif.id);
-                }
-            }
-        });
-
-        bindSwipeDismiss(card, () => {
-            card.remove();
-            if (container.children.length === 0) {
-                container.remove();
-            }
-        });
-
+        // 自动隐藏定时器
         const autoDismissTimeout = setTimeout(() => {
             dismissCard(card);
         }, 5000);
 
         function dismissCard(c) {
             clearTimeout(autoDismissTimeout);
-            c.classList.add('slide-out');
-            setTimeout(() => {
-                c.remove();
-                if (container.children.length === 0) {
-                    container.remove();
-                }
-            }, 300);
+            if (c.parentNode) {
+                c.classList.add('slide-out');
+                setTimeout(() => {
+                    c.remove();
+                    if (container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
+            }
         }
+
+        // 高精滑动手势与点击拦截绑定
+        bindSwipeDismiss(card, notif, () => {
+            card.remove();
+            if (container.children.length === 0) {
+                container.remove();
+            }
+        }, dismissCard);
     }
 
-    function bindSwipeDismiss(card, onDismiss) {
+    function bindSwipeDismiss(card, notif, onRemove, dismissCard) {
         let startX = 0;
         let currentX = 0;
         let startTime = 0;
         let isDragging = false;
+        let hasMovedSignificantly = false;
 
-        card.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
+        const onStart = (clientX) => {
+            startX = clientX;
+            currentX = 0;
             startTime = Date.now();
             isDragging = true;
-            card.dataset.dragged = 'false';
+            hasMovedSignificantly = false;
             card.style.transition = 'none';
-        }, { passive: true });
+        };
 
-        card.addEventListener('touchmove', (e) => {
+        const onMove = (clientX) => {
             if (!isDragging) return;
-            currentX = e.touches[0].clientX - startX;
-            if (Math.abs(currentX) > 8) {
-                card.dataset.dragged = 'true';
+            currentX = clientX - startX;
+            if (Math.abs(currentX) > 10) {
+                hasMovedSignificantly = true;
             }
             card.style.transform = `translateX(${currentX}px)`;
             const opacity = Math.max(0, 1 - Math.abs(currentX) / 250);
             card.style.opacity = opacity;
-        }, { passive: true });
+        };
 
-        card.addEventListener('touchend', (e) => {
+        const onEnd = () => {
             if (!isDragging) return;
             isDragging = false;
             card.style.transition = '';
@@ -1076,53 +1066,74 @@ async function recordPhoneIntrusion(payload) {
             const duration = Date.now() - startTime;
 
             if (Math.abs(diffX) > 100 || (Math.abs(diffX) > 30 && duration < 250)) {
+                // 确实是左右滑走
                 const direction = diffX > 0 ? 'right' : 'left';
                 card.classList.add(direction === 'right' ? 'slide-out' : 'slide-out-left');
-                setTimeout(onDismiss, 300);
+                setTimeout(onRemove, 300);
             } else {
-                card.style.transform = '';
-                card.style.opacity = '';
+                // 如果在极短时间内释放，且位移没有超过10px，判定为极其准确的 Tap 点击
+                if (!hasMovedSignificantly && duration < 350) {
+                    triggerTapNavigation();
+                } else {
+                    // 仅小位移抖动，弹性拉回
+                    card.style.transform = '';
+                    card.style.opacity = '';
+                }
             }
             currentX = 0;
+        };
+
+        // 执行全局跳转核心导航
+        function triggerTapNavigation() {
+            const targetId = Number(notif.id);
+            if (notif.type === 'group') {
+                if (typeof window.openGroupConversation === 'function') {
+                    window.openGroupConversation(targetId);
+                }
+            } else {
+                if (typeof window.openConversation === 'function') {
+                    window.openConversation(targetId);
+                }
+            }
+            // 跳转后卡片淡出
+            dismissCard(card);
+        }
+
+        // 触屏端
+        card.addEventListener('touchstart', (e) => {
+            onStart(e.touches[0].clientX);
+        }, { passive: true });
+
+        card.addEventListener('touchmove', (e) => {
+            onMove(e.touches[0].clientX);
+        }, { passive: true });
+
+        card.addEventListener('touchend', (e) => {
+            onEnd();
         });
 
+        // 鼠标端
         let isMouseDown = false;
         card.addEventListener('mousedown', (e) => {
-            startX = e.clientX;
-            startTime = Date.now();
             isMouseDown = true;
-            card.dataset.dragged = 'false';
-            card.style.transition = 'none';
+            onStart(e.clientX);
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isMouseDown) return;
-            currentX = e.clientX - startX;
-            if (Math.abs(currentX) > 8) {
-                card.dataset.dragged = 'true';
-            }
-            card.style.transform = `translateX(${currentX}px)`;
-            const opacity = Math.max(0, 1 - Math.abs(currentX) / 250);
-            card.style.opacity = opacity;
+            onMove(e.clientX);
         });
 
         document.addEventListener('mouseup', (e) => {
             if (!isMouseDown) return;
             isMouseDown = false;
-            card.style.transition = '';
+            onEnd();
+        });
 
-            const diffX = currentX;
-            const duration = Date.now() - startTime;
-
-            if (Math.abs(diffX) > 100 || (Math.abs(diffX) > 30 && duration < 250)) {
-                const direction = diffX > 0 ? 'right' : 'left';
-                card.classList.add(direction === 'right' ? 'slide-out' : 'slide-out-left');
-                setTimeout(onDismiss, 300);
-            } else {
-                card.style.transform = '';
-                card.style.opacity = '';
-            }
-            currentX = 0;
+        // 兜底原生 click 事件（防止部分环境下手势穿透）
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
         });
     }
 
@@ -1204,7 +1215,6 @@ async function recordPhoneIntrusion(payload) {
                 if (obj && obj.role === 'assistant' && obj.messageType !== 'innerVoice') {
                     const now = Date.now();
                     const msgTime = obj.timestamp || now;
-                    // 在15秒内写入的新消息被视为实时收到的新回复
                     if (Math.abs(now - msgTime) < 15000) {
                         const isActive = document.getElementById('page-conversation')?.classList.contains('active');
                         const isSameConv = window.currentConversationId === obj.conversationId;
