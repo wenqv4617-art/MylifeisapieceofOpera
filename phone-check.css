@@ -1,0 +1,1039 @@
+/* ============================================
+   查手机模块 - phone-check.css (重构美化版)
+   版本：v2.0 (独特拟真App设计)
+   依赖：index.html
+   ============================================ */
+
+/* ========== 全局系统变量 ========== */
+:root {
+    --phone-bg-gradient: linear-gradient(150deg, #d3eff1, #e3f2fd, #e0f2f1);
+    --phone-glass-bg: rgba(255, 255, 255, 0.45);
+    --phone-glass-border: rgba(255, 255, 255, 0.4);
+    --phone-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --phone-shadow-md: 0 8px 24px rgba(24, 76, 120, 0.08);
+    --phone-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+    --phone-font-sans: system-ui, -apple-system, sans-serif;
+    
+    /* 各 App 主题色 */
+    --theme-message: #4facfe;
+    --theme-browser: #2196f3;
+    --theme-memo: #ffb300;
+    --theme-diary: #8e24aa;
+    --theme-forum: #ff5722;
+    --theme-shop: #e53935;
+    --theme-stats: #00b0ff;
+}
+
+/* ========== 手机桌面外壳 ========== */
+.phone-check-page {
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    background: var(--phone-bg-gradient);
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 500;
+    font-family: var(--phone-font-sans);
+}
+.phone-check-page.active {
+    display: flex;
+    animation: phoneFadeIn 0.3s cubic-bezier(0.1, 0.8, 0.25, 1);
+}
+
+@keyframes phoneFadeIn {
+    from { opacity: 0; transform: scale(1.05); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.phone-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px 0 16px;
+    justify-content: space-between;
+}
+
+/* ========== 桌面时钟 ========== */
+.phone-time-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 45px;
+    color: #1e535c;
+    flex-shrink: 0;
+    text-shadow: 0 2px 10px rgba(255, 255, 255, 0.4);
+}
+.phone-time {
+    font-size: 74px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.phone-date {
+    font-size: 13.5px;
+    margin-top: 8px;
+    font-weight: 500;
+    opacity: 0.9;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 2px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ========== 桌面中部布局 (待办组件 + 2x2图标) ========== */
+.phone-middle {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    margin-top: 35px;
+    flex-shrink: 0;
+    max-height: 230px;
+    min-height: 180px;
+    align-items: stretch;
+}
+
+/* 待办玻璃态组件 */
+.phone-todo-container {
+    flex: 1.1;
+    background: var(--phone-glass-bg);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--phone-glass-border);
+    border-radius: 24px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--phone-shadow-md);
+}
+.phone-todo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+.phone-todo-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a434b;
+    letter-spacing: 0.5px;
+}
+.phone-todo-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.phone-todo-list::-webkit-scrollbar {
+    width: 3px;
+}
+.phone-todo-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+.phone-todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    transition: opacity 0.2s;
+}
+.phone-todo-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #5a8e97;
+    flex-shrink: 0;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.2s;
+}
+.phone-todo-checkbox.checked {
+    background: #5a8e97;
+    border-color: #5a8e97;
+    color: #fff;
+    transform: scale(0.95);
+}
+.phone-todo-text {
+    font-size: 13px;
+    color: #2c4a4f;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ========== 桌面 2x2 软件矩阵 ========== */
+.phone-app-box-2x2 {
+    width: 140px;
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    place-items: center;
+    align-content: center;
+}
+
+/* App公共图标规范 (Squircle 拟物微投影) */
+.phone-app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.phone-app-item:active {
+    transform: scale(0.9);
+}
+.phone-app-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    aspect-ratio: 1 / 1;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1), inset 0 -3px 0 rgba(0,0,0,0.12);
+    background-size: cover;
+    background-position: center;
+}
+
+/* 赋予各软件渐变质感 */
+.phone-app-item[data-app="memo"] .phone-app-icon {
+    background: linear-gradient(135deg, #ffca28, #ff8f00);
+}
+.phone-app-item[data-app="shop"] .phone-app-icon {
+    background: linear-gradient(135deg, #ff7043, #e64a19);
+}
+.phone-app-item[data-app="stats"] .phone-app-icon {
+    background: linear-gradient(135deg, #42a5f5, #1565c0);
+}
+.phone-app-item[data-app="forum"] .phone-app-icon {
+    background: linear-gradient(135deg, #ab47bc, #6a1b9a);
+}
+
+.phone-app-name {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1e535c;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+}
+
+/* ========== 底部 Dock 栏 ========== */
+.phone-dock {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 25px;
+    margin-top: auto;
+}
+.phone-dock-wrapper {
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 26px;
+    padding: 10px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255,255,255,0.3);
+    display: flex;
+    gap: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.phone-dock-wrapper .phone-app-icon {
+    width: 50px;
+    height: 50px;
+}
+#phoneDockMessageBtn .phone-app-icon {
+    background: linear-gradient(135deg, #66bb6a, #2e7d32);
+}
+#phoneDockBrowserBtn .phone-app-icon {
+    background: linear-gradient(135deg, #29b6f6, #0288d1);
+}
+#phoneDockDiaryBtn .phone-app-icon {
+    background: linear-gradient(135deg, #ec407a, #c2185b);
+}
+#phoneCheckCloseBtn .phone-app-icon {
+    background: linear-gradient(135deg, #78909c, #37474f);
+}
+.phone-dock .phone-app-name {
+    display: none; /* 精简IOS风格Dock，不显示名字 */
+}
+
+/* ========== 全屏应用基础外壳 ========== */
+.phone-fullscreen-app {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fdfdfd;
+    z-index: 600;
+    display: none;
+    flex-direction: column;
+}
+.phone-fullscreen-app.active {
+    display: flex;
+    animation: appOpen 0.28s cubic-bezier(0.075, 0.82, 0.165, 1);
+}
+
+@keyframes appOpen {
+    from { opacity: 0; transform: translateY(120px) scale(0.92); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 全景App头部样式 */
+.phone-app-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    padding: 0 16px;
+    background: #ffffff;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    border-bottom: 1px solid #f0f0f0;
+}
+.phone-app-header-back {
+    position: absolute;
+    left: 12px;
+    font-size: 22px;
+    cursor: pointer;
+    color: #4a5568;
+    padding: 6px 12px;
+    transition: transform 0.2s;
+}
+.phone-app-header-back:active {
+    transform: translateX(-4px);
+}
+.phone-app-header-title {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #1a202c;
+    padding: 6px 14px;
+    border-radius: 12px;
+}
+.phone-app-header-actions {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #e53e3e;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.phone-app-header-actions:active {
+    background: #fff5f5;
+}
+.phone-app-content {
+    flex: 1;
+    overflow-y: auto;
+    background: #fafafa;
+}
+
+/* ========== [App 1] 讯息模块 (WeChat / Line 现代简约版) ========== */
+#phoneFullscreenApp[data-current-app="message"] .phone-app-header {
+    background: #f7f7f7;
+    border-bottom-color: #e5e5e5;
+}
+.phone-chat-list {
+    background: #ffffff;
+    height: 100%;
+}
+.phone-chat-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 14px;
+    border-bottom: 1px solid #f2f2f2;
+    cursor: pointer;
+    transition: background-color 0.25s;
+}
+.phone-chat-item:active {
+    background-color: #f5f5f5;
+}
+.phone-chat-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16.5px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.phone-chat-name-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.phone-chat-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2d3748;
+}
+.phone-chat-time {
+    font-size: 12px;
+    color: #a0aec0;
+}
+.phone-chat-preview {
+    font-size: 13px;
+    color: #718096;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 讯息对话详情区 */
+.phone-chat-detail-wrap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ededed; /* 精准复刻聊天背景色 */
+}
+.phone-chat-detail-wrap .phone-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.phone-message-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 85%;
+}
+.phone-message-item.right {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+.phone-message-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.phone-message-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-all;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+}
+.phone-message-item.left .phone-message-bubble {
+    background: #ffffff;
+    color: #1a202c;
+    border-top-left-radius: 3px;
+}
+.phone-message-item.right .phone-message-bubble {
+    background: #95ec69; /* 精准拟真绿 */
+    color: #111111;
+    border-top-right-radius: 3px;
+}
+
+/* 聊天发送区 */
+.phone-chat-send-area {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f7f7f7;
+    border-top: 1px solid #dfdfdf;
+}
+.phone-chat-send-input {
+    flex: 1;
+    border: none;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    color: #2d3748;
+}
+.phone-chat-send-input:focus {
+    background: #ffffff;
+}
+.phone-chat-send-btn,
+.phone-chat-ai-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: #07c160; /* 标志性微信绿 */
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.phone-chat-ai-btn {
+    background: #ffb300;
+}
+.phone-chat-send-btn:active, .phone-chat-ai-btn:active {
+    opacity: 0.8;
+}
+
+/* ========== [App 2] 浏览器模块 (Safari 苹果科技风) ========== */
+.phone-browser-search {
+    background: #f4f5f7;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.phone-search-bar {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
+    border: 1px solid #e2e8f0;
+}
+.phone-search-bar input {
+    font-size: 14.5px;
+    color: #1a202c;
+    font-weight: 500;
+}
+.phone-history-section {
+    padding: 16px;
+}
+.phone-history-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+}
+.phone-history-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    gap: 12px;
+    border-bottom: 1px solid #edf2f7;
+    transition: background-color 0.2s;
+}
+.phone-history-item:active {
+    background-color: #f7fafc;
+}
+.phone-history-icon {
+    color: #a0aec0;
+}
+.phone-history-text {
+    flex: 1;
+    font-size: 14px;
+    color: #2d3748;
+    font-weight: 500;
+}
+.phone-history-time {
+    font-size: 11.5px;
+    color: #cbd5e0;
+}
+
+/* 浏览器详情页 -> 精美搜狗/百度检索流卡片 */
+#phoneDetailPage[data-current-app="browser"] .phone-detail-content {
+    background: #f1f3f6;
+    padding: 12px;
+}
+.phone-detail-content .phone-list-item {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+.phone-detail-content .phone-list-item div[style*="font-weight:500"] {
+    color: #1e3a8a !important; /* 经典搜索引擎蓝色标题 */
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    text-decoration: underline;
+}
+.phone-detail-content .phone-list-item div[style*="color:#666"] {
+    color: #4a5568 !important;
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+}
+
+/* ========== [App 3] 备忘录 (拟真横格纸 / Memo) ========== */
+#phoneFullscreenApp[data-current-app="memo"] .phone-app-content {
+    background: #fffdf4; /* 黄色便签纸背景 */
+    background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 100% 28px;
+    line-height: 28px;
+    padding: 12px 6px;
+}
+#phoneFullscreenApp[data-current-app="memo"] .phone-todo-item {
+    padding: 0 16px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    border: none;
+}
+#phoneFullscreenApp[data-current-app="memo"] .phone-todo-checkbox {
+    border-color: #ff9800;
+    border-radius: 4px; /* 方形勾选框 */
+    margin-top: 3px;
+    background: rgba(255,255,255,0.7);
+}
+#phoneFullscreenApp[data-current-app="memo"] .phone-todo-checkbox.checked {
+    background: #ff9800;
+    border-color: #ff9800;
+}
+#phoneFullscreenApp[data-current-app="memo"] .phone-todo-text {
+    font-family: 'Kaiti', 'STKaiti', 'Courier New', serif;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: #4e342e;
+}
+
+/* ========== [App 4] 日记模块 (复古玫瑰浪漫/手账本) ========== */
+#phoneFullscreenApp[data-current-app="diary"] .phone-app-content {
+    background: #fbf8f3;
+    padding: 16px;
+}
+#phoneFullscreenApp[data-current-app="diary"] .phone-list-item {
+    background: #ffffff;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    padding: 16px;
+    border: 1px solid #eae5db;
+    box-shadow: 0 4px 15px rgba(142, 36, 170, 0.03);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+#phoneFullscreenApp[data-current-app="diary"] .phone-list-item:active {
+    transform: translateY(2px);
+    box-shadow: none;
+}
+.phone-list-item-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #4a3728;
+}
+.phone-list-item-sub {
+    font-size: 13px;
+    color: #8c7a6b;
+    margin-top: 6px;
+}
+.phone-list-item-date {
+    font-size: 12px;
+    font-weight: 600;
+    color: #bfa38a;
+    background: #f4eee1;
+    padding: 4px 8px;
+    border-radius: 10px;
+}
+
+/* ========== [App 5] 论坛模块 (小红书/新潮社区版) ========== */
+#phoneFullscreenApp[data-current-app="forum"] .phone-app-content {
+    background: #f7f9fa;
+    padding: 12px;
+}
+#phoneFullscreenApp[data-current-app="forum"] .phone-list-item {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #eef2f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+#phoneFullscreenApp[data-current-app="forum"] .phone-list-item-title {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #1a202c;
+}
+#phoneFullscreenApp[data-current-app="forum"] .phone-list-item-sub {
+    color: #4a5568;
+    font-size: 13px;
+    margin-top: 8px;
+}
+#phoneFullscreenApp[data-current-app="forum"] .phone-list-item-date {
+    background: #fff2e8;
+    color: #ff5722;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ========== [App 6] 购物与资产 (红色炫酷金融卡) ========== */
+.phone-shop-tabs {
+    background: #ffffff;
+    border-bottom: 1px solid #f0f0f0;
+}
+.phone-shop-tab {
+    color: #718096;
+    font-size: 14.5px;
+    font-weight: 600;
+    padding: 12px;
+    transition: all 0.2s;
+}
+.phone-shop-tab.active {
+    color: #ff3d00;
+    border-bottom-color: #ff3d00;
+    font-weight: 700;
+}
+.phone-shop-panel {
+    padding: 14px;
+}
+.phone-cart-item {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: var(--phone-shadow-sm);
+    border: 1px solid #f0f0f0;
+}
+.phone-cart-img {
+    background: #fff3e0;
+    border-radius: 10px;
+}
+.phone-cart-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #2d3748;
+}
+.phone-cart-desc {
+    font-size: 12px;
+    color: #718096;
+}
+.phone-cart-price {
+    font-size: 17px;
+    color: #ff3d00;
+    font-weight: 800;
+}
+
+/* 资产详情卡片 -> 奢华黑金视觉 */
+.phone-asset-total {
+    background: linear-gradient(135deg, #1e1e24 0%, #3e3d40 100%);
+    border-radius: 18px;
+    padding: 24px 20px;
+    color: #dfba73; /* 尊贵金 */
+    margin-bottom: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border: 1px solid rgba(223, 186, 115, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+.phone-asset-total::before {
+    content: "HALOES BANK";
+    position: absolute;
+    right: 16px; top: 16px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    opacity: 0.3;
+}
+.phone-asset-total span {
+    color: #ffffff;
+    font-size: 38px;
+    font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.phone-asset-item {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--phone-shadow-sm);
+    border: 1px solid #f0f0f0;
+}
+.phone-asset-desc {
+    font-weight: 600;
+    color: #2d3748;
+}
+.phone-asset-amount.income {
+    color: #4caf50;
+    font-weight: 700;
+}
+.phone-asset-amount.expense {
+    color: #f44336;
+    font-weight: 700;
+}
+
+/* ========== [App 7] 屏幕统计 (iOS 极简渐变图表) ========== */
+.phone-stats-summary {
+    padding: 20px 16px;
+    background: #ffffff;
+    height: 100%;
+}
+.phone-stats-total {
+    color: #718096;
+}
+.phone-stats-total span {
+    color: #1a202c;
+    font-size: 32px;
+    font-weight: 800;
+}
+.phone-stats-bar-chart {
+    background: #f7fafc;
+    border-radius: 16px;
+    padding: 16px 10px;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 120px;
+    border: 1px solid #edf2f7;
+    margin-bottom: 24px;
+}
+.phone-stats-bar {
+    width: 14px;
+    border-radius: 8px; /* 顶部和底部都圆滑 */
+    background: linear-gradient(180deg, var(--theme-stats), #2979ff) !important;
+}
+.phone-stats-bar-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #a0aec0;
+}
+.phone-stats-list-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #edf2f7;
+}
+.phone-stats-icon {
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+}
+.phone-stats-name {
+    font-weight: 600;
+    color: #2d3748;
+}
+.phone-stats-time {
+    color: #2979ff;
+    font-weight: 700;
+}
+
+/* ========== 应用详情通用页 ========== */
+.phone-detail-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    z-index: 650;
+    display: none;
+    flex-direction: column;
+}
+.phone-detail-page.active {
+    display: flex;
+    animation: detailOpen 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes detailOpen {
+    from { opacity: 0; transform: translateX(80px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.phone-detail-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    background: #f8fafc;
+}
+
+/* 便签、日记详情页的拟真书写纸感 */
+#phoneDetailPage .phone-detail-content {
+    background-color: #fffef9; /* 精美羊皮纸 */
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.03);
+}
+.phone-detail-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #2d3748;
+    line-height: 1.3;
+    margin-bottom: 10px;
+}
+.phone-detail-date {
+    font-size: 13px;
+    color: #a0aec0;
+    font-weight: 500;
+}
+.phone-detail-body {
+    font-size: 15.5px;
+    line-height: 1.8;
+    color: #2d3748;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 详情评论区 (贴合论坛设计) */
+.phone-detail-comment {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #edf2f7;
+    margin-top: 10px;
+}
+.phone-detail-comment-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a5568;
+}
+.phone-detail-comment-text {
+    font-size: 14px;
+    color: #2d3748;
+    line-height: 1.4;
+}
+
+/* ========== AI 生成长按提示特效 ========== */
+.long-press-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 30px;
+    font-size: 13.5px;
+    font-weight: 600;
+    z-index: 700;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: fadeInOut 2.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    85% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -60%) scale(0.95); }
+}
+
+/* SVG 图标适配：无缝贴合系统色彩 */
+.phone-app-icon svg {
+    display: block;
+    margin: 0 auto;
+    color: #fff;
+}
+.phone-app-box-2x2 .phone-app-icon svg {
+    width: 24px;
+    height: 24px;
+}
+.phone-dock .phone-app-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+/* ========== 查手机：置顶对话限制提示 (微信式安全区域提示) ========== */
+.phone-chat-send-disabled {
+    flex-shrink: 0;
+    padding: 16px;
+    text-align: center;
+    font-size: 12.5px;
+    color: #8c9ba5;
+    background: #f7f8f9;
+    border-top: 1px solid #e2e8f0;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+    border-bottom: env(safe-area-inset-bottom); /* 适配全面屏手势栏 */
+}
+
+/* ========== 消息状态与按钮动效 (旋转与加载) ========== */
+.phone-chat-ai-btn.loading svg {
+    animation: phoneSpin 1s linear infinite;
+}
+
+@keyframes phoneSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ========== 细节微调与各App滚动条专属美化 ========== */
+.phone-app-content::-webkit-scrollbar,
+.phone-detail-content::-webkit-scrollbar,
+.phone-chat-messages::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.phone-app-content::-webkit-scrollbar-thumb,
+.phone-detail-content::-webkit-scrollbar-thumb,
+.phone-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.phone-app-content::-webkit-scrollbar-track,
+.phone-detail-content::-webkit-scrollbar-track,
+.phone-chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 微信聊天框自动滚动的弹性动效 */
+#phoneChatMessagesBox {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+}
+
+/* 拟真日记详情页的底部优雅手账Logo装饰 */
+#phoneDetailPage[data-current-app="diary"] .phone-detail-content::after {
+    content: "❤ My Secret Diary";
+    display: block;
+    text-align: center;
+    margin-top: 40px;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    color: #ebdcd0;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+/* 购物页卡片的微悬浮/点击缩放动效 */
+.phone-cart-item, .phone-asset-item {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.phone-cart-item:active, .phone-asset-item:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+/* 论坛卡片极简阴影过渡 */
+#phoneFullscreenApp[data-current-app="forum"] .phone-list-item {
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+#phoneFullscreenApp[data-current-app="forum"] .phone-list-item:active {
+    transform: scale(0.99) translateY(1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+}
