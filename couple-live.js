@@ -813,17 +813,33 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
     if (window.switchPage) window.switchPage("couple-live");
   }
 
+  /* ------------ Hooking into DOM Updates via MutationObserver ------------ */
+  function initLiveObserver() {
+    const appMain = document.querySelector(".app-main") || document.body;
+    const observer = new MutationObserver(() => {
+      const sectionsContainer = document.querySelector(".cs-sections");
+      if (sectionsContainer && !sectionsContainer.querySelector('[data-cs-key="live"]')) {
+        const convId = window.currentConversationId || window._currentCoupleSpaceConvId;
+        if (convId) {
+          injectLiveSection(convId);
+        }
+      }
+    });
+    observer.observe(appMain, { childList: true, subtree: true });
+  }
+
   /* ------------ Hooking into System Events ------------ */
   function bootstrap() {
     patchSwitchPage();
+    initLiveObserver();
 
-    // Patch Couple Space Open
-    if (window.coupleSpaceModule && window.coupleSpaceModule.openCoupleSpace) {
-      const origOpen = window.coupleSpaceModule.openCoupleSpace;
-      window.coupleSpaceModule.openCoupleSpace = async function (convId) {
-        await origOpen(convId);
+    // Immediate manual execution in case of already rendered DOM state on load
+    const sectionsContainer = document.querySelector(".cs-sections");
+    if (sectionsContainer && !sectionsContainer.querySelector('[data-cs-key="live"]')) {
+      const convId = window.currentConversationId || window._currentCoupleSpaceConvId;
+      if (convId) {
         injectLiveSection(convId);
-      };
+      }
     }
 
     // Intercept database transactions to trigger broadcast barrages when message added
