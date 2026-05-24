@@ -3,7 +3,7 @@
  *
  * 功能：
  * 1. 情侣空间新增「直播系统」
- * 2面板：直播开关 弹幕数量 / 粉丝量 / 打赏榜 / 独立世界书挂载
+ * 2. 面板：直播开关 弹幕数量 / 粉丝量 / 打赏榜 / 独立世界书挂载
  * 3. 粉丝通道：粉丝群 / char 私信箱 / user 私信箱
  * 4. 开启直播后，监听 chats 入库，每轮 char / assistant / offline_card 回复后自动生成弹幕
  * 5. 弹幕从右往左飘，支持评论 / 打赏 / 关注
@@ -433,12 +433,28 @@
                         <div class="cl-rank-index">${String(i + 1).padStart(2, "0")}</div>
                         <div class="cl-rank-name">${esc(r.name)}</div>
                         <div class="cl-rank-money">${Number(r.amount || 0).toLocaleString()}</div>
+                      </div>
+                    `).join("")
+                : `<div class="cl-empty">NO RANK DATA</div>`
+            }
+          </div>
         </div>
       </div>
     `;
+  }
 
+  async function renderWorldbookPanel(convId, cfg) {
     const DB = window.DB;
-    const all = await DB.getAll("worldbooks");
+    if (!DB) {
+      return `
+        <div class="cl-panel">
+          <div class="cl-panel-head"><div class="cl-panel-title">Mounted Worldbooks</div></div>
+          <div class="cl-panel-body"><div class="cl-empty">DB NOT READY</div></div>
+        </div>
+      `;
+    }
+
+    const all = (await DB.getAll("worldbooks")) || [];
     const selected = cfg.mountedWorldbookIds || [];
 
     if (!all.length) {
@@ -579,21 +595,19 @@
   }
 
   function bindWorldbookEvents(convId) {
-document.querySelectorAll(".cl-wb-group-head").forEach(head => {
-  head.addEventListener("click", () => {
-    head.closest(".cl-wb-group").classList.toggle("collapsed");
-  });
-});
+    document.querySelectorAll(".cl-wb-group-head").forEach(head => {
+      head.addEventListener("click", () => {
+        head.closest(".cl-wb-group").classList.toggle("collapsed");
+      });
     });
 
     document.querySelectorAll(".clWbCheck").forEach(cb => {
-  cb.addEventListener("change", async () => {
-    const cfg = await getCfg(convId);
-    cfg.mountedWorldbookIds = [...document.querySelectorAll(".clWbCheck:checked")].map(x => x.value);
-    await saveCfg(convId, cfg);
-    window.showStatus && window.showStatus("直播世界书挂载已更新", "success");
-  });
-});
+      cb.addEventListener("change", async () => {
+        const cfg = await getCfg(convId);
+        cfg.mountedWorldbookIds = [...document.querySelectorAll(".clWbCheck:checked")].map(x => x.value);
+        await saveCfg(convId, cfg);
+        window.showStatus && window.showStatus("直播世界书挂载已更新", "success");
+      });
     });
   }
 
@@ -729,7 +743,7 @@ ${worldbook || "无"}
 `;
 
     try {
-      window.recordApiPending && window.recordApiPending();
+      if (window.recordApiPending) window.recordApiPending();
 
       const raw = await window.callLLM(
         [{ role: "user", content: prompt }],
@@ -920,7 +934,7 @@ ${worldbook || "无"}
 `;
 
     try {
-      window.recordApiPending && window.recordApiPending();
+      if (window.recordApiPending) window.recordApiPending();
       window.showStatus && window.showStatus("正在生成新的私信...", "info");
 
       const raw = await window.callLLM(
@@ -1120,7 +1134,7 @@ ${history}
 `;
 
     try {
-      window.recordApiPending && window.recordApiPending();
+      if (window.recordApiPending) window.recordApiPending();
       window.showStatus && window.showStatus("正在获取TA的回复...", "info");
 
       const raw = await window.callLLM(
@@ -1205,7 +1219,7 @@ ${history}
 `;
 
     try {
-      window.recordApiPending && window.recordApiPending();
+      if (window.recordApiPending) window.recordApiPending();
       window.showStatus && window.showStatus("正在获取网友回复...", "info");
 
       const raw = await window.callLLM(
@@ -1384,7 +1398,7 @@ gift 必须带 amount 数字。
 `;
 
     try {
-      window.recordApiPending && window.recordApiPending();
+      if (window.recordApiPending) window.recordApiPending();
 
       const raw = await window.callLLM(
         [{ role: "user", content: prompt }],
@@ -1577,6 +1591,7 @@ gift 必须带 amount 数字。
 
   async function buildLiveWorldbook(convId) {
     const DB = window.DB;
+    if (!DB) return "";
     const cfg = await getCfg(convId);
     const ids = cfg.mountedWorldbookIds || [];
 
