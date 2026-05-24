@@ -17,16 +17,14 @@
     fanfic:  '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>',
     checkin: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
     date:    '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 18.5c-2.5-1.8-4-3.2-4-4.7 0-1.1.9-2 2-2 .7 0 1.4.4 1.7 1 .3-.6 1-1 1.7-1 1.1 0 2 .9 2 2 0 1.5-1.5 2.9-4 4.7z" fill="currentColor" stroke="none"/></svg>',
-    truth:   '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    live: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 19v2"/><path d="M10 10l5 3-5 3v-6z"/></svg>'
+    truth:   '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
   };
 
   const SECTIONS = [
     { key: "fanfic",  label: "同人",         desc: "为你们的故事书写新章节",   icon: SECTION_ICONS.fanfic },
     { key: "checkin", label: "查岗",         desc: "看看 Ta 此刻在做什么",     icon: SECTION_ICONS.checkin },
     { key: "date",    label: "约会大作战",   desc: "策划一场特别的约会",       icon: SECTION_ICONS.date },
-    { key: "truth",   label: "真心话大冒险", desc: "敢说出心里的那句话吗",     icon: SECTION_ICONS.truth },
-    { key: "live", label: "直播系统", desc: "让观众见证你们的每一轮互动", icon: SECTION_ICONS.live }
+    { key: "truth",   label: "真心话大冒险", desc: "敢说出心里的那句话吗",     icon: SECTION_ICONS.truth }
   ];
 
   const BACK_ICON  = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -206,10 +204,6 @@
       window.coupleDateModule.open(convId);
       return;
     }
-    if (key === "live" && window.coupleLiveModule) {
-  window.coupleLiveModule.open(convId);
-  return;
-}
     const titleEl = el.querySelector(".cs-section-title");
     const title = titleEl ? titleEl.textContent : "敬请期待";
     if (window.showStatus) window.showStatus(title + "：开发中", "info");

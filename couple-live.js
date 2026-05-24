@@ -1,117 +1,96 @@
 /* ================================================================
- * couple-live.js - 情侣空间 · 直播系统
- * 依赖：
- * window.DB, window.callLLM, window.escapeHtml, window.showStatus,
- * window.getAvatarColor, window.currentConversationId
+ * couple-live.js - Couple Space Live Broadcast Extension
+ * Theme: Tech Black & White, No Emojis, High Internet Slang (网感)
  * ================================================================ */
 
 (function () {
   "use strict";
 
-  console.log("LIVE SYSTEM module loading");
+  console.log("▲ Couple Live Extension Loaded");
 
+  /* ------------ SVG Icon Assets (Clean Path, B&W Only) ------------ */
   const ICONS = {
+    screen: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="13" rx="2" ry="2"/><line x1="12" y1="20" x2="12" y2="15"/><line x1="8" y1="20" x2="16" y2="20"/><circle cx="12" cy="8" r="2"/></svg>',
+    users: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
+    send: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
     back: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
-    live: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 10l5 2-5 2v-4z"/></svg>',
-    users: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    rank: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-    book: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-    mail: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M22 6 12 13 2 6"/></svg>',
-    send: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+    arrow: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
   };
 
-  const DEFAULT_STATE = {
-    enabled: false,
-    minDanmaku: 4,
-    maxDanmaku: 10,
-    fans: 128,
-    worldbookIds: [],
-    rank: [
-      { name: "NullPointer", amount: 2600 },
-      { name: "BlackBox", amount: 1800 },
-      { name: "ObserverX", amount: 900 }
+  /* ------------ Local Internet Slang Pools (Fallback & Slang Engine) ------------ */
+  const BARRAGE_TEMPLATES = [
+    "KSWL KSWL CP IS REAL!",
+    "SWEETNESS OVERLOAD DETECTED.",
+    "MARRIAGE REGISTRY OFFICE MOVED TO THIS ROOM.",
+    "ARE YOU TWO ACTUALLY DATING?",
+    "THE TENSION IS SO REAL.",
+    "PRESENTER YOU ARE DOING GREAT.",
+    "COULD YOU BE ANY MORE OBVIOUS?",
+    "TSUNDERE MODE ACTIVE.",
+    "LOUDER FOR THE PEOPLE IN THE BACK.",
+    "PLEASE NEVER BREAK UP.",
+    "I LIVE FOR THIS CONTENT.",
+    "CP FANS OVERJOYED TO NIGHT.",
+    "THIS IS HIGH DEFINITION CHEMISTRY."
+  ];
+
+  const SYSTEM_DONORS = ["STREAM_SPY", "CP_WATCHER", "LU_XUN_FAN", "TECH_MONSTER", "WHITE_NOISE"];
+  const SYSTEM_FOLLOWERS = ["CYBER_PUNK_9", "NEO_FANATIC", "ASCII_SOLDIER", "NULL_POINTER", "X_VIBRATION"];
+
+  const DEFAULT_PMS = {
+    char: [
+      { id: "pm_c1", sender: "CYBER_STALKER", content: "Is your partner always this demanding? I think you deserve better. Let us know the truth.", replies: [] },
+      { id: "pm_c2", sender: "CP_INVESTOR_99", content: "Please read this comment out loud on your stream! We raised 5000 units just to see you blush.", replies: [] },
+      { id: "pm_c3", sender: "GLITCH_IN_MATRIX", content: "That TS-Style response was perfect. Are you actually simulated or is this genuine affection?", replies: [] }
     ],
-    danmakuHistory: [],
-    fanGroup: {
-      messages: [
-        { role: "system", sender: "SYSTEM", content: "粉丝群已创建。", time: Date.now() }
-      ]
-    },
-    inbox: {
-      char: [],
-      user: []
-    },
-    currentTab: "group"
+    user: [
+      { id: "pm_u1", sender: "DOUBTING_THOMAS", content: "Honestly, the sweet talk feels like a script. Convince us this isn't for views.", replies: [] },
+      { id: "pm_u2", sender: "MOM_FAN_CLAN", content: "We noticed they looked tired today. Are you taking care of them properly behind the scenes?", replies: [] },
+      { id: "pm_u3", sender: "BINARY_SWEETNESS", content: "The way they looked at you today was legendary. Please stream longer tomorrow!", replies: [] }
+    ]
   };
 
-  function esc(s) {
-    if (window.escapeHtml) return window.escapeHtml(s);
-    return String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
-  }
+  const DEFAULT_FANGROUP_MESSAGES = [
+    { sender: "CP_CHRONICLES", text: "THE STREAM TODAY WAS ABSOLUTELY INSANE." },
+    { sender: "STREAM_ARCHIVER", text: "Anyone recorded the 15-minute mark? The eye contact was out of this world." },
+    { sender: "VOID_GLANCE", text: "I can confirm, they are not acting. That reaction is 100% natural." }
+  ];
 
-  function keyOf(convId) {
-    return "couple_live_state_" + convId;
-  }
-
-  async function getState(convId) {
-    const raw = await window.DB.getSetting(keyOf(convId), null);
-    if (!raw) {
-      const s = structuredCloneSafe(DEFAULT_STATE);
-      await saveState(convId, s);
-      return s;
-    }
-    return mergeState(structuredCloneSafe(DEFAULT_STATE), raw);
-  }
-
-  async function saveState(convId, state) {
-    await window.DB.setSetting(keyOf(convId), state);
-  }
-
-  function structuredCloneSafe(obj) {
-    return JSON.parse(JSON.stringify(obj));
-  }
-
-  function mergeState(base, saved) {
-    const out = Object.assign(base, saved || {});
-    out.rank = Array.isArray(out.rank) ? out.rank : [];
-    out.danmakuHistory = Array.isArray(out.danmakuHistory) ? out.danmakuHistory : [];
-    out.worldbookIds = Array.isArray(out.worldbookIds) ? out.worldbookIds : [];
-    out.fanGroup = out.fanGroup || { messages: [] };
-    out.fanGroup.messages = Array.isArray(out.fanGroup.messages) ? out.fanGroup.messages : [];
-    out.inbox = out.inbox || {};
-    out.inbox.char = Array.isArray(out.inbox.char) ? out.inbox.char : [];
-    out.inbox.user = Array.isArray(out.inbox.user) ? out.inbox.user : [];
-    return out;
-  }
-
-  async function getNames(convId) {
+  /* ------------ State & Storage Helpers ------------ */
+  async function getLiveConfig(convId) {
     const DB = window.DB;
-    const conv = await DB.get("conversations", convId);
-    if (!conv) return { charName: "CHAR", userName: "USER", charDetail: "", userDetail: "" };
+    if (!DB) return null;
+    const config = await DB.getSetting("couple_live_config_" + convId);
+    if (config) return config;
 
-    const char = await DB.get("characters", conv.charId);
-    const mask = await DB.get("userProfiles", conv.maskId);
-    const detail = await DB.get("convDetails", convId);
-
-    return {
-      conv,
-      char,
-      mask,
-      charName: detail?.charName || char?.name || "CHAR",
-      userName: detail?.userName || mask?.name || "USER",
-      charDetail: detail?.charDetail || char?.detail || "",
-      userDetail: detail?.userDetail || mask?.bio || ""
+    // Default configuration if none exists
+    const defaultCfg = {
+      enabled: false,
+      minBarrage: 2,
+      maxBarrage: 5,
+      followers: 1024,
+      totalDonations: 0,
+      contributions: [
+        { name: "CYBER_DONOR", amount: 1000, message: "PRODUCING THE BEST SHOW ON EARTH" },
+        { name: "CP_BELIEVER", amount: 500, message: "MINIMALIST SWEETNESS IS THE KEY" }
+      ],
+      worldbookIds: [],
+      pmList: JSON.parse(JSON.stringify(DEFAULT_PMS)),
+      fanGroupChat: JSON.parse(JSON.stringify(DEFAULT_FANGROUP_MESSAGES))
     };
+    await DB.setSetting("couple_live_config_" + convId, defaultCfg);
+    return defaultCfg;
   }
 
-  async function getLiveWorldbookText(state) {
-    const all = await window.DB.getAll("worldbooks");
-    const selected = all.filter(w => state.worldbookIds.includes(w.id));
-    if (!selected.length) return "";
-    return selected.map(w => `【${w.group || "未分组"} / ${w.title}】\n${w.content}`).join("\n\n");
+  async function saveLiveConfig(convId, config) {
+    const DB = window.DB;
+    if (DB) {
+      await DB.setSetting("couple_live_config_" + convId, config);
+    }
   }
 
-  function ensurePage() {
+  /* ------------ UI Creation ------------ */
+  function ensureLivePage() {
     let page = document.getElementById("page-couple-live");
     if (page) return page;
 
@@ -119,37 +98,671 @@
     page.id = "page-couple-live";
     page.className = "page";
     page.innerHTML = `
-      <div class="chat-header cs-header">
+      <div class="chat-header live-header">
         <div class="chat-header-left">
-          <button class="back-btn clickable" id="cliveBackBtn">${ICONS.back}</button>
-          <h2 class="cs-title">LIVE SYSTEM</h2>
+          <button class="back-btn clickable" id="liveBackBtn">${ICONS.back}</button>
+          <h2 class="live-title">LIVE MODULE</h2>
         </div>
         <div class="header-actions"></div>
       </div>
-      <div class="cs-scroll clive-page" id="cliveRoot"></div>
+      <div class="live-scroll" id="liveScroll"></div>
     `;
 
     const appMain = document.querySelector(".app-main");
     if (appMain) appMain.appendChild(page);
     else document.body.appendChild(page);
 
-    page.querySelector("#cliveBackBtn").addEventListener("click", () => {
-      if (window.coupleSpaceModule && window._currentCoupleSpaceConvId) {
-        window.coupleSpaceModule.openCoupleSpace(window._currentCoupleSpaceConvId);
-      } else if (window.switchPage) {
-        window.switchPage("conversation");
-      }
+    page.querySelector("#liveBackBtn").addEventListener("click", () => {
+      if (window.switchPage) window.switchPage("couple-space");
     });
 
     return page;
   }
 
-  function activatePage() {
-    document.querySelectorAll(".page").forEach(p => {
-      if (p.id !== "page-couple-live") {
-        p.classList.remove("active");
-        if (p.style.display && p.style.display !== "none") p.style.display = "none";
+  /* ------------ Render Module Dashboard ------------ */
+  async function renderLiveDashboard(convId) {
+    const page = ensureLivePage();
+    const container = page.querySelector("#liveScroll");
+    const config = await getLiveConfig(convId);
+    if (!config) return;
+
+    container.innerHTML = `
+      <!-- Control Panel -->
+      <div class="live-panel-box">
+        <div class="live-panel-title">CONTROL PANEL</div>
+        
+        <div class="live-row">
+          <span class="live-label">LIVE SYSTEM SW</span>
+          <button class="live-switch-btn ${config.enabled ? 'on' : 'off'}" id="liveSwitchBtn">
+            ${config.enabled ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
+        <div class="live-row">
+          <span class="live-label">BARRAGE COUNT (MIN / MAX)</span>
+          <div class="live-range-ctrl">
+            <input type="number" id="liveMinBarrage" class="live-input-num" min="1" max="15" value="${config.minBarrage}">
+            <span class="live-separator">/</span>
+            <input type="number" id="liveMaxBarrage" class="live-input-num" min="1" max="15" value="${config.maxBarrage}">
+          </div>
+        </div>
+
+        <div class="live-stats-row">
+          <div class="live-stat-card">
+            <div class="live-stat-num" id="liveFollowerCount">${config.followers}</div>
+            <div class="live-stat-label">SUBSCRIBERS</div>
+          </div>
+          <div class="live-stat-card">
+            <div class="live-stat-num" id="liveTotalDonations">¥${config.totalDonations}</div>
+            <div class="live-stat-label">DONATIONS</div>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="live-rank-box">
+          <div class="live-sub-title">DONATION LEADERBOARD</div>
+          <div class="live-rank-list" id="liveRankList">
+            ${config.contributions.map((c, i) => `
+              <div class="live-rank-item">
+                <span class="live-rank-index">${i + 1}</span>
+                <span class="live-rank-name">${c.name}</span>
+                <span class="live-rank-msg">${c.message}</span>
+                <span class="live-rank-amount">¥${c.amount}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <!-- Mounted Worldbooks -->
+        <div class="live-wb-box">
+          <div class="live-sub-title">MOUNTED WORLDBOOKS (LIVE ONLY)</div>
+          <div id="liveWbContainer" class="live-wb-container"></div>
+        </div>
+      </div>
+
+      <!-- Fan Channels -->
+      <div class="live-panel-box" style="margin-top: 14px;">
+        <div class="live-panel-title">FAN CHANNELS</div>
+        
+        <!-- Sticky Fan Group -->
+        <div class="live-fan-group-card clickable" id="liveFanGroupBtn">
+          <div class="live-fan-icon">${ICONS.users}</div>
+          <div class="live-fan-info">
+            <div class="live-fan-name">CP FAN CLUB GROUP</div>
+            <div class="live-fan-desc">Active Stream Spectators & Supporters</div>
+          </div>
+          <div class="live-fan-go">${ICONS.arrow}</div>
+        </div>
+
+        <!-- PM Inbox Toggles -->
+        <div class="live-tabs">
+          <button class="live-tab active" id="liveTabChar">CHAR PM BOX</button>
+          <button class="live-tab" id="liveTabUser">USER PM BOX</button>
+        </div>
+
+        <div class="live-inbox-list" id="liveInboxList"></div>
+      </div>
+    `;
+
+    bindDashboardEvents(convId, config);
+    await renderLiveWorldbooks(convId, config);
+    renderInboxList(convId, config, "char");
+  }
+
+  /* ------------ Dashboard Events Handlers ------------ */
+  function bindDashboardEvents(convId, config) {
+    const page = ensureLivePage();
+
+    // Toggle Switch
+    const switchBtn = page.querySelector("#liveSwitchBtn");
+    switchBtn.addEventListener("click", async () => {
+      config.enabled = !config.enabled;
+      switchBtn.className = `live-switch-btn ${config.enabled ? 'on' : 'off'}`;
+      switchBtn.textContent = config.enabled ? 'ON' : 'OFF';
+      await saveLiveConfig(convId, config);
+    });
+
+    // Min Barrage
+    const minInput = page.querySelector("#liveMinBarrage");
+    minInput.addEventListener("change", async () => {
+      const val = parseInt(minInput.value) || 2;
+      config.minBarrage = Math.min(val, config.maxBarrage);
+      minInput.value = config.minBarrage;
+      await saveLiveConfig(convId, config);
+    });
+
+    // Max Barrage
+    const maxInput = page.querySelector("#liveMaxBarrage");
+    maxInput.addEventListener("change", async () => {
+      const val = parseInt(maxInput.value) || 5;
+      config.maxBarrage = Math.max(val, config.minBarrage);
+      maxInput.value = config.maxBarrage;
+      await saveLiveConfig(convId, config);
+    });
+
+    // Fan Group Navigation
+    page.querySelector("#liveFanGroupBtn").addEventListener("click", () => {
+      openFanGroup(convId);
+    });
+
+    // PM Toggles
+    const charTab = page.querySelector("#liveTabChar");
+    const userTab = page.querySelector("#liveTabUser");
+
+    charTab.addEventListener("click", () => {
+      charTab.classList.add("active");
+      userTab.classList.remove("active");
+      renderInboxList(convId, config, "char");
+    });
+
+    userTab.addEventListener("click", () => {
+      userTab.classList.add("active");
+      charTab.classList.remove("active");
+      renderInboxList(convId, config, "user");
+    });
+  }
+
+  /* ------------ Render Mounted Worldbooks Grouped ------------ */
+  async function renderLiveWorldbooks(convId, config) {
+    const DB = window.DB;
+    if (!DB) return;
+    const allWorldbooks = await DB.getAll("worldbooks");
+    const container = document.getElementById("liveWbContainer");
+    if (!container) return;
+
+    if (allWorldbooks.length === 0) {
+      container.innerHTML = `<div class="live-empty-text">NO WORLDBOOKS AVAILABLE</div>`;
+      return;
+    }
+
+    // Grouping
+    const groups = {};
+    allWorldbooks.forEach(wb => {
+      const g = wb.group || "UNGROUPED";
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(wb);
+    });
+
+    container.innerHTML = Object.keys(groups).map(gName => `
+      <div class="live-wb-group">
+        <div class="live-wb-group-title">${gName}</div>
+        ${groups[gName].map(wb => {
+          const checked = (config.worldbookIds || []).includes(wb.id) ? 'checked' : '';
+          return `
+            <label class="live-wb-checkbox-label">
+              <input type="checkbox" value="${wb.id}" ${checked} data-wb-id="${wb.id}">
+              <span class="live-wb-title-span">${wb.title}</span>
+            </label>
+          `;
+        }).join("")}
+      </div>
+    `).join("");
+
+    container.querySelectorAll("input[type='checkbox']").forEach(cb => {
+      cb.addEventListener("change", async () => {
+        const wbId = cb.dataset.wbId;
+        if (cb.checked) {
+          if (!config.worldbookIds.includes(wbId)) config.worldbookIds.push(wbId);
+        } else {
+          config.worldbookIds = config.worldbookIds.filter(id => id !== wbId);
+        }
+        await saveLiveConfig(convId, config);
+      });
+    });
+  }
+
+  /* ------------ Render PM Inbox List ------------ */
+  function renderInboxList(convId, config, inboxType) {
+    const container = document.getElementById("liveInboxList");
+    if (!container) return;
+    const list = config.pmList[inboxType] || [];
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="live-empty-text">INBOX EMPTY</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(pm => {
+      const isReplied = pm.replies.length > 0;
+      return `
+        <div class="live-pm-item clickable" data-pm-id="${pm.id}">
+          <div class="live-pm-row">
+            <span class="live-pm-sender">@${pm.sender}</span>
+            <span class="live-pm-status ${isReplied ? 'replied' : 'pending'}">
+              ${isReplied ? 'REPLIED' : 'UNREAD'}
+            </span>
+          </div>
+          <div class="live-pm-preview">${pm.content}</div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".live-pm-item").forEach(item => {
+      item.addEventListener("click", () => {
+        openPMDetail(convId, inboxType, item.dataset.pmId);
+      });
+    });
+  }
+
+  /* ------------ Fan Club Group Interface ------------ */
+  function ensureFanGroupPage() {
+    let page = document.getElementById("page-couple-live-fangroup");
+    if (page) return page;
+
+    page = document.createElement("div");
+    page.id = "page-couple-live-fangroup";
+    page.className = "page";
+    page.innerHTML = `
+      <div class="chat-header live-header">
+        <div class="chat-header-left">
+          <button class="back-btn clickable" id="fgBackBtn">${ICONS.back}</button>
+          <h2 class="live-title">FAN CLUB CHAT</h2>
+        </div>
+      </div>
+      <div class="live-fg-messages" id="liveFgMessages"></div>
+      <div class="live-fg-input-row">
+        <input type="text" id="liveFgInput" placeholder="ENTER MESSAGE..." autocomplete="off">
+        <button id="liveFgSendBtn" class="live-fg-icon-btn">${ICONS.send}</button>
+      </div>
+    `;
+
+    const appMain = document.querySelector(".app-main");
+    if (appMain) appMain.appendChild(page);
+    else document.body.appendChild(page);
+
+    page.querySelector("#fgBackBtn").addEventListener("click", () => {
+      if (window.switchPage) window.switchPage("couple-live");
+    });
+
+    return page;
+  }
+
+  async function openFanGroup(convId) {
+    const page = ensureFanGroupPage();
+    const config = await getLiveConfig(convId);
+    if (!config) return;
+
+    if (window.switchPage) window.switchPage("couple-live-fangroup");
+
+    const msgContainer = page.querySelector("#liveFgMessages");
+    const input = page.querySelector("#liveFgInput");
+    const sendBtn = page.querySelector("#liveFgSendBtn");
+
+    const renderMsgs = () => {
+      msgContainer.innerHTML = config.fanGroupChat.map(m => `
+        <div class="live-fg-msg-row">
+          <span class="live-fg-msg-sender">@${m.sender}:</span>
+          <span class="live-fg-msg-text">${m.text}</span>
+        </div>
+      `).join("");
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+    };
+
+    renderMsgs();
+
+    const handleSend = async () => {
+      const txt = input.value.trim();
+      if (!txt) return;
+
+      // Add user message
+      config.fanGroupChat.push({ sender: "YOU", text: txt });
+      input.value = "";
+      renderMsgs();
+
+      // Trigger Simulated Fan Reactions (高网感)
+      setTimeout(async () => {
+        const reactions = await generateFanGroupReactions(convId, txt);
+        reactions.forEach(r => config.fanGroupChat.push(r));
+        await saveLiveConfig(convId, config);
+        renderMsgs();
+      }, 1000);
+    };
+
+    // Re-bind to avoid duplicate listeners
+    sendBtn.onclick = handleSend;
+    input.onkeypress = (e) => { if (e.key === 'Enter') handleSend(); };
+  }
+
+  async function generateFanGroupReactions(convId, userMsg) {
+    const DB = window.DB;
+    const conv = await DB.get("conversations", convId);
+    const char = await DB.get("characters", conv?.charId);
+    const mask = await DB.get("userProfiles", conv?.maskId);
+
+    const charName = char?.name || "HOST";
+    const userName = mask?.name || "CO-HOST";
+
+    const prompt = `You are a group of hyperactive stream spectators in a fans' club group chat. 
+Your hosts are the streaming couple: 【${charName}】 and 【${userName}】.
+Your speaking style should be minimal, cold-tech style, using high "Internet slang" and netizen buzzwords (KSWL, CP IS REAL, TS-Style, Glitch, CP FANS, etc). 
+DO NOT USE EMOJIS.
+
+The co-host (User) just sent this message to the group chat: "${userMsg}".
+Generate 2 distinct short netizen replies to simulate active group banter.
+Format:
+[NETIZEN_HANDLE_A]: reply content
+[NETIZEN_HANDLE_B]: reply content`;
+
+    try {
+      if (window.callLLM) {
+        if (window.recordApiPending) window.recordApiPending();
+        const reply = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 150 });
+        const lines = reply.split("\n").filter(l => l.includes(":"));
+        if (lines.length > 0) {
+          return lines.map(line => {
+            const parts = line.split(":");
+            const sender = parts[0].replace(/[\[\]]/g, "").trim();
+            const text = parts.slice(1).join(":").trim();
+            return { sender, text };
+          });
+        }
       }
+    } catch (e) {
+      console.warn("LLM fan-group synthesis failed, fallback applied.");
+    }
+
+    // Fallback Slang
+    return [
+      { sender: "CP_CHRONICLES", text: `HOLY CRAP, PRESENTER APART FROM THE SCRIPT SHE LITERALLY SAID: ${userMsg}` },
+      { sender: "STREAM_STALKER", text: "THE TENSION HAS RISEN BY 500 UNITS. THIS GROUP CHAT IS PEAKING." }
+    ];
+  }
+
+  /* ------------ Private Messages Details Interface ------------ */
+  function ensurePMDetailPage() {
+    let page = document.getElementById("page-couple-live-pmdetail");
+    if (page) return page;
+
+    page = document.createElement("div");
+    page.id = "page-couple-live-pmdetail";
+    page.className = "page";
+    page.innerHTML = `
+      <div class="chat-header live-header">
+        <div class="chat-header-left">
+          <button class="back-btn clickable" id="pmBackBtn">${ICONS.back}</button>
+          <h2 class="live-title" id="pmDetailTitle">PRIVATE MESSAGE</h2>
+        </div>
+      </div>
+      <div class="live-pm-detail-body">
+        <div class="live-pm-orig-card">
+          <div class="live-pm-orig-sender" id="pmOrigSender">@SENDER</div>
+          <div class="live-pm-orig-text" id="pmOrigText">MSG CONTENT</div>
+        </div>
+        <div class="live-pm-thread" id="pmThread"></div>
+      </div>
+      <div class="live-pm-action-row" id="pmActionRow"></div>
+    `;
+
+    const appMain = document.querySelector(".app-main");
+    if (appMain) appMain.appendChild(page);
+    else document.body.appendChild(page);
+
+    page.querySelector("#pmBackBtn").addEventListener("click", () => {
+      if (window.switchPage) window.switchPage("couple-live");
+    });
+
+    return page;
+  }
+
+  async function openPMDetail(convId, inboxType, pmId) {
+    const page = ensurePMDetailPage();
+    const config = await getLiveConfig(convId);
+    if (!config) return;
+
+    const pm = config.pmList[inboxType].find(p => p.id === pmId);
+    if (!pm) return;
+
+    if (window.switchPage) window.switchPage("couple-live-pmdetail");
+
+    page.querySelector("#pmOrigSender").textContent = `@${pm.sender}`;
+    page.querySelector("#pmOrigText").textContent = pm.content;
+
+    const threadContainer = page.querySelector("#pmThread");
+    const actionRow = page.querySelector("#pmActionRow");
+
+    const renderThread = () => {
+      threadContainer.innerHTML = pm.replies.map(r => `
+        <div class="live-pm-bubble-row ${r.sender === 'YOU' || r.sender === 'CHAR' ? 'self' : 'other'}">
+          <div class="live-pm-bubble">
+            <span class="live-pm-bubble-sender">@${r.sender}:</span>
+            <span class="live-pm-bubble-text">${r.text}</span>
+          </div>
+        </div>
+      `).join("");
+      threadContainer.scrollTop = threadContainer.scrollHeight;
+    };
+
+    renderThread();
+
+    if (inboxType === "char") {
+      // CHAR Box: AI generates reply in Char's persona
+      actionRow.innerHTML = `
+        <button id="livePmGenReplyBtn" class="live-pm-btn-block">GENERATE CHAR'S RESPONSE</button>
+      `;
+      const genBtn = actionRow.querySelector("#livePmGenReplyBtn");
+      genBtn.onclick = async () => {
+        genBtn.disabled = true;
+        genBtn.textContent = "GENERATING RESPONSE...";
+        const replyTxt = await generateCharPMResponse(convId, pm.content);
+        pm.replies.push({ sender: "CHAR", text: replyTxt });
+        await saveLiveConfig(convId, config);
+        renderThread();
+        genBtn.style.display = "none";
+      };
+    } else {
+      // USER Box: User types reply, then fan follows up
+      actionRow.innerHTML = `
+        <div class="live-pm-reply-input-wrap">
+          <input type="text" id="livePmUserInput" placeholder="REPLY AS USER..." autocomplete="off">
+          <button id="livePmUserSendBtn" class="live-fg-icon-btn">${ICONS.send}</button>
+        </div>
+      `;
+      const userInput = actionRow.querySelector("#livePmUserInput");
+      const userSend = actionRow.querySelector("#livePmUserSendBtn");
+
+      const handleUserReply = async () => {
+        const txt = userInput.value.trim();
+        if (!txt) return;
+
+        pm.replies.push({ sender: "YOU", text: txt });
+        userInput.value = "";
+        renderThread();
+
+        // Simulated Fan Follow-Up
+        setTimeout(async () => {
+          const followUp = await generateFanPMFollowUp(convId, pm.content, txt, pm.sender);
+          pm.replies.push({ sender: pm.sender, text: followUp });
+          await saveLiveConfig(convId, config);
+          renderThread();
+        }, 1000);
+      };
+
+      userSend.onclick = handleUserReply;
+      userInput.onkeypress = (e) => { if (e.key === 'Enter') handleUserReply(); };
+    }
+  }
+
+  async function generateCharPMResponse(convId, fanMsg) {
+    const DB = window.DB;
+    const conv = await DB.get("conversations", convId);
+    const char = await DB.get("characters", conv?.charId);
+    const charName = char?.name || "CHAR";
+    const prompt = `You are playing 【${charName}】. You received a private message from a stream fan: "${fanMsg}".
+Write a reply back to the fan matching your exact persona and tone. Keep it natural, slightly online-styled but highly in-character.
+DO NOT USE EMOJIS. No bracketed action narration. Output the reply message text only.`;
+
+    try {
+      if (window.callLLM) {
+        if (window.recordApiPending) window.recordApiPending();
+        return await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 150 });
+      }
+    } catch (e) {
+      console.warn("LLM Char reply synthesis failed.");
+    }
+    return "Thank you for the message. We appreciate your support. Keep watching.";
+  }
+
+  async function generateFanPMFollowUp(convId, origMsg, userReply, fanSender) {
+    const prompt = `You are stream fan @${fanSender}. You previously messaged the host: "${origMsg}".
+The host just replied directly to you: "${userReply}".
+Generate your excited, internet-slang styled direct follow-up message back. Keep it short.
+DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
+
+    try {
+      if (window.callLLM) {
+        if (window.recordApiPending) window.recordApiPending();
+        return await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
+      }
+    } catch (e) {
+      console.warn("LLM Fan follow-up failed.");
+    }
+    return "OH MY GOD REAL RESPONSE! SPREADING THE NEWS TO THE CLUB!";
+  }
+
+  /* ------------ Barrage/Danmaku Trigger Logic ------------ */
+  async function triggerLiveBarrageFlow(convId, msg) {
+    const config = await getLiveConfig(convId);
+    if (!config || !config.enabled) return;
+
+    const count = Math.floor(Math.random() * (config.maxBarrage - config.minBarrage + 1)) + config.minBarrage;
+    if (count <= 0) return;
+
+    const chatWindow = document.getElementById("convChatMessages");
+    if (!chatWindow) return;
+
+    // Ensure Barrage Container exists
+    let barrageWrap = chatWindow.querySelector(".cs-barrage-overlay");
+    if (!barrageWrap) {
+      barrageWrap = document.createElement("div");
+      barrageWrap.className = "cs-barrage-overlay";
+      chatWindow.appendChild(barrageWrap);
+    }
+
+    // Dynamic Barrage Generator
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        createBarrageElement(barrageWrap, config, msg);
+      }, i * 700);
+    }
+  }
+
+  function createBarrageElement(container, config, msg) {
+    const randType = Math.random();
+    let text = "";
+    let isSystem = false;
+
+    if (randType < 0.1) {
+      // System alert: Follower count increases
+      const user = SYSTEM_FOLLOWERS[Math.floor(Math.random() * SYSTEM_FOLLOWERS.length)];
+      text = `>>> @${user} HAS INSCRIBED TO THE SYSTEM CHANNEL.`;
+      isSystem = true;
+      config.followers += 1;
+      updateLiveDashboardStats(config);
+    } else if (randType < 0.2) {
+      // System alert: Donation
+      const user = SYSTEM_DONORS[Math.floor(Math.random() * SYSTEM_DONORS.length)];
+      const amount = [50, 100, 200, 500, 1000][Math.floor(Math.random() * 5)];
+      const donationMessage = BARRAGE_TEMPLATES[Math.floor(Math.random() * BARRAGE_TEMPLATES.length)];
+      text = `$$$ @${user} HAS GRANTED ¥${amount} : "${donationMessage}"`;
+      isSystem = true;
+
+      // Update statistics
+      config.totalDonations += amount;
+      
+      // Update Contribution array
+      const existing = config.contributions.find(c => c.name === user);
+      if (existing) {
+        existing.amount += amount;
+        existing.message = donationMessage;
+      } else {
+        config.contributions.push({ name: user, amount, message: donationMessage });
+      }
+      config.contributions.sort((a, b) => b.amount - a.amount);
+      updateLiveDashboardStats(config);
+    } else {
+      // Regular fan comments
+      const rawText = BARRAGE_TEMPLATES[Math.floor(Math.random() * BARRAGE_TEMPLATES.length)];
+      const users = [...SYSTEM_DONORS, ...SYSTEM_FOLLOWERS];
+      const randomUser = users[Math.floor(Math.random() * users.length)];
+      text = `@${randomUser}: ${rawText}`;
+    }
+
+    // Create the HTML Span
+    const item = document.createElement("span");
+    item.className = `cs-barrage-item ${isSystem ? 'system' : ''}`;
+    item.textContent = text;
+
+    // Track generation (0 to 6 Lanes to prevent collision)
+    const lane = Math.floor(Math.random() * 7);
+    item.style.top = `${12 + lane * 13}%`;
+
+    container.appendChild(item);
+
+    // Garbage collection on completion of CSS Animation (8s)
+    setTimeout(() => {
+      item.remove();
+    }, 8100);
+  }
+
+  function updateLiveDashboardStats(config) {
+    const fCount = document.getElementById("liveFollowerCount");
+    const dCount = document.getElementById("liveTotalDonations");
+    const rList = document.getElementById("liveRankList");
+
+    if (fCount) fCount.textContent = config.followers;
+    if (dCount) dCount.textContent = `¥${config.totalDonations}`;
+    if (rList) {
+      rList.innerHTML = config.contributions.map((c, i) => `
+        <div class="live-rank-item">
+          <span class="live-rank-index">${i + 1}</span>
+          <span class="live-rank-name">${c.name}</span>
+          <span class="live-rank-msg">${c.message}</span>
+          <span class="live-rank-amount">¥${c.amount}</span>
+        </div>
+      `).join("");
+    }
+    // Async save
+    const convId = window.currentConversationId || window._currentCoupleSpaceConvId;
+    if (convId) saveLiveConfig(convId, config);
+  }
+
+  /* ------------ switchPage Patches Integration ------------ */
+  function patchSwitchPage() {
+    if (!window.switchPage || window.switchPage._livePatched) return;
+    const originalSwitch = window.switchPage;
+
+    window.switchPage = function (pageId) {
+      const livePage = document.getElementById("page-couple-live");
+      const fgPage = document.getElementById("page-couple-live-fangroup");
+      const pmPage = document.getElementById("page-couple-live-pmdetail");
+
+      if (pageId === "couple-live") {
+        activatePage("page-couple-live");
+        return;
+      }
+      if (pageId === "couple-live-fangroup") {
+        activatePage("page-couple-live-fangroup");
+        return;
+      }
+      if (pageId === "couple-live-pmdetail") {
+        activatePage("page-couple-live-pmdetail");
+        return;
+      }
+
+      if (livePage) livePage.classList.remove("active");
+      if (fgPage) fgPage.classList.remove("active");
+      if (pmPage) pmPage.classList.remove("active");
+
+      return originalSwitch.apply(this, arguments);
+    };
+    window.switchPage._livePatched = true;
+  }
+
+  function activatePage(id) {
+    document.querySelectorAll(".page").forEach(p => {
+      if (p.id === id) return;
+      p.classList.remove("active");
+      if (p.style.display && p.style.display !== "none") p.style.display = "none";
     });
 
     const homeMain = document.getElementById("homeMain");
@@ -157,835 +770,91 @@
     const pageInd = document.querySelector(".page-indicator");
     const appMain = document.querySelector(".app-main");
     const tabBar = document.getElementById("mainTabBar");
-    const momentsFab = document.getElementById("momentsFabBtn");
 
     if (homeMain) homeMain.style.display = "none";
     if (homeDock) homeDock.style.display = "none";
     if (pageInd) pageInd.style.display = "none";
     if (appMain) appMain.style.display = "";
     if (tabBar) tabBar.style.display = "none";
-    if (momentsFab) momentsFab.style.display = "none";
 
-    const couplePage = document.getElementById("page-couple-space");
-    if (couplePage) couplePage.setAttribute("data-live-theme", "tech");
-
-    const page = ensurePage();
-    page.style.display = "";
-    page.classList.add("active");
+    const target = document.getElementById(id);
+    if (target) target.classList.add("active");
   }
 
-  async function open(convId) {
-    if (!convId) {
-      window.showStatus?.("请先进入对话", "error");
-      return;
-    }
-    window._currentCoupleLiveConvId = convId;
-    ensurePage();
-    activatePage();
-    await render(convId);
-  }
+  /* ------------ Dynamic Couple Space Injections ------------ */
+  function injectLiveSection(convId) {
+    const sectionsContainer = document.querySelector(".cs-sections");
+    if (!sectionsContainer) return;
+    if (sectionsContainer.querySelector('[data-cs-key="live"]')) return; // Already exists
 
-  async function render(convId) {
-    const root = document.getElementById("cliveRoot");
-    if (!root) return;
-
-    const state = await getState(convId);
-    const names = await getNames(convId);
-
-    root.innerHTML = `
-      ${renderControlPanel(state)}
-      ${await renderWorldbookPanel(state)}
-      ${renderFanChannel(state, names)}
-    `;
-
-    bindControlEvents(convId);
-    bindWorldbookEvents(convId);
-    bindChannelEvents(convId);
-  }
-
-  function renderControlPanel(state) {
-    const totalTip = state.rank.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-    const rankHtml = state.rank.length
-      ? state.rank
-          .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))
-          .slice(0, 10)
-          .map((r, i) => `
-            <div class="clive-rank-row">
-              <div class="clive-rank-no">${String(i + 1).padStart(2, "0")}</div>
-              <div class="clive-rank-name">${esc(r.name)}</div>
-              <div class="clive-rank-amt">${Number(r.amount || 0)}</div>
-            </div>
-          `).join("")
-      : `<div class="clive-empty">暂无打榜记录</div>`;
-
-    return `
-      <div class="clive-panel">
-        <div class="clive-panel-title">${ICONS.live}<span>CONTROL PANEL</span></div>
-
-        <div class="clive-row">
-          <div>
-            <div class="clive-label">直播系统开关</div>
-            <div class="clive-sub">开启后，线上与线下每轮角色回复都会生成弹幕和粉丝动态。</div>
-          </div>
-          <div class="clive-switch ${state.enabled ? "on" : ""}" id="cliveSwitch"></div>
-        </div>
-
-        <div class="clive-row">
-          <div>
-            <div class="clive-label">每轮弹幕数量</div>
-            <div class="clive-sub">控制 API 每次返回的弹幕最小与最大条数。</div>
-          </div>
-          <div class="clive-two-inputs">
-            <input class="clive-input" id="cliveMinInput" type="number" min="1" max="30" value="${Number(state.minDanmaku || 4)}">
-            <span class="clive-label">to</span>
-            <input class="clive-input" id="cliveMaxInput" type="number" min="1" max="60" value="${Number(state.maxDanmaku || 10)}">
-          </div>
-        </div>
-
-        <div class="clive-num-card">
-          <div class="clive-stat">
-            <div class="clive-stat-num" id="cliveFansNum">${Number(state.fans || 0)}</div>
-            <div class="clive-stat-label">FOLLOWERS</div>
-          </div>
-          <div class="clive-stat">
-            <div class="clive-stat-num">${totalTip}</div>
-            <div class="clive-stat-label">TOTAL TIPS</div>
-          </div>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div class="clive-panel-title">${ICONS.rank}<span>RANKING</span></div>
-        <div class="clive-rank-list">${rankHtml}</div>
-
-        <div style="height:12px"></div>
-        <button class="clive-save-btn" id="cliveSaveControlBtn">SAVE SETTINGS</button>
+    const liveCard = document.createElement("div");
+    liveCard.className = "cs-section clickable";
+    liveCard.dataset.csKey = "live";
+    liveCard.innerHTML = `
+      <div class="cs-section-icon-wrap" style="background: #111; color: #fff; border: 1px solid #ffffff;">
+        ${ICONS.screen}
       </div>
-    `;
-  }
-
-async function renderWorldbookPanel(state) {
-  const all = await window.DB.getAll("worldbooks");
-  if (!all.length) {
-    return `
-      <div class="clive-panel">
-        <div class="clive-panel-title">${ICONS.book}<span>LIVE WORLDBOOK</span></div>
-        <div class="clive-empty">暂无世界书</div>
+      <div class="cs-section-text">
+        <div class="cs-section-title">直播系统</div>
+        <div class="cs-section-desc">科技黑白质感，高能弹幕飘飞</div>
       </div>
-    `;
-  }
-
-  const groups = {};
-  all.forEach(w => {
-    const g = w.group || "未分组";
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(w);
-  });
-
-  const groupHtml = Object.keys(groups).sort().map(groupName => {
-    const list = groups[groupName];
-    const checkedCount = list.filter(w => state.worldbookIds.includes(w.id)).length;
-    return `
-      <div class="clive-wb-group ${checkedCount ? "" : "collapsed"}">
-        <div class="clive-wb-group-head">
-          <span>${esc(groupName)}</span>
-          <span>${checkedCount}/${list.length}</span>
-        </div>
-        <div class="clive-wb-group-body">
-          ${list.map(w => `
-            <label class="clive-wb-check">
-              <input type="checkbox" class="cliveWbCheck" value="${esc(w.id)}" ${state.worldbookIds.includes(w.id) ? "checked" : ""}>
-              <div>
-                <div class="ive-title">${esc(w.title || "未命名")}</div>
-                <div class="clive-wb-preview">
-                  ${esc((w.content || "").slice(0, 80))}
-                  ${(w.content || "").length > 80 ? "..." : ""}
-                </div>
-              </div>
-            </label>
-          `).join("")}
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  return `
-    <div class="clive-panel">
-      <div class="clive-panel-title">${ICONS.book}<span>LIVE WORLDBOOK</span></div>
-      <div class="clive-sub" style="margin-bottom:10px;">直播世界书独立于线上/线下聊天，仅用于弹幕、粉丝群和私信。</div>
-      ${groupHtml}
-      <button class="clive-save-btn" id="cliveSaveWbBtn">SAVE WORLDBOOKS</button>
-    </div>
-  `;
-}
-
-  function renderFanChannel(state, names) {
-    const tab = state.currentTab || "group";
-
-    let body = "";
-    if (tab === "group") {
-      body = `
-        <div class="clive-fan-group-card" id="cliveOpenFanGroup">
-          <div class="clive-fan-group-title">FAN GROUP</div>
-          <div class="clive-fan-group-desc">观众集中讨论 ${esc(names.charName)} 与 ${esc(names.userName)} 的直播内容。</div>
-        </div>
-      `;
-    } else {
-      const boxType = tab === "charInbox" ? "char" : "user";
-      const list = state.inbox[boxType] || [];
-      if (!list.length) {
-        body = `<div class="clive-empty">当前私信箱暂无消息</div>`;
-      } else {
-        body = list.map(dm => `
-          <div class="clive-dm-card" data-dm-id="${esc(dm.id)}" data-dm-box="${boxType}">
-            <div class="clive-dm-name">${esc(dm.from || "anonymous")}</div>
-            <div class="clive-dm-preview">${esc(lastDmPreview(dm))}</div>
-          </div>
-        `).join("");
-      }
-    }
-
-    return `
-      <div class="clive-panel">
-        <div class="clive-panel-title">${ICONS.users}<span>FAN CHANNEL</span></div>
-
-        <div class="clive-channel-tabs">
-          <div class="clive-channel-tab ${tab === "group" ? "active" : ""}" data-clive-tab="group">粉丝群</div>
-          <div class="clive-channel-tab ${tab === "charInbox" ? "active" : ""}" data-clive-tab="charInbox">${esc(names.charName)} 私信箱</div>
-          <div class="clive-channel-tab ${tab === "userInbox" ? "active" : ""}" data-clive-tab="userInbox">${esc(names.userName)} 私信箱</div>
-        </div>
-
-        ${body}
-
-        <div style="height:10px"></div>
-        <button class="clive-secondary-btn" id="cliveSeedInboxBtn">GENERATE TEST MESSAGES</button>
-      </div>
-    `;
-  }
-
-  function lastDmPreview(dm) {
-    const arr = dm.messages || [];
-    const last = arr[arr.length - 1];
-    return last ? last.content : dm.content || "";
-  }
-
-  function bindControlEvents(convId) {
-    const sw = document.getElementById("cliveSwitch");
-    sw?.addEventListener("click", async () => {
-      const s = await getState(convId);
-      s.enabled = !s.enabled;
-      await saveState(convId, s);
-      await render(convId);
-      window.showStatus?.(s.enabled ? "直播系统已开启" : "直播系统已关闭", "success");
-    });
-
-    document.getElementById("cliveSaveControlBtn")?.addEventListener("click", async () => {
-      const s = await getState(convId);
-      let min = parseInt(document.getElementById("cliveMinInput").value || "4", 10);
-      let max = parseInt(document.getElementById("cliveMaxInput").value || "10", 10);
-      min = Math.max(1, Math.min(30, min));
-      max = Math.max(min, Math.min(60, max));
-      s.minDanmaku = min;
-      s.maxDanmaku = max;
-      await saveState(convId, s);
-      await render(convId);
-      window.showStatus?.("直播控制参数已保存", "success");
-    });
-  }
-
-  function bindWorldbookEvents(convId) {
-    document.querySelectorAll(".clive-wb-group-head").forEach(head => {
-      head.addEventListener("click", () => {
-        head.closest(".clive-wb-group")?.classList.toggle("collapsed");
-      });
-    });
-
-    document.getElementById("cliveSaveWbBtn")?.addEventListener("click", async () => {
-      const s = await getState(convId);
-      s.worldbookIds = Array.from(document.querySelectorAll(".cliveWbCheck:checked")).map(x => x.value);
-      await saveState(convId, s);
-      await render(convId);
-      window.showStatus?.("直播世界书已保存", "success");
-    });
-  }
-
-  function bindChannelEvents(convId) {
-    document.querySelectorAll(".clive-channel-tab").forEach(tab => {
-      tab.addEventListener("click", async () => {
-        const s = await getState(convId);
-        s.currentTab = tab.dataset.cliveTab;
-        await saveState(convId, s);
-        await render(convId);
-      });
-    });
-
-    document.getElementById("cliveOpenFanGroup")?.addEventListener("click", () => openFanGroup(convId));
-
-    document.querySelectorAll(".clive-dm-card").forEach(card => {
-      card.addEventListener("click", () => openDm(convId, card.dataset.dmBox, card.dataset.dmId));
-    });
-
-    document.getElementById("cliveSeedInboxBtn")?.addEventListener("click", async () => {
-      await seedFanMessages(convId);
-      await render(convId);
-      window.showStatus?.("已生成模拟私信", "success");
-    });
-  }
-
-  async function openFanGroup(convId) {
-    const page = ensurePage();
-    activatePage();
-
-    const root = document.getElementById("cliveRoot");
-    const s = await getState(convId);
-    const messages = s.fanGroup.messages || [];
-
-    root.innerHTML = `
-      <div class="clive-panel">
-        <div class="clive-panel-title">${ICONS.users}<span>FAN GROUP</span></div>
-        <div class="clive-chat-log" id="cliveFanGroupLog">
-          ${messages.map(m => renderChatMsg(m)).join("")}
-        </div>
-        <div class="clive-chat-row">
-          <input class="clive-input-wide" id="cliveFanGroupInput" placeholder="输入要发送到粉丝群的内容">
-          <button class="clive-primary-btn" id="cliveFanGroupSend">${ICONS.send}</button>
-        </div>
-        <div style="height:8px"></div>
-        <button class="clive-secondary-btn" id="cliveFanGroupAi">GENERATE FAN REPLIES</button>
-      </div>
+      <div class="cs-section-go">${ICONS.arrow}</div>
     `;
 
-    scrollChatLog();
-
-    document.getElementById("cliveFanGroupSend")?.addEventListener("click", async () => {
-      const input = document.getElementById("cliveFanGroupInput");
-      const text = input.value.trim();
-      if (!text) return;
-      const ss = await getState(convId);
-      ss.fanGroup.messages.push({
-        role: "self",
-        sender: "YOU",
-        content: text,
-        time: Date.now()
-      });
-      await saveState(convId, ss);
-      await openFanGroup(convId);
-    });
-
-    document.getElementById("cliveFanGroupAi")?.addEventListener("click", async () => {
-      await generateFanGroupReplies(convId);
-      await openFanGroup(convId);
+    sectionsContainer.appendChild(liveCard);
+    liveCard.addEventListener("click", () => {
+      openLiveDashboard(convId);
     });
   }
 
-  function renderChatMsg(m) {
-    return `
-      <div class="clive-chat-msg ${m.role === "self" ? "self" : m.role === "system" ? "system" : ""}">
-        <div class="clive-chat-sender">${esc(m.sender || "FAN")}</div>
-        <div>${esc(m.content || "")}</div>
-      </div>
-    `;
+  async function openLiveDashboard(convId) {
+    ensureLivePage();
+    await renderLiveDashboard(convId);
+    if (window.switchPage) window.switchPage("couple-live");
   }
 
-  function scrollChatLog() {
-    setTimeout(() => {
-      const el = document.querySelector(".clive-chat-log");
-      if (el) el.scrollTop = el.scrollHeight;
-    }, 60);
-  }
-
-  async function openDm(convId, box, dmId) {
-    const page = ensurePage();
-    activatePage();
-
-    const s = await getState(convId);
-    const list = s.inbox[box] || [];
-    const dm = list.find(x => String(x.id) === String(dmId));
-    if (!dm) return;
-
-    const root = document.getElementById("cliveRoot");
-    root.innerHTML = `
-      <div class="clive-panel">
-        <div class="clive-panel-title">${ICONS.mail}<span>${box === "char" ? "CHAR INBOX" : "USER INBOX"} / ${esc(dm.from)}</span></div>
-
-        <div class="clive-chat-log">
-          ${(dm.messages || []).map(m => renderChatMsg(m)).join("")}
-        </div>
-
-        <div class="clive-chat-row">
-          <input class="clive-input-wide" id="cliveDmInput" placeholder="输入回复内容">
-          <button class="clive-primary-btn" id="cliveDmSend">${ICONS.send}</button>
-        </div>
-
-        <div style="height:8px"></div>
-        <button class="clive-secondary-btn" id="cliveDmAiReply">GENERATE REPLY</button>
-      </div>
-    `;
-
-    scrollChatLog();
-
-    document.getElementById("cliveDmSend")?.addEventListener("click", async () => {
-      const input = document.getElementById("cliveDmInput");
-      const text = input.value.trim();
-      if (!text) return;
-      await addDmMessage(convId, box, dmId, {
-        role: "self",
-        sender: box === "char" ? "CHAR" : "USER",
-        content: text,
-        time: Date.now()
-      });
-      await openDm(convId, box, dmId);
-    });
-
-    document.getElementById("cliveDmAiReply")?.addEventListener("click", async () => {
-      await generateDmReply(convId, box, dmId);
-      await openDm(convId, box, dmId);
-    });
-  }
-
-  async function addDmMessage(convId, box, dmId, msg) {
-    const s = await getState(convId);
-    const list = s.inbox[box] || [];
-    const dm = list.find(x => String(x.id) === String(dmId));
-    if (!dm) return;
-    dm.messages = dm.messages || [];
-    dm.messages.push(msg);
-    await saveState(convId, s);
-  }
-
-  async function seedFanMessages(convId) {
-    const s = await getState(convId);
-    const t = Date.now();
-
-    s.inbox.char.unshift({
-      id: "dm_char_" + t,
-      from: "ColdReader",
-      messages: [
-        { role: "fan", sender: "ColdReader", content: "你刚才那句不像营业，像真心话。", time: t }
-      ]
-    });
-
-    s.inbox.user.unshift({
-      id: "dm_user_" + t,
-      from: "DeepViewer",
-      messages: [
-        { role: "fan", sender: "DeepViewer", content: "你是不是故意在镜头前逗他？观众已经看出来了。", time: t }
-      ]
-    });
-
-    await saveState(convId, s);
-  }
-
-  async function generateFanGroupReplies(convId) {
-    const s = await getState(convId);
-    const names = await getNames(convId);
-    const wb = await getLiveWorldbookText(s);
-
-    const recent = (s.fanGroup.messages || []).slice(-12)
-      .map(m => `${m.sender}: ${m.content}`).join("\n");
-
-    const prompt = `
-你正在模拟一个直播间的粉丝群。
-风格要求：强网感、会玩梗、会阴阳怪气、会嗑、会吵架，但不要脏话和人身攻击。
-禁止使用 emoji。
-禁止解释。
-每条格式：昵称:内容
-返回 3 到 6 条。
-
-直播主角：
-char=${names.charName}
-user=${names.userName}
-
-直播世界书：
-${wb || "无"}
-
-粉丝群最近聊天：
-${recent || "暂无"}
-
-现在生成粉丝群的新回复。`;
-
-    try {
-      window.recordApiPending?.();
-      const res = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 700, temperature: 0.95 });
-      const lines = res.split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 8);
-
-      lines.forEach(line => {
-        const idx = line.indexOf(":");
-        const sender = idx > -1 ? line.slice(0, idx).trim() : "Viewer";
-        const content = idx > -1 ? line.slice(idx + 1).trim() : line;
-        s.fanGroup.messages.push({ role: "fan", sender, content, time: Date.now() });
-      });
-
-      await saveState(convId, s);
-    } catch (e) {
-      window.showStatus?.("粉丝群生成失败：" + e.message, "error");
-    }
-  }
-
-  async function generateDmReply(convId, box, dmId) {
-    const s = await getState(convId);
-    const list = s.inbox[box] || [];
-    const dm = list.find(x => String(x.id) === String(dmId));
-    if (!dm) return;
-
-    const names = await getNames(convId);
-    const wb = await getLiveWorldbookText(s);
-
-    const speaker = box === "char" ? names.charName : names.userName;
-    const persona = box === "char" ? names.charDetail : names.userDetail;
-
-    const history = (dm.messages || [])
-      .slice(-10)
-      .map(m => `${m.sender}: ${m.content}`)
-      .join("\n");
-
-    const prompt = `
-你正在代替 ${speaker} 回复直播间网友私信。
-
-人物设定：
-${persona || "无"}
-
-直播世界书：
-${wb || "无"}
-
-私信历史：
-${history}
-
-要求：
-1. 回复要有网感，像真实私信，不要官腔。
-2. 可以多条回复。
-3. 禁止使用 emoji。
-4. 严格输出格式：
-[MSG]文字:第一条
-[MSG]文字:第二条
-`;
-
-    try {
-      window.recordApiPending?.();
-      const res = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 700, temperature: 0.85 });
-      const msgs = parseMsgTexts(res);
-      msgs.forEach(content => {
-        dm.messages.push({
-          role: "self",
-          sender: speaker,
-          content,
-          time: Date.now()
-        });
-      });
-      await saveState(convId, s);
-    } catch (e) {
-      window.showStatus?.("私信回复失败：" + e.message, "error");
-    }
-  }
-
-  function parseMsgTexts(text) {
-    const arr = [];
-    const reg = /\[MSG\]文字\s*[:：]\s*([\s\S]*?)(?=\n\s*\[MSG\]|$)/g;
-    let m;
-    while ((m = reg.exec(text)) !== null) {
-      const v = m[1].trim();
-      if (v) arr.push(v);
-    }
-    if (!arr.length && text.trim()) arr.push(text.trim());
-    return arr.slice(0, 6);
-  }
-
-  /* ============================================================
-   * 弹幕系统
-   * ============================================================ */
-
-  function ensureDanmakuLayer() {
-    const page = document.getElementById("page-conversation");
-    if (!page) return null;
-
-    let layer = page.querySelector(".clive-danmaku-layer");
-    if (!layer) {
-      layer = document.createElement("div");
-      layer.className = "clive-danmaku-layer";
-      page.appendChild(layer);
-    }
-    return layer;
-  }
-
-  function showDanmaku(events) {
-    const layer = ensureDanmakuLayer();
-    if (!layer) return;
-
-    const laneCount = 7;
-    events.forEach((ev, i) => {
-      const item = document.createElement("div");
-      item.className = "clive-danmaku-item " + (ev.type || "comment");
-      item.textContent = ev.text || "";
-      const lane = i % laneCount;
-      item.style.top = (lane * 24 + 4) + "px";
-      item.style.animationDuration = (8 + Math.random() * 4) + "s";
-      item.style.animationDelay = (i * 0.35) + "s";
-      layer.appendChild(item);
-      setTimeout(() => item.remove(), 14000);
-    });
-  }
-
-  async function generateLiveEvents(convId, chatObj) {
-    const state = await getState(convId);
-    if (!state.enabled) return;
-    if (!chatObj || chatObj.messageType === "innerVoice" || chatObj.messageType === "phone_intrusion") return;
-
-    const names = await getNames(convId);
-    const wb = await getLiveWorldbookText(state);
-
-    const min = Math.max(1, Number(state.minDanmaku || 4));
-    const max = Math.max(min, Number(state.maxDanmaku || 10));
-    const count = Math.floor(min + Math.random() * (max - min + 1));
-
-    const chats = await window.DB.queryByIndex("chats", "conversationId", convId);
-    const recent = chats
-      .filter(c => c.messageType !== "innerVoice" && c.messageType !== "phone_intrusion")
-      .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
-      .slice(-8)
-      .map(c => {
-        const role = c.role === "user" ? names.userName : names.charName;
-        return `${role}: ${String(c.content || "").replace(/<[^>]*>/g, "").slice(0, 220)}`;
-      }).join("\n");
-
-    const prompt = `
-你是一个直播间弹幕生成器。
-核心风格：网感强、像真实网友、会嗑、会看热闹、会打榜、会关注、会起哄、会做阅读理解。
-禁止使用 emoji。
-禁止解释。
-禁止输出 Markdown。
-需要生成 ${count} 条直播事件。
-
-事件类型：
-comment: 普通弹幕，格式类似 "昵称:内容"
-tip: 打赏通知，格式类似 "昵称 给直播间打赏了1000元，留言:内容"
-follow: 关注通知，格式类似 "昵称 关注了直播间"
-
-要求：
-1. comment 占大多数。
-2. tip 可以有 0 到 2 条。
-3. follow 可以有 0 到 2 条。
-4. 内容要贴合当前互动，不能空泛。
-5. 可以有路人误读、嗑 CP、拱火、阴阳怪气、拉踩、打榜发言，但不要低俗辱骂。
-6. 返回 JSON 数组，不要包代码块。
-格式：
-[
-  {"type":"comment","name":"昵称","text":"昵称:内容"},
-  {"type":"tip","name":"昵称","amount":1000,"text":"昵称 给直播间打赏了1000元，留言:内容"},
-  {"type":"follow","name":"昵称","text":"昵称 关注了直播间"}
-]
-
-直播主角：
-char=${names.charName}
-user=${names.userName}
-
-直播世界书：
-${wb || "无"}
-
-最近直播内容：
-${recent}
-
-刚刚发生：
-${chatObj.role}: ${String(chatObj.content || "").replace(/<[^>]*>/g, "").slice(0, 500)}
-`;
-
-    try {
-      window.recordApiPending?.();
-      const res = await window.callLLM([{ role: "user", content: prompt }], {
-        maxTokens: 1000,
-        temperature: 0.98
-      });
-
-      const events = parseEvents(res).slice(0, count);
-      if (!events.length) return;
-
-      applyEventEffects(state, events);
-      state.danmakuHistory.push(...events.map(e => ({ ...e, time: Date.now() })));
-      state.danmakuHistory = state.danmakuHistory.slice(-300);
-
-      // 弹幕也会带动粉丝群和私信
-      injectEventsToFanChannel(state, events, names);
-
-      await saveState(convId, state);
-
-      if (Number(window.currentConversationId) === Number(convId)) {
-        showDanmaku(events);
-      }
-    } catch (e) {
-      console.warn("live events failed:", e);
-    }
-  }
-
-  function parseEvents(text) {
-    let raw = String(text || "").trim();
-    raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-
-    try {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        return arr.map(normalizeEvent).filter(e => e.text);
-      }
-    } catch (e) {}
-
-    return raw.split(/\n+/).map(line => {
-      line = line.trim().replace(/^[\-\d.、\s]+/, "");
-      if (!line) return null;
-      const type = line.includes("打赏") ? "tip" : line.includes("关注") ? "follow" : "comment";
-      return normalizeEvent({ type, text: line });
-    }).filter(Boolean);
-  }
-
-  function normalizeEvent(e) {
-    const text = String(e.text || "").trim();
-    return {
-      type: e.type === "tip" || e.type === "follow" ? e.type : "comment",
-      name: String(e.name || guessName(text) || "Viewer").trim(),
-      amount: Number(e.amount || guessAmount(text) || 0),
-      text
-    };
-  }
-
-  function guessName(text) {
-    const m = String(text).match(/^([^:：\s]+)[:：\s]/);
-    return m ? m[1] : "";
-  }
-
-  function guessAmount(text) {
-    const m = String(text).match(/打赏了?\s*(\d+)/);
-    return m ? Number(m[1]) : 0;
-  }
-
-  function applyEventEffects(state, events) {
-    events.forEach(e => {
-      if (e.type === "follow") {
-        state.fans = Number(state.fans || 0) + 1;
-      }
-      if (e.type === "tip") {
-        const name = e.name || guessName(e.text) || "Viewer";
-        const amount = Number(e.amount || guessAmount(e.text) || 0);
-        if (amount > 0) {
-          let row = state.rank.find(r => r.name === name);
-          if (!row) {
-            row = { name, amount: 0 };
-            state.rank.push(row);
-          }
-          row.amount = Number(row.amount || 0) + amount;
-        }
-      }
-    });
-  }
-
-  function injectEventsToFanChannel(state, events, names) {
-  const comments = events.filter(e => e.type === "comment").slice(0, 4);
-  comments.forEach(e => {
-    const idx = e.text.indexOf(":");
-    state.fanGroup.messages.push({
-      role: "fan",
-      sender: idx > -1 ? e.text.slice(0, idx).trim() : e.name || "Viewer",
-      content: idx > -1 ? e.text.slice(idx + 1).trim() : e.text,
-      time: Date.now()
-    });
-  });
-
-  // 少量弹幕转化为私信，制造玩法
-  const maybe = events.find(e => e.type === "comment" && /私信|想问|告诉|磕|刺激|真心/.test(e.text));
-  if (maybe && Math.random() < 0.45) {
-    const target = Math.random() < 0.5 ? "char" : "user";
-    const from = maybe.name || guessName(maybe.text) || "Viewer";
-    state.inbox[target].unshift({
-      id: "dm_" + target + "_" + Date.now() + "_" + Math.random().toString(36).slice(2),
-      from,
-      messages: [
-        {
-          role: "fan",
-          sender: from,
-          content: maybe.text.replace(/^([^:：]+)[:：]/, "").trim(),
-          time: Date.now()
-        }
-      ]
-    });
-    state.inbox[target] = state.inbox[target].slice(0, 50);
-  }
-}
-
-  async function patchDBPut() {
-    if (!window.DB || window.DB._clivePutPatched) return;
-
-    const originalPut = window.DB.put.bind(window.DB);
-
-    window.DB.put = async function (store, obj) {
-      const result = await originalPut(store, obj);
-
-      try {
-        if (
-          store === "chats" &&
-          obj &&
-          obj.conversationId &&
-          (obj.role === "assistant" || obj.role === "char") &&
-          !["innerVoice", "phone_intrusion", "mode_switch"].includes(obj.messageType)
-        ) {
-          setTimeout(() => {
-            generateLiveEvents(obj.conversationId, obj);
-          }, 500);
-        }
-      } catch (e) {
-        console.warn("live DB hook failed:", e);
-      }
-
-      return result;
-    };
-
-    window.DB._clivePutPatched = true;
-  }
-
-  function patchSwitchPage() {
-    if (!window.switchPage || window.switchPage._clivePatched) return;
-
-    const orig = window.switchPage;
-    window.switchPage = function (pageId) {
-      if (pageId !== "couple-live") {
-        const page = document.getElementById("page-couple-live");
-        if (page) page.classList.remove("active");
-        const cp = document.getElementById("page-couple-space");
-        if (cp) cp.removeAttribute("data-live-theme");
-      }
-      if (pageId === "couple-live") {
-        activatePage();
-        return;
-      }
-      return orig.apply(this, arguments);
-    };
-
-    window.switchPage._clivePatched = true;
-  }
-
+  /* ------------ Hooking into System Events ------------ */
   function bootstrap() {
-    ensurePage();
+    patchSwitchPage();
 
-    let tries = 0;
-    const timer = setInterval(() => {
-      if (window.DB) patchDBPut();
-      if (window.switchPage) patchSwitchPage();
+    // Patch Couple Space Open
+    if (window.coupleSpaceModule && window.coupleSpaceModule.openCoupleSpace) {
+      const origOpen = window.coupleSpaceModule.openCoupleSpace;
+      window.coupleSpaceModule.openCoupleSpace = async function (convId) {
+        await origOpen(convId);
+        injectLiveSection(convId);
+      };
+    }
 
-      tries++;
-      if ((window.DB && window.DB._clivePutPatched && window.switchPage && window.switchPage._clivePatched) || tries > 80) {
-        clearInterval(timer);
-      }
-    }, 100);
+    // Intercept database transactions to trigger broadcast barrages when message added
+    if (window.DB && window.DB.put) {
+      const origPut = window.DB.put;
+      window.DB.put = async function (store, obj) {
+        const res = await origPut.apply(this, arguments);
+        if (store === "chats" && obj.conversationId) {
+          triggerLiveBarrageFlow(obj.conversationId, obj);
+        }
+        return res;
+      };
+    }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootstrap);
-  } else {
-    bootstrap();
-  }
+  // Setup loop
+  let checkAttempts = 0;
+  const initInterval = setInterval(() => {
+    if (window.coupleSpaceModule && window.DB) {
+      bootstrap();
+      clearInterval(initInterval);
+    } else if (++checkAttempts > 60) {
+      clearInterval(initInterval);
+    }
+  }, 100);
 
   window.coupleLiveModule = {
-    open,
-    getState,
-    saveState,
-    generateLiveEvents,
-    showDanmaku
+    open: openLiveDashboard,
+    isLiveActive: async (convId) => {
+      const config = await getLiveConfig(convId);
+      return config && config.enabled;
+    }
   };
-
-  console.log("LIVE SYSTEM module ready");
 })();

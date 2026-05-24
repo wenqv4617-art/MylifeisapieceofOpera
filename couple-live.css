@@ -1,471 +1,574 @@
 /* ============================================================
- * couple-live.css - 情侣空间 · 直播系统
- * 科技黑白风，禁止 emoji
+ * couple-live.css - Couple Space Cyber B&W Live Styling
+ * Colors: Minimalist Cyber Black, White, Tech Grays
  * ============================================================ */
 
-#page-couple-space[data-live-theme="tech"] {
-  background: #050505 !important;
-  color: #f5f5f5;
+#page-couple-live,
+#page-couple-live-fangroup,
+#page-couple-live-pmdetail {
+  background: #000000;
+  color: #ffffff;
+  font-family: 'SF Mono', Monaco, 'Inconsolata', monospace;
 }
 
-#page-couple-space[data-live-theme="tech"] .cs-header {
-  background: rgba(5, 5, 5, 0.92) !important;
-  border-bottom: 1px solid #2a2a2a !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+.live-header {
+  background: #0d0d0d !important;
+  border-bottom: 1.5px solid #ffffff !important;
 }
 
-#page-couple-space[data-live-theme="tech"] .cs-title,
-#page-couple-space[data-live-theme="tech"] .back-btn {
-  color: #f5f5f5 !important;
-}
-
-.clive-page {
-  padding: 14px;
-  background: #050505;
-  min-height: 100%;
-  color: #f5f5f5;
-}
-
-.clive-panel {
-  background: #0c0c0c;
-  border: 1px solid #2d2d2d;
-  border-radius: 0;
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
-}
-
-.clive-panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
+.live-title {
+  font-size: 19px !important;
+  color: #ffffff !important;
+  letter-spacing: 2px !important;
   text-transform: uppercase;
+}
+
+#page-couple-live .back-btn,
+#page-couple-live-fangroup .back-btn,
+#page-couple-live-pmdetail .back-btn {
+  color: #ffffff !important;
+}
+
+.live-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 12px 28px;
+}
+
+/* Common Box Grid System */
+.live-panel-box {
+  background: #0d0d0d;
+  border: 1.5px solid #ffffff;
+  border-radius: 0px; /* Tech Sharp borders */
+  padding: 16px;
   margin-bottom: 14px;
-  border-bottom: 1px solid #252525;
-  padding-bottom: 10px;
 }
 
-.clive-panel-title svg {
-  width: 16px;
-  height: 16px;
+.live-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
+  padding: 4px 8px;
+  display: inline-block;
+  margin-bottom: 16px;
+  letter-spacing: 1.5px;
 }
 
-.clive-row {
+.live-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  border-bottom: 1px solid #222222;
+  padding: 12px 0;
 }
 
-.clive-row:last-child {
-  margin-bottom: 0;
-}
-
-.clive-label {
+.live-label {
   font-size: 12px;
-  color: #b8b8b8;
-  letter-spacing: 0.5px;
-}
-
-.clive-sub {
-  font-size: 11px;
-  color: #777;
-  line-height: 1.5;
-  margin-top: 3px;
-}
-
-.clive-switch {
-  width: 48px;
-  height: 24px;
-  border: 1px solid #444;
-  background: #111;
-  position: relative;
-  cursor: pointer;
-  transition: all .18s;
-}
-
-.clive-switch::after {
-  content: "";
-  width: 18px;
-  height: 18px;
-  background: #777;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: all .18s;
-}
-
-.clive-switch.on {
-  border-color: #fff;
-  background: #f5f5f5;
-}
-
-.clive-switch.on::after {
-  left: 26px;
-  background: #050505;
-}
-
-.clive-input {
-  width: 78px;
-  background: #050505;
-  border: 1px solid #444;
-  color: #fff;
-  padding: 7px 8px;
-  font-size: 12px;
-  outline: none;
-  border-radius: 0;
-  font-family: 'SF Mono', Monaco, monospace;
-}
-
-.clive-input:focus {
-  border-color: #fff;
-}
-
-.clive-input-wide {
-  width: 100%;
-  background: #050505;
-  border: 1px solid #444;
-  color: #fff;
-  padding: 9px 10px;
-  font-size: 13px;
-  outline: none;
-  border-radius: 0;
-  font-family: inherit;
-}
-
-.clive-input-wide:focus {
-  border-color: #fff;
-}
-
-.clive-two-inputs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.clive-num-card {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.clive-stat {
-  border: 1px solid #2d2d2d;
-  padding: 12px;
-  background: #070707;
-}
-
-.clive-stat-num {
-  font-family: 'SF Mono', Monaco, monospace;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.clive-stat-label {
-  font-size: 11px;
-  color: #777;
+  color: #aaaaaa;
   letter-spacing: 1px;
 }
 
-.clive-rank-list {
+/* Minimal Switches */
+.live-switch-btn {
+  background: #000000;
+  color: #ffffff;
+  border: 1.5px solid #ffffff;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.live-switch-btn.on {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Number inputs */
+.live-range-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-input-num {
+  width: 46px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  text-align: center;
+  padding: 4px;
+  font-size: 13px;
+}
+
+.live-separator {
+  color: #666666;
+}
+
+/* Live Stats */
+.live-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.live-stat-card {
+  border: 1px solid #333333;
+  padding: 12px;
+  text-align: center;
+  background: #050505;
+}
+
+.live-stat-num {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.live-stat-label {
+  font-size: 9px;
+  color: #666666;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+.live-sub-title {
+  font-size: 11px;
+  font-weight: bold;
+  color: #888888;
+  margin: 18px 0 10px;
+  letter-spacing: 1px;
+}
+
+/* Donation Leaderboard */
+.live-rank-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 160px;
-  overflow-y: auto;
-}
-
-.clive-rank-row {
-  display: grid;
-  grid-template-columns: 28px 1fr auto;
   gap: 8px;
+}
+
+.live-rank-item {
+  display: flex;
   align-items: center;
-  border: 1px solid #252525;
-  background: #070707;
-  padding: 8px 10px;
-  font-size: 12px;
+  font-size: 11px;
+  border-bottom: 1px dashed #222222;
+  padding-bottom: 6px;
 }
 
-.clive-rank-no {
-  color: #999;
-  font-family: 'SF Mono', Monaco, monospace;
+.live-rank-index {
+  color: #000000;
+  background: #ffffff;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
 }
 
-.clive-rank-name {
-  color: #e8e8e8;
+.live-rank-name {
+  font-weight: bold;
+  color: #ffffff;
+  margin-right: 12px;
+  min-width: 90px;
+}
+
+.live-rank-msg {
+  color: #666666;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.clive-rank-amt {
-  color: #fff;
-  font-family: 'SF Mono', Monaco, monospace;
+.live-rank-amount {
+  font-weight: bold;
+  color: #ffffff;
+  margin-left: 8px;
 }
 
-.clive-wb-group {
-  border: 1px solid #252525;
-  margin-bottom: 8px;
-}
-
-.clive-wb-group-head {
-  padding: 9px 10px;
-  background: #080808;
-  color: #ddd;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  cursor: pointer;
-  border-bottom: 1px solid #252525;
-}
-
-.clive-wb-group-body {
-  padding: 8px 10px;
+/* Worldbooks List Box */
+.live-wb-container {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
 }
 
-.clive-wb-group.collapsed .clive-wb-group-body {
-  display: none;
+.live-wb-group {
+  border: 1px solid #222222;
+  padding: 8px;
 }
 
-.clive-wb-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  color: #ccc;
-}
-
-.clive-wb-check input {
-  accent-color: #fff;
-  margin-top: 2px;
-}
-
-.clive-wb-title {
-  color: #f5f5f5;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.clive-wb-preview {
-  color: #777;
+.live-wb-group-title {
   font-size: 11px;
-  line-height: 1.45;
+  font-weight: bold;
+  color: #ffffff;
+  border-bottom: 1px solid #222222;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.clive-save-btn,
-.clive-primary-btn,
-.clive-secondary-btn,
-.clive-danger-btn {
-  width: 100%;
-  border-radius: 0;
-  padding: 10px 12px;
+.live-wb-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #888888;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+.live-wb-checkbox-label input[type="checkbox"] {
+  accent-color: #ffffff;
+}
+
+.live-wb-title-span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* sticky fan card */
+.live-fan-group-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1.5px solid #ffffff;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.live-fan-icon {
+  background: #ffffff;
+  color: #000000;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.live-fan-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.live-fan-name {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.live-fan-desc {
+  font-size: 10px;
+  color: #666666;
+  margin-top: 4px;
+}
+
+.live-fan-go {
+  color: #666666;
+}
+
+/* Live PM Tabs */
+.live-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  border-bottom: 1px solid #333333;
+}
+
+.live-tab {
+  flex: 1;
+  text-align: center;
+  background: none;
+  border: none;
+  color: #666666;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 10px 0;
   cursor: pointer;
   letter-spacing: 1px;
-  font-family: inherit;
 }
 
-.clive-save-btn,
-.clive-primary-btn {
-  background: #f5f5f5;
-  color: #050505;
-  border: 1px solid #f5f5f5;
+.live-tab.active {
+  color: #ffffff;
+  border-bottom: 2px solid #ffffff;
 }
 
-.clive-secondary-btn {
-  background: #080808;
-  color: #f5f5f5;
-  border: 1px solid #444;
-}
-
-.clive-danger-btn {
-  background: #120606;
-  color: #ffb8b8;
-  border: 1px solid #5a2525;
-}
-
-.clive-save-btn:active,
-.clive-primary-btn:active,
-.clive-secondary-btn:active,
-.clive-danger-btn:active {
-  transform: scale(0.985);
-}
-
-.clive-channel-tabs {
+/* Inbox Messages List */
+.live-inbox-list {
   display: flex;
-  border: 1px solid #2d2d2d;
-  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.clive-channel-tab {
+.live-pm-item {
+  border: 1px solid #222222;
+  padding: 10px;
+}
+
+.live-pm-item:active {
+  border-color: #ffffff;
+}
+
+.live-pm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.live-pm-sender {
+  font-size: 11px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.live-pm-status {
+  font-size: 9px;
+  padding: 2px 6px;
+  border: 1px solid;
+}
+
+.live-pm-status.pending {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.live-pm-status.replied {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.live-pm-preview {
+  font-size: 11px;
+  color: #888888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fan group chat screen */
+.live-fg-messages {
   flex: 1;
-  padding: 9px 4px;
-  text-align: center;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.live-fg-msg-row {
   font-size: 12px;
-  color: #888;
-  background: #070707;
+  line-height: 1.6;
+}
+
+.live-fg-msg-sender {
+  font-weight: bold;
+  color: #ffffff;
+  margin-right: 6px;
+}
+
+.live-fg-msg-text {
+  color: #cccccc;
+}
+
+.live-fg-input-row {
+  border-top: 1.5px solid #ffffff;
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  background: #000;
+}
+
+.live-fg-input-row input {
+  flex: 1;
+  background: #0d0d0d;
+  border: 1px solid #333333;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.live-fg-input-row input:focus {
+  border-color: #ffffff;
+}
+
+.live-fg-icon-btn {
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  border-right: 1px solid #2d2d2d;
 }
 
-.clive-channel-tab:last-child {
-  border-right: none;
+/* PM Detail screen */
+.live-pm-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
 }
 
-.clive-channel-tab.active {
-  color: #050505;
-  background: #f5f5f5;
-  font-weight: 700;
+.live-pm-orig-card {
+  border: 1.5px solid #ffffff;
+  padding: 14px;
+  background: #0d0d0d;
+  margin-bottom: 16px;
 }
 
-.clive-fan-group-card,
-.clive-dm-card {
-  border: 1px solid #2d2d2d;
-  background: #080808;
-  padding: 12px;
-  cursor: pointer;
-  margin-bottom: 8px;
+.live-pm-orig-sender {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 6px;
 }
 
-.clive-fan-group-title,
-.clive-dm-name {
-  color: #fff;
-  font-weight: 700;
+.live-pm-orig-text {
   font-size: 13px;
+  line-height: 1.5;
+  color: #cccccc;
+}
+
+.live-pm-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.live-pm-bubble-row {
+  display: flex;
+}
+
+.live-pm-bubble-row.self {
+  justify-content: flex-end;
+}
+
+.live-pm-bubble-row.other {
+  justify-content: flex-start;
+}
+
+.live-pm-bubble {
+  max-width: 80%;
+  border: 1px solid #333333;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.live-pm-bubble-row.self .live-pm-bubble {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.live-pm-bubble-sender {
+  font-weight: bold;
+  display: block;
+  font-size: 10px;
   margin-bottom: 4px;
 }
 
-.clive-fan-group-desc,
-.clive-dm-preview {
-  color: #777;
-  font-size: 12px;
-  line-height: 1.45;
+.live-pm-action-row {
+  border-top: 1.5px solid #ffffff;
+  padding: 14px;
+  background: #000000;
 }
 
-.clive-empty {
-  border: 1px dashed #333;
-  padding: 24px 12px;
-  text-align: center;
-  color: #666;
-  font-size: 12px;
+.live-pm-btn-block {
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  font-weight: bold;
+  padding: 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
 }
 
-.clive-chat-log {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 56vh;
-  overflow-y: auto;
-  border: 1px solid #252525;
-  background: #050505;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-.clive-chat-msg {
-  max-width: 86%;
-  border: 1px solid #2d2d2d;
-  padding: 8px 10px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #ddd;
-  background: #0c0c0c;
-  word-break: break-word;
-}
-
-.clive-chat-msg.self {
-  align-self: flex-end;
-  background: #f5f5f5;
-  color: #050505;
-  border-color: #f5f5f5;
-}
-
-.clive-chat-msg.system {
-  align-self: center;
-  background: transparent;
-  color: #777;
-  border-color: #333;
-  font-size: 11px;
-}
-
-.clive-chat-sender {
-  font-size: 10px;
-  color: #777;
-  margin-bottom: 3px;
-  letter-spacing: .8px;
-}
-
-.clive-chat-msg.self .clive-chat-sender {
-  color: #333;
-}
-
-.clive-chat-row {
+.live-pm-reply-input-wrap {
   display: flex;
   gap: 8px;
 }
 
-.clive-chat-row input {
+.live-pm-reply-input-wrap input {
   flex: 1;
+  background: #0d0d0d;
+  border: 1px solid #333333;
+  color: #ffffff;
+  padding: 10px;
+  font-family: inherit;
+  outline: none;
 }
 
-.clive-chat-row button {
-  width: 64px;
+.live-pm-reply-input-wrap input:focus {
+  border-color: #ffffff;
 }
 
-/* 弹幕层 */
-.clive-danmaku-layer {
+.live-empty-text {
+  text-align: center;
+  padding: 24px;
+  font-size: 11px;
+  color: #555555;
+  border: 1px dashed #222222;
+}
+
+/* ============================================================
+ * Live Barrage (Danmaku) Rendering over Chat Room Screen
+ * ============================================================ */
+
+.cs-barrage-overlay {
   position: absolute;
+  top: 0;
   left: 0;
-  right: 0;
-  top: 58px;
-  height: 180px;
+  width: 100%;
+  height: 60%; /* Float barrages across upper part of chat room screen */
   pointer-events: none;
-  z-index: 999;
+  z-index: 1000;
   overflow: hidden;
 }
 
-.clive-danmaku-item {
+/* Danmaku Item Styling */
+.cs-barrage-item {
   position: absolute;
-  right: -120%;
+  right: 0;
   white-space: nowrap;
-  color: #fff;
-  font-size: 13px;
-  line-height: 1;
-  padding: 4px 9px;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid rgba(255,255,255,0.35);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-  animation-name: cliveDanmakuMove;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #ffffff;
+  padding: 4px 10px;
+  transform: translateX(100%);
+  animation: cs-danmaku-fly-animation 8s linear forwards;
+  font-family: 'SF Mono', Monaco, monospace;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-.clive-danmaku-item.tip {
-  color: #fff;
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.75);
+/* System notifications style */
+.cs-barrage-item.system {
+  background: #ffffff;
+  color: #000000;
+  border: 1.5px solid #000000;
+  font-weight: bold;
 }
 
-.clive-danmaku-item.follow {
-  color: #d8f1ff;
-  border-color: rgba(216,241,255,0.75);
-}
-
-@keyframes cliveDanmakuMove {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-180vw); }
+@keyframes cs-danmaku-fly-animation {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-150%);
+  }
 }
