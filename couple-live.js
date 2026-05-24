@@ -1,9 +1,16 @@
 /* ================================================================
  * couple-live.js - 情侣空间 · 直播系统
+ * 
+ * 功能：
+ * 1. 情侣空间新增「直播系统」入口
+ * 2. 控制面板：直播开关 / 弹幕数量 / 粉丝量 / 打赏榜 / 独立世界书挂载
+ * 3. 粉丝通道：粉丝群 / char 私信箱 / user 私信箱
+ * 4. 开启直播后，监听 chats 入库，每轮 char / assistant / offline_card 回复后自动生成弹幕
+ * 5. 弹幕从右往左飘，支持评论 / 打赏 / 关注
+ * 
  * 依赖：
  * window.DB, window.callLLM, window.showStatus, window.escapeHtml,
- * window.switchPage, window.currentConversationId,
- * window.loadConversationMessages
+ * window.switchPage, window.currentConversationId
  * ================================================================ */
 
 (function () {
@@ -36,9 +43,16 @@
     userInbox: []
   };
 
+  const clDebounceTimers = {};
+
   function esc(s) {
     if (window.escapeHtml) return window.escapeHtml(s);
-    return String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+    return String(s == null ? "" : s).replace(/[&<>"]/g, m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;"
+    }[m]));
   }
 
   function nowTime(ts) {
@@ -60,11 +74,32 @@
     return "couple_live_cfg_" + convId;
   }
 
+  function safeClone(obj) {
+    try {
+      return structuredClone(obj);
+    } catch (e) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+  }
+
   async function getCfg(convId) {
     const DB = window.DB;
-    if (!DB) return structuredClone(DEFAULT_CFG);
+    if (!DB) return safeClone(DEFAULT_CFG);
+
     const v = await DB.getSetting(cfgKey(convId), null);
-    return Object.assign({}, structuredClone(DEFAULT_CFG), v || {});
+    const cfg = Object.assign({}, safeClone(DEFAULT_CFG), v || {});
+
+    if (!Array.isArray(cfg.rank)) cfg.rank = [];
+    if (!Array.isArray(cfg.fanGroup)) cfg.fanGroup = [];
+    if (!Array.isArray(cfg.charInbox)) cfg.charInbox = [];
+    if (!Array.isArray(cfg.userInbox)) cfg.userInbox = [];
+    if (!Array.isArray(cfg.mountedWorldbookIds)) cfg.mountedWorldbookIds = [];
+
+    cfg.minBullets = clamp(cfg.minBullets, 1, 50);
+    cfg.maxBullets = clamp(cfg.maxBullets, cfg.minBullets, 80);
+    cfg.fans = Number(cfg.fans || 0);
+
+    return cfg;
   }
 
   async function saveCfg(convId, cfg) {
@@ -75,6 +110,8 @@
 
   async function getConvInfo(convId) {
     const DB = window.DB;
+    if (!DB) return null;
+
     const conv = await DB.get("conversations", convId);
     if (!conv) return null;
 
@@ -96,12 +133,94 @@
       if (detail.relationship) relation = detail.relationship;
     }
 
-    return { conv, char, mask, detail, charName, userName, charDetail, userDetail, relation };
+    return {
+      conv,
+      char,
+      mask,
+      detail,
+      charName,
+      userName,
+      charDetail,
+      userDetail,
+      relation
+    };
+  }
+
+  /* ------------------------------------------------------------
+   * 直播触发器：监听 chats 入库
+   * ------------------------------------------------------------ */
+
+  function scheduleLiveCheck(convId) {
+    if (!convId) return;
+
+    clearTimeout(clDebounceTimers[convId]);
+
+    // 延迟一点，避免 assistant 一次回复多条消息时触发多次
+    clDebounceTimers[convId] = setTimeout(() => {
+      maybeGenerateLiveBullets(convId);
+    }, 900);
+  }
+
+  function patchDBPutForLive() {
+    if (!window.DB || !window.DB.put || window.DB.put._clLivePatched) return;
+
+    const originalPut = window.DB.put.bind(window.DB);
+
+    window.DB.put = async function (store, obj) {
+      const result = await originalPut(store, obj);
+
+      try {
+        if (store === "chats" && obj && obj.conversationId) {
+          const isCharReply =
+            obj.role === "assistant" ||
+            obj.role === "char" ||
+            obj.messageType === "offline_card";
+
+          const ignoredTypes = new Set([
+            "innerVoice",
+            "phone_intrusion",
+            "mode_switch",
+            "voice_call_msg"
+          ]);
+
+          if (isCharReply && !ignoredTypes.has(obj.messageType)) {
+            console.log("[LIVE] chat put detected", obj.conversationId, obj.role, obj.messageType);
+            scheduleLiveCheck(obj.conversationId);
+          }
+        }
+      } catch (e) {
+        console.warn("[LIVE] DB.put hook error:", e);
+      }
+
+      return result;
+    };
+
+    window.DB.put._clLivePatched = true;
+    console.log("[LIVE] DB.put hook patched");
+  }
+
+  function setupPatchPolling() {
+    let attempts = 0;
+
+    const id = setInterval(() => {
+      if (window.DB && window.DB.put && !window.DB.put._clLivePatched) {
+        patchDBPutForLive();
+        clearInterval(id);
+        return;
+      }
+
+      attempts++;
+      if (attempts > 100) {
+        clearInterval(id);
+        console.warn("[LIVE] DB.put hook patch timeout");
+      }
+    }, 100);
   }
 
   /* ------------------------------------------------------------
    * 在情侣空间注入“直播系统”入口
    * ------------------------------------------------------------ */
+
   function injectEntry() {
     const scroll = document.getElementById("csScroll");
     if (!scroll) return;
@@ -121,6 +240,7 @@
       </div>
       <div class="cl-entry-go">${SVG.arrow}</div>
     `;
+
     card.addEventListener("click", () => {
       const convId = window._currentCoupleSpaceConvId || window.currentConversationId;
       if (!convId) {
@@ -136,13 +256,16 @@
   function observeCoupleSpace() {
     const mo = new MutationObserver(() => injectEntry());
     mo.observe(document.body, { childList: true, subtree: true });
+
     setTimeout(injectEntry, 300);
     setTimeout(injectEntry, 1000);
+    setTimeout(injectEntry, 2000);
   }
 
   /* ------------------------------------------------------------
    * 页面骨架
    * ------------------------------------------------------------ */
+
   function ensureLivePage() {
     let page = document.getElementById("page-couple-live");
     if (page) return page;
@@ -166,8 +289,9 @@
     else document.body.appendChild(page);
 
     page.querySelector("#clBackBtn").addEventListener("click", () => {
+      const convId = window._currentCoupleLiveConvId || window.currentConversationId;
       if (window.coupleSpaceModule && window.coupleSpaceModule.openCoupleSpace) {
-        window.coupleSpaceModule.openCoupleSpace(window._currentCoupleLiveConvId || window.currentConversationId);
+        window.coupleSpaceModule.openCoupleSpace(convId);
       } else if (window.switchPage) {
         window.switchPage("conversation");
       }
@@ -207,8 +331,10 @@
   /* ------------------------------------------------------------
    * 首页：控制面板 + 粉丝通道
    * ------------------------------------------------------------ */
+
   async function openLiveHome(convId) {
     window._currentCoupleLiveConvId = convId;
+
     const page = ensureLivePage();
     activateLivePage();
 
@@ -231,6 +357,7 @@
 
   function renderControlPanel(cfg) {
     const rank = cfg.rank || [];
+
     return `
       <div class="cl-panel">
         <div class="cl-panel-head">
@@ -330,9 +457,11 @@
           <div class="cl-sub" style="margin-bottom:10px;">
             直播系统世界书与线上、线下聊天完全隔离，只影响弹幕、粉丝群和私信。
           </div>
+
           ${groups.map(g => {
             const list = groupMap[g];
             const checkedCount = list.filter(w => selected.includes(w.id)).length;
+
             return `
               <div class="cl-wb-group ${checkedCount ? "" : "collapsed"}">
                 <div class="cl-wb-group-head">
@@ -394,11 +523,17 @@
     const bindSwitch = id => {
       const el = document.getElementById(id);
       if (!el) return;
+
       el.addEventListener("click", async () => {
         const cfg = await getCfg(convId);
         cfg.enabled = !cfg.enabled;
         await saveCfg(convId, cfg);
-        window.showStatus && window.showStatus(cfg.enabled ? "直播系统已开启" : "直播系统已关闭", "success");
+
+        window.showStatus && window.showStatus(
+          cfg.enabled ? "直播系统已开启" : "直播系统已关闭",
+          "success"
+        );
+
         await openLiveHome(convId);
       });
     };
@@ -411,14 +546,21 @@
 
     async function saveNums() {
       const cfg = await getCfg(convId);
+
       let min = clamp(minEl.value, 1, 50);
       let max = clamp(maxEl.value, 1, 80);
+
       if (max < min) max = min;
+
       cfg.minBullets = min;
       cfg.maxBullets = max;
+
       await saveCfg(convId, cfg);
+
       minEl.value = min;
       maxEl.value = max;
+
+      window.showStatus && window.showStatus("弹幕数量设置已保存", "success");
     }
 
     minEl?.addEventListener("change", saveNums);
@@ -437,6 +579,7 @@
         const cfg = await getCfg(convId);
         cfg.mountedWorldbookIds = [...document.querySelectorAll(".clWbCheck:checked")].map(x => x.value);
         await saveCfg(convId, cfg);
+        window.showStatus && window.showStatus("直播世界书挂载已更新", "success");
       });
     });
   }
@@ -449,6 +592,7 @@
   /* ------------------------------------------------------------
    * 粉丝群
    * ------------------------------------------------------------ */
+
   async function openFanGroup(convId) {
     window._currentCoupleLiveConvId = convId;
     activateLivePage();
@@ -458,8 +602,18 @@
 
     if (!cfg.fanGroup || cfg.fanGroup.length === 0) {
       cfg.fanGroup = [
-        { role: "fan", name: "NullPointer", content: "开播第一天就这么有戏，谁还睡得着。", ts: Date.now() - 60000 },
-        { role: "fan", name: "白噪声", content: "我先占座，后面肯定会变成名场面。", ts: Date.now() - 30000 }
+        {
+          role: "fan",
+          name: "NullPointer",
+          content: "开播第一天就这么有戏，谁还睡得着。",
+          ts: Date.now() - 60000
+        },
+        {
+          role: "fan",
+          name: "白噪声",
+          content: "我先占座，后面肯定会变成名场面。",
+          ts: Date.now() - 30000
+        }
       ];
       await saveCfg(convId, cfg);
     }
@@ -511,7 +665,13 @@
 
     const cfg = await getCfg(convId);
     cfg.fanGroup = cfg.fanGroup || [];
-    cfg.fanGroup.push({ role: "self", name: "主播", content: text, ts: Date.now() });
+    cfg.fanGroup.push({
+      role: "self",
+      name: "主播",
+      content: text,
+      ts: Date.now()
+    });
+
     input.value = "";
     await saveCfg(convId, cfg);
     await openFanGroup(convId);
@@ -520,6 +680,11 @@
   }
 
   async function generateFanGroupReplies(convId, text) {
+    if (!window.callLLM) {
+      window.showStatus && window.showStatus("API模块未就绪", "error");
+      return;
+    }
+
     const cfg = await getCfg(convId);
     const info = await getConvInfo(convId);
     const worldbook = await buildLiveWorldbook(convId);
@@ -552,14 +717,23 @@ ${worldbook || "无"}
 
     try {
       window.recordApiPending && window.recordApiPending();
-      const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 800, temperature: 0.9 });
+
+      const raw = await window.callLLM(
+        [{ role: "user", content: prompt }],
+        { maxTokens: 800, temperature: 0.9 }
+      );
+
       const arr = parseJsonArray(raw).slice(0, 5);
-      arr.forEach(x => cfg.fanGroup.push({
-        role: "fan",
-        name: x.name || randomFanName(),
-        content: x.content || "",
-        ts: Date.now()
-      }));
+
+      arr.forEach(x => {
+        cfg.fanGroup.push({
+          role: "fan",
+          name: x.name || randomFanName(),
+          content: x.content || "",
+          ts: Date.now()
+        });
+      });
+
       await saveCfg(convId, cfg);
       await openFanGroup(convId);
     } catch (e) {
@@ -570,11 +744,13 @@ ${worldbook || "无"}
   /* ------------------------------------------------------------
    * 私信箱
    * ------------------------------------------------------------ */
+
   async function openInbox(convId, box = "char") {
     activateLivePage();
 
     const cfg = await getCfg(convId);
     const info = await getConvInfo(convId);
+
     await ensureInboxSeed(convId, cfg, info);
 
     const threads = box === "char" ? cfg.charInbox : cfg.userInbox;
@@ -612,12 +788,15 @@ ${worldbook || "无"}
     `;
 
     document.getElementById("clBackHomeBtn").addEventListener("click", () => openLiveHome(convId));
+
     document.querySelectorAll(".cl-tab").forEach(tab => {
       tab.addEventListener("click", () => openInbox(convId, tab.dataset.clBox));
     });
 
     document.querySelectorAll("[data-cl-thread]").forEach(card => {
-      card.addEventListener("click", () => openThread(convId, card.dataset.clBox, card.dataset.clThread));
+      card.addEventListener("click", () => {
+        openThread(convId, card.dataset.clBox, card.dataset.clThread);
+      });
     });
   }
 
@@ -637,7 +816,11 @@ ${worldbook || "无"}
           target: "char",
           updatedAt: Date.now(),
           messages: [
-            { role: "fan", content: `你和${info.userName}到底是什么关系，能不能正面说一次。`, ts: Date.now() }
+            {
+              role: "fan",
+              content: `你和${info.userName}到底是什么关系，能不能正面说一次。`,
+              ts: Date.now()
+            }
           ]
         }
       ];
@@ -652,7 +835,11 @@ ${worldbook || "无"}
           target: "user",
           updatedAt: Date.now(),
           messages: [
-            { role: "fan", content: `我说真的，你们这直播比电视剧上头多了。`, ts: Date.now() }
+            {
+              role: "fan",
+              content: "我说真的，你们这直播比电视剧上头多了。",
+              ts: Date.now()
+            }
           ]
         }
       ];
@@ -668,9 +855,11 @@ ${worldbook || "无"}
     const cfg = await getCfg(convId);
     const list = box === "char" ? cfg.charInbox : cfg.userInbox;
     const thread = list.find(t => t.id === threadId);
+
     if (!thread) return;
 
     const scroll = document.getElementById("clScroll");
+
     scroll.innerHTML = `
       <div class="cl-panel">
         <div class="cl-panel-head">
@@ -712,28 +901,43 @@ ${worldbook || "无"}
   async function sendThreadMsg(convId, box, threadId) {
     const input = document.getElementById("clThreadInput");
     const text = input.value.trim();
+
     if (!text) return;
 
     const cfg = await getCfg(convId);
     const list = box === "char" ? cfg.charInbox : cfg.userInbox;
     const thread = list.find(t => t.id === threadId);
+
     if (!thread) return;
 
-    thread.messages.push({ role: "self", content: text, ts: Date.now() });
+    thread.messages.push({
+      role: "self",
+      content: text,
+      ts: Date.now()
+    });
     thread.updatedAt = Date.now();
+
     await saveCfg(convId, cfg);
     await openThread(convId, box, threadId);
   }
 
   async function generateThreadReply(convId, box, threadId) {
+    if (!window.callLLM) {
+      window.showStatus && window.showStatus("API模块未就绪", "error");
+      return;
+    }
+
     const cfg = await getCfg(convId);
     const info = await getConvInfo(convId);
     const list = box === "char" ? cfg.charInbox : cfg.userInbox;
     const thread = list.find(t => t.id === threadId);
+
     if (!thread) return;
 
     const worldbook = await buildLiveWorldbook(convId);
-    const history = thread.messages.map(m => `${m.role === "self" ? "主播侧" : thread.name}: ${m.content}`).join("\n");
+    const history = thread.messages
+      .map(m => `${m.role === "self" ? "主播侧" : thread.name}: ${m.content}`)
+      .join("\n");
 
     const speaker = box === "char" ? info.charName : info.userName;
 
@@ -741,7 +945,14 @@ ${worldbook || "无"}
 你正在模拟直播系统私信。
 目标回复者：${speaker}
 私信对象：${thread.name}
-核心风格：网感强、像真实私信、可以多条短回复、可以有犀利吐槽或暧昧拉扯。
+
+核心风格：
+- 网感强
+- 像真实私信
+- 可以多条短回复
+- 可以犀利、暧昧、吐槽、拉扯
+- 不要像客服，不要像作文
+
 禁止使用emoji。
 禁止动作描写。
 禁止长篇说教。
@@ -770,13 +981,22 @@ ${history}
 
     try {
       window.recordApiPending && window.recordApiPending();
-      const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 900, temperature: 0.85 });
+
+      const raw = await window.callLLM(
+        [{ role: "user", content: prompt }],
+        { maxTokens: 900, temperature: 0.85 }
+      );
+
       const arr = parseJsonArray(raw).slice(0, 6);
-      arr.forEach(x => thread.messages.push({
-        role: "self",
-        content: x.content || "",
-        ts: Date.now()
-      }));
+
+      arr.forEach(x => {
+        thread.messages.push({
+          role: "self",
+          content: x.content || "",
+          ts: Date.now()
+        });
+      });
+
       thread.updatedAt = Date.now();
       await saveCfg(convId, cfg);
       await openThread(convId, box, threadId);
@@ -788,46 +1008,41 @@ ${history}
   /* ------------------------------------------------------------
    * 弹幕生成与播放
    * ------------------------------------------------------------ */
-  function patchLoadConversationMessages() {
-    if (!window.loadConversationMessages || window.loadConversationMessages._clPatched) return;
-
-    const orig = window.loadConversationMessages;
-    window.loadConversationMessages = async function (convId) {
-      const ret = await orig.apply(this, arguments);
-      setTimeout(() => maybeGenerateLiveBullets(convId), 250);
-      return ret;
-    };
-
-    window.loadConversationMessages._clPatched = true;
-  }
-
-  function setupPatchPolling() {
-    let attempts = 0;
-    const id = setInterval(() => {
-      if (window.loadConversationMessages && !window.loadConversationMessages._clPatched) {
-        patchLoadConversationMessages();
-        clearInterval(id);
-      }
-      if (++attempts > 80) clearInterval(id);
-    }, 100);
-  }
 
   async function maybeGenerateLiveBullets(convId) {
-    if (!convId || window.__clGenerating) return;
+    console.log("[LIVE] check live bullets", convId);
+
+    if (!convId) return;
+    if (window.__clGenerating) {
+      console.log("[LIVE] already generating, skip");
+      return;
+    }
 
     const cfg = await getCfg(convId);
-    if (!cfg.enabled) return;
+    console.log("[LIVE] cfg", cfg);
+
+    if (!cfg.enabled) {
+      console.log("[LIVE] live disabled");
+      return;
+    }
+
+    if (!window.callLLM) {
+      console.warn("[LIVE] callLLM not ready");
+      return;
+    }
 
     const DB = window.DB;
     const conv = await DB.get("conversations", convId);
     if (!conv) return;
 
     const chats = await DB.queryByIndex("chats", "conversationId", convId);
+
     const visible = chats
       .filter(c =>
         c.messageType !== "innerVoice" &&
         c.messageType !== "phone_intrusion" &&
-        c.messageType !== "mode_switch"
+        c.messageType !== "mode_switch" &&
+        c.messageType !== "voice_call_msg"
       )
       .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
@@ -837,19 +1052,42 @@ ${history}
       c.messageType === "offline_card"
     );
 
-    if (!last || !last.id) return;
-    if (String(cfg.lastProcessedChatId) === String(last.id)) return;
+    if (!last) {
+      console.log("[LIVE] no char reply found");
+      return;
+    }
 
-    cfg.lastProcessedChatId = last.id;
+    const lastKey = [
+      last.id || "noid",
+      last.timestamp || 0,
+      last.role || "",
+      last.messageType || "",
+      String(last.content || "").slice(0, 40)
+    ].join("|");
+
+    if (String(cfg.lastProcessedChatId) === String(lastKey)) {
+      console.log("[LIVE] already processed", lastKey);
+      return;
+    }
+
+    cfg.lastProcessedChatId = lastKey;
     await saveCfg(convId, cfg);
 
     window.__clGenerating = true;
+
     try {
+      console.log("[LIVE] generating bullets...");
       const bullets = await generateBullets(convId, cfg, visible.slice(-8));
+
+      console.log("[LIVE] bullets result", bullets);
+
       if (bullets.length) {
         await applyBulletEffects(convId, bullets);
         playDanmaku(bullets);
       }
+    } catch (e) {
+      console.error("[LIVE] generate bullets failed", e);
+      window.showStatus && window.showStatus("直播弹幕生成失败：" + e.message, "error");
     } finally {
       window.__clGenerating = false;
     }
@@ -863,12 +1101,15 @@ ${history}
     const max = clamp(cfg.maxBullets, min, 80);
 
     const context = recentChats.map(c => {
-      const who = c.role === "user" ? info.userName : info.charName;
+      let who;
+      if (c.role === "user") who = info.userName;
+      else who = info.charName;
       return `${who}: ${c.content}`;
     }).join("\n");
 
     const prompt = `
 你正在模拟一个高热度直播间的弹幕系统。
+
 核心玩点：网感。
 弹幕要像真实网友，不要像作文。
 可以有：
@@ -880,10 +1121,15 @@ ${history}
 6. 榜一发言
 7. 催互动、拱火、看热闹
 
-禁止使用emoji。
-禁止解释。
-昵称要有网感，但不要过长。
-系统通知也要像直播间通知。
+要求：
+- 禁止使用emoji。
+- 禁止解释。
+- 昵称要有网感，但不要过长。
+- 系统通知也要像直播间通知。
+- 弹幕可以短，可以尖锐，可以嗑疯，可以阴阳怪气。
+- 不要每条都很温柔。
+- 不要输出 Markdown。
+- 不要输出代码块。
 
 直播双方：
 CHAR=${info.charName}
@@ -910,41 +1156,68 @@ gift 必须带 amount 数字。
 
     try {
       window.recordApiPending && window.recordApiPending();
-      const raw = await window.callLLM([{ role: "user", content: prompt }], {
-        maxTokens: 1200,
-        temperature: 0.95
-      });
+
+      const raw = await window.callLLM(
+        [{ role: "user", content: prompt }],
+        {
+          maxTokens: 1200,
+          temperature: 0.95
+        }
+      );
 
       const arr = parseJsonArray(raw);
-      return arr.slice(0, max).map(x => normalizeBullet(x)).filter(Boolean);
+
+      const normalized = arr
+        .slice(0, max)
+        .map(x => normalizeBullet(x))
+        .filter(Boolean);
+
+      if (normalized.length < min) {
+        const fb = fallbackBullets(min - normalized.length, min - normalized.length);
+        normalized.push(...fb);
+      }
+
+      return normalized.slice(0, max);
     } catch (e) {
-      console.warn("live bullets failed", e);
+      console.warn("[LIVE] live bullets API failed, using fallback", e);
       return fallbackBullets(min, max);
     }
   }
 
   function normalizeBullet(x) {
     if (!x) return null;
+
     const type = ["comment", "gift", "follow"].includes(x.type) ? x.type : "comment";
     const name = String(x.name || randomFanName()).slice(0, 16);
     const content = String(x.content || "").slice(0, 80);
     const amount = Number(x.amount || 0);
-    return { type, name, content, amount };
+
+    return {
+      type,
+      name,
+      content,
+      amount
+    };
   }
 
   function fallbackBullets(min, max) {
     const n = Math.floor(Math.random() * (max - min + 1)) + min;
+
     const samples = [
       { type: "comment", name: "白噪声", content: "这个对视我真的会反复看。" },
       { type: "comment", name: "NullPointer", content: "别装了，你们两个都有问题。" },
       { type: "comment", name: "SignalLost", content: "这直播间怎么比剧本还像剧本。" },
+      { type: "comment", name: "404观众", content: "刚刚那句我暂停截图了。" },
+      { type: "comment", name: "只看名场面", content: "这段剪出来绝对爆。" },
       { type: "follow", name: "低电量用户", content: "关注了直播间" }
     ];
-    return Array.from({ length: n }, () => rand(samples));
+
+    return Array.from({ length: n }, () => Object.assign({}, rand(samples)));
   }
 
   async function applyBulletEffects(convId, bullets) {
     const cfg = await getCfg(convId);
+
     cfg.rank = cfg.rank || [];
     cfg.fans = Number(cfg.fans || 0);
 
@@ -952,14 +1225,23 @@ gift 必须带 amount 数字。
       if (b.type === "follow") {
         cfg.fans += 1 + Math.floor(Math.random() * 3);
       }
+
       if (b.type === "gift") {
+        const amount = Number(b.amount || 0);
+        if (amount <= 0) return;
+
         const old = cfg.rank.find(x => x.name === b.name);
-        if (old) old.amount = Number(old.amount || 0) + Number(b.amount || 0);
-        else cfg.rank.push({ name: b.name, amount: Number(b.amount || 0) });
+        if (old) {
+          old.amount = Number(old.amount || 0) + amount;
+        } else {
+          cfg.rank.push({
+            name: b.name,
+            amount
+          });
+        }
       }
     });
 
-    // 概率生成私信
     if (Math.random() < 0.35) {
       await generateAutoInbox(convId, cfg, bullets);
     }
@@ -980,12 +1262,14 @@ gift 必须带 amount 数字。
       ? [
           `${info.charName}，你刚才那个反应也太明显了吧。`,
           `你是不是已经有点离不开${info.userName}了。`,
-          `我不管，你们这条线我追定了。`
+          `我不管，你们这条线我追定了。`,
+          `你别嘴硬，直播间都看见了。`
         ]
       : [
-          `你刚刚那句话真的很会。`,
+          "你刚刚那句话真的很会。",
           `说实话，你和${info.charName}比我刷到的所有剧都上头。`,
-          `能不能多给点正面回应，直播间都急了。`
+          "能不能多给点正面回应，直播间都急了。",
+          "你别装淡定，你耳朵根都快红了。"
         ];
 
     cfg[box].unshift({
@@ -994,7 +1278,11 @@ gift 必须带 amount 数字。
       target,
       updatedAt: Date.now(),
       messages: [
-        { role: "fan", content: rand(contentPool), ts: Date.now() }
+        {
+          role: "fan",
+          content: rand(contentPool),
+          ts: Date.now()
+        }
       ]
     });
 
@@ -1006,12 +1294,14 @@ gift 必须带 amount 数字。
     if (!phone) return null;
 
     let layer = document.getElementById("clDanmakuLayer");
+
     if (!layer) {
       layer = document.createElement("div");
       layer.id = "clDanmakuLayer";
       layer.className = "cl-danmaku-layer";
       phone.appendChild(layer);
     }
+
     return layer;
   }
 
@@ -1035,6 +1325,7 @@ gift 必须带 amount 数字。
       }
 
       const lane = i % lanes;
+
       el.style.top = `${lane * 30 + 8}px`;
       el.style.animationDuration = `${8 + Math.random() * 4}s`;
       el.style.animationDelay = `${i * 0.35}s`;
@@ -1043,31 +1334,42 @@ gift 必须带 amount 数字。
 
       setTimeout(() => {
         if (el.parentNode) el.parentNode.removeChild(el);
-      }, 15000);
+      }, 16000);
     });
   }
 
   /* ------------------------------------------------------------
    * 直播专属世界书
    * ------------------------------------------------------------ */
+
   async function buildLiveWorldbook(convId) {
     const DB = window.DB;
     const cfg = await getCfg(convId);
     const ids = cfg.mountedWorldbookIds || [];
+
     if (!ids.length) return "";
 
     const all = await DB.getAll("worldbooks");
     const mounted = all.filter(w => ids.includes(w.id));
-    return mounted.map(w => `--- ${w.title || "未命名"} ---\n${w.content || ""}`).join("\n\n");
+
+    return mounted
+      .map(w => `--- ${w.title || "未命名"} ---\n${w.content || ""}`)
+      .join("\n\n");
   }
 
   /* ------------------------------------------------------------
    * JSON 容错
    * ------------------------------------------------------------ */
+
   function parseJsonArray(raw) {
     if (!raw) return [];
+
     let text = String(raw).trim();
-    text = text.replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+
+    text = text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
 
     try {
       const parsed = JSON.parse(text);
@@ -1081,6 +1383,7 @@ gift 必须带 amount 数字。
         return Array.isArray(parsed) ? parsed : [];
       } catch (e) {}
     }
+
     return [];
   }
 
@@ -1095,17 +1398,22 @@ gift 必须带 amount 数字。
       "频道巡视员",
       "404观众",
       "夜间模式",
-      "只看名场面"
+      "只看名场面",
+      "数据过载",
+      "匿名看客",
+      "弹幕鉴定师"
     ]);
   }
 
   /* ------------------------------------------------------------
    * 初始化
    * ------------------------------------------------------------ */
+
   function bootstrap() {
     ensureLivePage();
     observeCoupleSpace();
     setupPatchPolling();
+    console.log("LIVE SYSTEM bootstrap complete");
   }
 
   if (document.readyState === "loading") {
@@ -1116,8 +1424,12 @@ gift 必须带 amount 数字。
 
   window.coupleLiveModule = {
     openLiveHome,
+    openFanGroup,
+    openInbox,
     playDanmaku,
-    maybeGenerateLiveBullets
+    maybeGenerateLiveBullets,
+    getCfg,
+    saveCfg
   };
 
   console.log("LIVE SYSTEM module ready");
