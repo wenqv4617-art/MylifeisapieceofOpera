@@ -25,7 +25,8 @@
     { key: "fanfic",  label: "同人",         desc: "为你们的故事书写新章节",   icon: SECTION_ICONS.fanfic },
     { key: "checkin", label: "查岗",         desc: "看看 Ta 此刻在做什么",     icon: SECTION_ICONS.checkin },
     { key: "date",    label: "约会大作战",   desc: "策划一场特别的约会",       icon: SECTION_ICONS.date },
-    { key: "truth",   label: "真心话大冒险", desc: "敢说出心里的那句话吗",     icon: SECTION_ICONS.truth }
+    { key: "truth",   label: "真心话大冒险", desc: "敢说出心里的那句话吗",     icon: SECTION_ICONS.truth },
+    { key: "live", label: "直播系统", desc: "让观众见证你们的每一轮互动", icon: SECTION_ICONS.live }
   ];
 
   const BACK_ICON  = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -204,7 +205,11 @@
     if (key === "date" && window.coupleDateModule) {
       window.coupleDateModule.open(convId);
       return;
-    }
+    },
+    if (key === "live" && window.coupleLiveModule) {
+  window.coupleLiveModule.open(convId);
+  return;
+}
     const titleEl = el.querySelector(".cs-section-title");
     const title = titleEl ? titleEl.textContent : "敬请期待";
     if (window.showStatus) window.showStatus(title + "：开发中", "info");
