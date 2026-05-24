@@ -20,6 +20,28 @@
         link.href = basePath + file;
         document.head.appendChild(link);
     });
+
+    // ========== iOS / iPadOS PWA 冷启动高度预处理 ==========
+    // 只给 iOS / iPadOS 加 class，不影响安卓。
+    const isIOS =
+        /iP(ad|hone|od)/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (isIOS) {
+        document.documentElement.classList.add('is-ios');
+
+        const isStandalone =
+            window.navigator.standalone ||
+            window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isStandalone) {
+            document.documentElement.classList.add('is-pwa');
+
+            // iOS PWA 独立模式下优先用 100vh，避免 cold start 时 innerHeight 偶发偏小。
+            document.documentElement.style.setProperty('--ios-app-height', '100vh');
+            document.documentElement.style.setProperty('--app-height', '100vh');
+        }
+    }
 })();
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -6112,21 +6134,55 @@
             // ========== PWA / iOS 视口高度修正 ==========
             // iOS PWA 中 100vh 可能会比真实可见区域更高，导致页面上下滚动。
             // 使用 window.innerHeight 写入 CSS 变量，让主容器按真实可见高度渲染。
-            function updateAppHeightVar() {
-                const h = window.innerHeight;
-                document.documentElement.style.setProperty('--app-height', h + 'px');
-            }
+            function isIOSDeviceForHeightFix() {
+    return /iP(ad|hone|od)/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 
-            updateAppHeightVar();
+function isStandalonePWAForHeightFix() {
+    return window.navigator.standalone ||
+        window.matchMedia('(display-mode: standalone)').matches;
+}
 
-            window.addEventListener('resize', updateAppHeightVar);
-            window.addEventListener('orientationchange', () => {
-                setTimeout(updateAppHeightVar, 300);
-            });
+function updateAppHeightVar() {
+    const isIOS = isIOSDeviceForHeightFix();
+    const isStandalone = isStandalonePWAForHeightFix();
 
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', updateAppHeightVar);
-            }
+    // 安卓 / 桌面：维持原逻辑，只是优先使用 visualViewport，更稳。
+    if (!isIOS) {
+        const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--app-height', Math.round(h) + 'px');
+        return;
+    }
+
+    // iOS / iPadOS：加 class。
+    document.documentElement.classList.add('is-ios');
+
+    // iOS PWA 独立模式：固定使用 100vh，防止冷启动 innerHeight 偏小导致底部白边。
+    if (isStandalone) {
+        document.documentElement.classList.add('is-pwa');
+        document.documentElement.style.setProperty('--ios-app-height', '100vh');
+        document.documentElement.style.setProperty('--app-height', '100vh');
+        return;
+    }
+
+    // 普通 iOS Safari：使用 visualViewport 适配地址栏伸缩。
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--ios-app-height', Math.round(h) + 'px');
+    document.documentElement.style.setProperty('--app-height', Math.round(h) + 'px');
+}
+
+updateAppHeightVar();
+
+window.addEventListener('resize', updateAppHeightVar);
+window.addEventListener('orientationchange', () => {
+    setTimeout(updateAppHeightVar, 300);
+});
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateAppHeightVar);
+    window.visualViewport.addEventListener('scroll', updateAppHeightVar);
+}
 
             const DB_NAME = "CompanionDB_V18";
             const DB_VERSION = 27;
