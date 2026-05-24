@@ -1,13 +1,17 @@
 /* ================================================================
  * couple-live.js - 情侣空间 · 直播系统
- * 
+ *
  * 功能：
- * 1. 情侣空间新增「直播系统」入口
- * 2. 控制面板：直播开关 / 弹幕数量 / 粉丝量 / 打赏榜 / 独立世界书挂载
+ * 1. 情侣空间新增「直播系统」
+ * 2面板：直播开关 弹幕数量 / 粉丝量 / 打赏榜 / 独立世界书挂载
  * 3. 粉丝通道：粉丝群 / char 私信箱 / user 私信箱
  * 4. 开启直播后，监听 chats 入库，每轮 char / assistant / offline_card 回复后自动生成弹幕
  * 5. 弹幕从右往左飘，支持评论 / 打赏 / 关注
- * 
+ * 6. 粉丝群、私信对话固定聊天区，聊天记录内部滚动
+ * 7. 私信箱支持强制触发新私信
+ * 8. char 私信：左侧获取 Ta 回复，右侧小飞机获取网友回复
+ * 9. user 私信：输入框回车上屏，小飞机获取网友回复
+ *
  * 依赖：
  * window.DB, window.callLLM, window.showStatus, window.escapeHtml,
  * window.switchPage, window.currentConversationId
@@ -18,12 +22,23 @@
   console.log("LIVE SYSTEM module loading");
 
   const SVG = {
-    live: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M10 10l4 2-4 2z"/></svg>',
-    back: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
-    arrow: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
-    group: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    inbox: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
-    send: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+    live:
+      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M10 10l4 2-4 2z"/></svg>',
+
+    back:
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+
+    arrow:
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+
+    group:
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+
+    inbox:
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+
+    send:
+      '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
   };
 
   const DEFAULT_CFG = {
@@ -57,7 +72,11 @@
 
   function nowTime(ts) {
     const d = ts ? new Date(ts) : new Date();
-    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    return (
+      String(d.getHours()).padStart(2, "0") +
+      ":" +
+      String(d.getMinutes()).padStart(2, "0")
+    );
   }
 
   function rand(arr) {
@@ -414,18 +433,10 @@
                         <div class="cl-rank-index">${String(i + 1).padStart(2, "0")}</div>
                         <div class="cl-rank-name">${esc(r.name)}</div>
                         <div class="cl-rank-money">${Number(r.amount || 0).toLocaleString()}</div>
-                      </div>
-                    `)
-                    .join("")
-                : `<div class="cl-empty">NO DATA</div>`
-            }
-          </div>
         </div>
       </div>
     `;
-  }
 
-  async function renderWorldbookPanel(convId, cfg) {
     const DB = window.DB;
     const all = await DB.getAll("worldbooks");
     const selected = cfg.mountedWorldbookIds || [];
@@ -568,19 +579,21 @@
   }
 
   function bindWorldbookEvents(convId) {
-    document.querySelectorAll(".cl-wb-group-head").forEach(head => {
-      head.addEventListener("click", () => {
-        head.closest(".cl-wb-group").classList.toggle("collapsed");
-      });
+document.querySelectorAll(".cl-wb-group-head").forEach(head => {
+  head.addEventListener("click", () => {
+    head.closest(".cl-wb-group").classList.toggle("collapsed");
+  });
+});
     });
 
     document.querySelectorAll(".clWbCheck").forEach(cb => {
-      cb.addEventListener("change", async () => {
-        const cfg = await getCfg(convId);
-        cfg.mountedWorldbookIds = [...document.querySelectorAll(".clWbCheck:checked")].map(x => x.value);
-        await saveCfg(convId, cfg);
-        window.showStatus && window.showStatus("直播世界书挂载已更新", "success");
-      });
+  cb.addEventListener("change", async () => {
+    const cfg = await getCfg(convId);
+    cfg.mountedWorldbookIds = [...document.querySelectorAll(".clWbCheck:checked")].map(x => x.value);
+    await saveCfg(convId, cfg);
+    window.showStatus && window.showStatus("直播世界书挂载已更新", "success");
+  });
+});
     });
   }
 
@@ -619,7 +632,7 @@
     }
 
     scroll.innerHTML = `
-      <div class="cl-panel">
+      <div class="cl-panel cl-chat-panel">
         <div class="cl-panel-head">
           <div class="cl-panel-title">Fan Group</div>
           <button class="cl-small-btn ghost" id="clBackHomeBtn">BACK</button>
@@ -643,7 +656,7 @@
     });
 
     const list = document.getElementById("clFanGroupList");
-    list.scrollTop = list.scrollHeight;
+    if (list) list.scrollTop = list.scrollHeight;
   }
 
   function renderFanMsg(m) {
@@ -756,6 +769,8 @@ ${worldbook || "无"}
     const threads = box === "char" ? cfg.charInbox : cfg.userInbox;
     const scroll = document.getElementById("clScroll");
 
+    const boxTitle = box === "char" ? `${info.charName} 的私信箱` : `${info.userName} 的私信箱`;
+
     scroll.innerHTML = `
       <div class="cl-tabs">
         <div class="cl-tab ${box === "char" ? "active" : ""}" data-cl-box="char">${esc(info.charName)} 的私信箱</div>
@@ -765,9 +780,13 @@ ${worldbook || "无"}
       <div class="cl-panel">
         <div class="cl-panel-head">
           <div class="cl-panel-title">Direct Messages</div>
-          <button class="cl-small-btn ghost" id="clBackHomeBtn">BACK</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="cl-force-btn" id="clForceInboxBtn">FORCE DM</button>
+            <button class="cl-small-btn ghost" id="clBackHomeBtn">BACK</button>
+          </div>
         </div>
         <div class="cl-panel-body">
+          <div class="cl-sub" style="margin-bottom:10px;">${esc(boxTitle)}</div>
           <div class="cl-thread-list">
             ${
               threads.length
@@ -788,6 +807,10 @@ ${worldbook || "无"}
     `;
 
     document.getElementById("clBackHomeBtn").addEventListener("click", () => openLiveHome(convId));
+
+    document.getElementById("clForceInboxBtn").addEventListener("click", async () => {
+      await forceGenerateInboxMessage(convId, box);
+    });
 
     document.querySelectorAll(".cl-tab").forEach(tab => {
       tab.addEventListener("click", () => openInbox(convId, tab.dataset.clBox));
@@ -849,6 +872,94 @@ ${worldbook || "无"}
     if (changed) await saveCfg(convId, cfg);
   }
 
+  async function forceGenerateInboxMessage(convId, box) {
+    if (!window.callLLM) {
+      window.showStatus && window.showStatus("API模块未就绪", "error");
+      return;
+    }
+
+    const cfg = await getCfg(convId);
+    const info = await getConvInfo(convId);
+    const worldbook = await buildLiveWorldbook(convId);
+
+    const targetName = box === "char" ? info.charName : info.userName;
+    const targetDesc = box === "char" ? info.charDetail : info.userDetail;
+    const inboxKey = box === "char" ? "charInbox" : "userInbox";
+
+    const prompt = `
+你正在模拟直播系统里的网友私信。
+
+目标收信人：${targetName}
+
+要求：
+- 强网感
+- 像真实网友私信
+- 可以嗑CP，可以阴阳怪气，可以拱火，可以认真发问
+- 禁止使用emoji
+- 禁止长篇作文
+- 内容要能引发后续对话
+- 昵称要有互联网感
+
+目标人物设定：
+${targetDesc || "无"}
+
+关系信息：
+CHAR=${info.charName}
+USER=${info.userName}
+关系=${info.relation || "未知"}
+
+直播系统专属世界书：
+${worldbook || "无"}
+
+请生成 1 条新的私信。
+严格输出 JSON：
+{
+  "name": "网友昵称",
+  "content": "私信内容"
+}
+`;
+
+    try {
+      window.recordApiPending && window.recordApiPending();
+      window.showStatus && window.showStatus("正在生成新的私信...", "info");
+
+      const raw = await window.callLLM(
+        [{ role: "user", content: prompt }],
+        { maxTokens: 500, temperature: 0.95 }
+      );
+
+      const obj = parseJsonObject(raw);
+
+      const name = obj.name || randomFanName();
+      const content = obj.content || "你们刚才那段我看了三遍，别装没事。";
+
+      cfg[inboxKey] = cfg[inboxKey] || [];
+
+      cfg[inboxKey].unshift({
+        id: box + "_dm_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+        name,
+        target: box,
+        updatedAt: Date.now(),
+        messages: [
+          {
+            role: "fan",
+            content,
+            ts: Date.now()
+          }
+        ]
+      });
+
+      cfg[inboxKey] = cfg[inboxKey].slice(0, 80);
+
+      await saveCfg(convId, cfg);
+      await openInbox(convId, box);
+
+      window.showStatus && window.showStatus("新的私信已送达", "success");
+    } catch (e) {
+      window.showStatus && window.showStatus("私信生成失败：" + e.message, "error");
+    }
+  }
+
   async function openThread(convId, box, threadId) {
     activateLivePage();
 
@@ -860,8 +971,22 @@ ${worldbook || "无"}
 
     const scroll = document.getElementById("clScroll");
 
+    const bottomHtml = box === "char"
+      ? `
+        <div class="cl-thread-action-row">
+          <button class="cl-small-btn ghost" id="clAutoSelfReplyBtn">获取TA的回复</button>
+          <button class="cl-send-btn" id="clFanReplyBtn">${SVG.send}</button>
+        </div>
+      `
+      : `
+        <div class="cl-user-input-row">
+          <input class="cl-text-input" id="clThreadInput" placeholder="输入内容，回车上屏">
+          <button class="cl-send-btn" id="clFanReplyBtn">${SVG.send}</button>
+        </div>
+      `;
+
     scroll.innerHTML = `
-      <div class="cl-panel">
+      <div class="cl-panel cl-chat-panel">
         <div class="cl-panel-head">
           <div class="cl-panel-title">${esc(thread.name)}</div>
           <button class="cl-small-btn ghost" id="clBackInboxBtn">BACK</button>
@@ -875,33 +1000,45 @@ ${worldbook || "无"}
             `).join("")}
           </div>
 
-          <div class="cl-input-row">
-            <input class="cl-text-input" id="clThreadInput" placeholder="${box === "char" ? "代 Ta 回复粉丝" : "回复你的粉丝"}">
-            <button class="cl-send-btn" id="clThreadSend">${SVG.send}</button>
-          </div>
-
-          <button class="cl-small-btn ghost" id="clAutoReplyBtn" style="width:100%;margin-top:10px;">
-            查看 Ta 的回复
-          </button>
+          ${bottomHtml}
         </div>
       </div>
     `;
 
     document.getElementById("clBackInboxBtn").addEventListener("click", () => openInbox(convId, box));
-    document.getElementById("clThreadSend").addEventListener("click", () => sendThreadMsg(convId, box, threadId));
-    document.getElementById("clThreadInput").addEventListener("keypress", e => {
-      if (e.key === "Enter") sendThreadMsg(convId, box, threadId);
-    });
-    document.getElementById("clAutoReplyBtn").addEventListener("click", () => generateThreadReply(convId, box, threadId));
+
+    if (box === "char") {
+      document.getElementById("clAutoSelfReplyBtn").addEventListener("click", () => {
+        generateThreadReply(convId, box, threadId);
+      });
+
+      document.getElementById("clFanReplyBtn").addEventListener("click", () => {
+        generateFanThreadReply(convId, box, threadId);
+      });
+    } else {
+      const input = document.getElementById("clThreadInput");
+
+      input.addEventListener("keypress", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendThreadMsg(convId, box, threadId);
+        }
+      });
+
+      document.getElementById("clFanReplyBtn").addEventListener("click", () => {
+        generateFanThreadReply(convId, box, threadId);
+      });
+    }
 
     const msgList = document.getElementById("clThreadList");
-    msgList.scrollTop = msgList.scrollHeight;
+    if (msgList) msgList.scrollTop = msgList.scrollHeight;
   }
 
   async function sendThreadMsg(convId, box, threadId) {
     const input = document.getElementById("clThreadInput");
-    const text = input.value.trim();
+    if (!input) return;
 
+    const text = input.value.trim();
     if (!text) return;
 
     const cfg = await getCfg(convId);
@@ -915,7 +1052,10 @@ ${worldbook || "无"}
       content: text,
       ts: Date.now()
     });
+
     thread.updatedAt = Date.now();
+
+    input.value = "";
 
     await saveCfg(convId, cfg);
     await openThread(convId, box, threadId);
@@ -981,6 +1121,7 @@ ${history}
 
     try {
       window.recordApiPending && window.recordApiPending();
+      window.showStatus && window.showStatus("正在获取TA的回复...", "info");
 
       const raw = await window.callLLM(
         [{ role: "user", content: prompt }],
@@ -1000,8 +1141,96 @@ ${history}
       thread.updatedAt = Date.now();
       await saveCfg(convId, cfg);
       await openThread(convId, box, threadId);
+
+      window.showStatus && window.showStatus("TA已回复", "success");
     } catch (e) {
       window.showStatus && window.showStatus("私信回复失败：" + e.message, "error");
+    }
+  }
+
+  async function generateFanThreadReply(convId, box, threadId) {
+    if (!window.callLLM) {
+      window.showStatus && window.showStatus("API模块未就绪", "error");
+      return;
+    }
+
+    const cfg = await getCfg(convId);
+    const info = await getConvInfo(convId);
+    const list = box === "char" ? cfg.charInbox : cfg.userInbox;
+    const thread = list.find(t => t.id === threadId);
+
+    if (!thread) return;
+
+    const worldbook = await buildLiveWorldbook(convId);
+
+    const targetName = box === "char" ? info.charName : info.userName;
+
+    const history = thread.messages
+      .map(m => `${m.role === "self" ? targetName : thread.name}: ${m.content}`)
+      .join("\n");
+
+    const prompt = `
+你正在模拟直播系统里的网友私信回复。
+
+网友昵称：${thread.name}
+私信对象：${targetName}
+
+核心风格：
+- 强网感
+- 像真实网友私信
+- 可以嘴快、嗑CP、拱火、阴阳怪气、追问
+- 不要像客服
+- 不要像作文
+- 禁止使用emoji
+- 禁止动作描写
+
+直播双方：
+CHAR=${info.charName}
+USER=${info.userName}
+关系=${info.relation || "未知"}
+
+直播系统专属世界书：
+${worldbook || "无"}
+
+私信历史：
+${history}
+
+请以网友 ${thread.name} 的口吻继续回复。
+支持多条短回复。
+严格输出 JSON 数组：
+[
+  {"content":"第一条"},
+  {"content":"第二条"}
+]
+`;
+
+    try {
+      window.recordApiPending && window.recordApiPending();
+      window.showStatus && window.showStatus("正在获取网友回复...", "info");
+
+      const raw = await window.callLLM(
+        [{ role: "user", content: prompt }],
+        { maxTokens: 800, temperature: 0.95 }
+      );
+
+      const arr = parseJsonArray(raw).slice(0, 5);
+
+      arr.forEach(x => {
+        thread.messages.push({
+          role: "fan",
+          content: x.content || "",
+          ts: Date.now()
+        });
+      });
+
+      thread.updatedAt = Date.now();
+
+      await saveCfg(convId, cfg);
+      await openThread(convId, box, threadId);
+
+      window.showStatus && window.showStatus("网友已回复", "success");
+    } catch (e) {
+      window.showStatus && window.showStatus("网友回复失败：" + e.message, "error");
     }
   }
 
@@ -1327,14 +1556,18 @@ gift 必须带 amount 数字。
       const lane = i % lanes;
 
       el.style.top = `${lane * 30 + 8}px`;
-      el.style.animationDuration = `${8 + Math.random() * 4}s`;
+
+      // 动画时长适当拉长，避免左侧突然停顿
+      el.style.animationDuration = `${10 + Math.random() * 4}s`;
       el.style.animationDelay = `${i * 0.35}s`;
 
       layer.appendChild(el);
 
+      // 注意：CSS 已经改成完整飘出左侧。
+      // 这里的移除时间只作为兜底，略大于动画时间。
       setTimeout(() => {
         if (el.parentNode) el.parentNode.removeChild(el);
-      }, 16000);
+      }, 20000);
     });
   }
 
@@ -1385,6 +1618,32 @@ gift 必须带 amount 数字。
     }
 
     return [];
+  }
+
+  function parseJsonObject(raw) {
+    if (!raw) return {};
+
+    let text = String(raw).trim();
+
+    text = text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
+
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    } catch (e) {}
+
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) {
+      try {
+        const parsed = JSON.parse(m[0]);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+
+    return {};
   }
 
   function randomFanName() {
