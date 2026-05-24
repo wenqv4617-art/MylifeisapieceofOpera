@@ -1,0 +1,471 @@
+/* ============================================================
+ * couple-live.css - 情侣空间 · 直播系统
+ * 科技黑白风，禁止 emoji
+ * ============================================================ */
+
+#page-couple-space[data-live-theme="tech"] {
+  background: #050505 !important;
+  color: #f5f5f5;
+}
+
+#page-couple-space[data-live-theme="tech"] .cs-header {
+  background: rgba(5, 5, 5, 0.92) !important;
+  border-bottom: 1px solid #2a2a2a !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+#page-couple-space[data-live-theme="tech"] .cs-title,
+#page-couple-space[data-live-theme="tech"] .back-btn {
+  color: #f5f5f5 !important;
+}
+
+.clive-page {
+  padding: 14px;
+  background: #050505;
+  min-height: 100%;
+  color: #f5f5f5;
+}
+
+.clive-panel {
+  background: #0c0c0c;
+  border: 1px solid #2d2d2d;
+  border-radius: 0;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.clive-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #252525;
+  padding-bottom: 10px;
+}
+
+.clive-panel-title svg {
+  width: 16px;
+  height: 16px;
+}
+
+.clive-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.clive-row:last-child {
+  margin-bottom: 0;
+}
+
+.clive-label {
+  font-size: 12px;
+  color: #b8b8b8;
+  letter-spacing: 0.5px;
+}
+
+.clive-sub {
+  font-size: 11px;
+  color: #777;
+  line-height: 1.5;
+  margin-top: 3px;
+}
+
+.clive-switch {
+  width: 48px;
+  height: 24px;
+  border: 1px solid #444;
+  background: #111;
+  position: relative;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.clive-switch::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: #777;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: all .18s;
+}
+
+.clive-switch.on {
+  border-color: #fff;
+  background: #f5f5f5;
+}
+
+.clive-switch.on::after {
+  left: 26px;
+  background: #050505;
+}
+
+.clive-input {
+  width: 78px;
+  background: #050505;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 7px 8px;
+  font-size: 12px;
+  outline: none;
+  border-radius: 0;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.clive-input:focus {
+  border-color: #fff;
+}
+
+.clive-input-wide {
+  width: 100%;
+  background: #050505;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 9px 10px;
+  font-size: 13px;
+  outline: none;
+  border-radius: 0;
+  font-family: inherit;
+}
+
+.clive-input-wide:focus {
+  border-color: #fff;
+}
+
+.clive-two-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clive-num-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.clive-stat {
+  border: 1px solid #2d2d2d;
+  padding: 12px;
+  background: #070707;
+}
+
+.clive-stat-num {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.clive-stat-label {
+  font-size: 11px;
+  color: #777;
+  letter-spacing: 1px;
+}
+
+.clive-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.clive-rank-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #252525;
+  background: #070707;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.clive-rank-no {
+  color: #999;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.clive-rank-name {
+  color: #e8e8e8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clive-rank-amt {
+  color: #fff;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.clive-wb-group {
+  border: 1px solid #252525;
+  margin-bottom: 8px;
+}
+
+.clive-wb-group-head {
+  padding: 9px 10px;
+  background: #080808;
+  color: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #252525;
+}
+
+.clive-wb-group-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.clive-wb-group.collapsed .clive-wb-group-body {
+  display: none;
+}
+
+.clive-wb-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.clive-wb-check input {
+  accent-color: #fff;
+  margin-top: 2px;
+}
+
+.clive-wb-title {
+  color: #f5f5f5;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.clive-wb-preview {
+  color: #777;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.clive-save-btn,
+.clive-primary-btn,
+.clive-secondary-btn,
+.clive-danger-btn {
+  width: 100%;
+  border-radius: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  font-family: inherit;
+}
+
+.clive-save-btn,
+.clive-primary-btn {
+  background: #f5f5f5;
+  color: #050505;
+  border: 1px solid #f5f5f5;
+}
+
+.clive-secondary-btn {
+  background: #080808;
+  color: #f5f5f5;
+  border: 1px solid #444;
+}
+
+.clive-danger-btn {
+  background: #120606;
+  color: #ffb8b8;
+  border: 1px solid #5a2525;
+}
+
+.clive-save-btn:active,
+.clive-primary-btn:active,
+.clive-secondary-btn:active,
+.clive-danger-btn:active {
+  transform: scale(0.985);
+}
+
+.clive-channel-tabs {
+  display: flex;
+  border: 1px solid #2d2d2d;
+  margin-bottom: 10px;
+}
+
+.clive-channel-tab {
+  flex: 1;
+  padding: 9px 4px;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  background: #070707;
+  cursor: pointer;
+  border-right: 1px solid #2d2d2d;
+}
+
+.clive-channel-tab:last-child {
+  border-right: none;
+}
+
+.clive-channel-tab.active {
+  color: #050505;
+  background: #f5f5f5;
+  font-weight: 700;
+}
+
+.clive-fan-group-card,
+.clive-dm-card {
+  border: 1px solid #2d2d2d;
+  background: #080808;
+  padding: 12px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.clive-fan-group-title,
+.clive-dm-name {
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.clive-fan-group-desc,
+.clive-dm-preview {
+  color: #777;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.clive-empty {
+  border: 1px dashed #333;
+  padding: 24px 12px;
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+}
+
+.clive-chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 56vh;
+  overflow-y: auto;
+  border: 1px solid #252525;
+  background: #050505;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.clive-chat-msg {
+  max-width: 86%;
+  border: 1px solid #2d2d2d;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #ddd;
+  background: #0c0c0c;
+  word-break: break-word;
+}
+
+.clive-chat-msg.self {
+  align-self: flex-end;
+  background: #f5f5f5;
+  color: #050505;
+  border-color: #f5f5f5;
+}
+
+.clive-chat-msg.system {
+  align-self: center;
+  background: transparent;
+  color: #777;
+  border-color: #333;
+  font-size: 11px;
+}
+
+.clive-chat-sender {
+  font-size: 10px;
+  color: #777;
+  margin-bottom: 3px;
+  letter-spacing: .8px;
+}
+
+.clive-chat-msg.self .clive-chat-sender {
+  color: #333;
+}
+
+.clive-chat-row {
+  display: flex;
+  gap: 8px;
+}
+
+.clive-chat-row input {
+  flex: 1;
+}
+
+.clive-chat-row button {
+  width: 64px;
+}
+
+/* 弹幕层 */
+.clive-danmaku-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58px;
+  height: 180px;
+  pointer-events: none;
+  z-index: 999;
+  overflow: hidden;
+}
+
+.clive-danmaku-item {
+  position: absolute;
+  right: -120%;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 9px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.35);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  animation-name: cliveDanmakuMove;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.clive-danmaku-item.tip {
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.75);
+}
+
+.clive-danmaku-item.follow {
+  color: #d8f1ff;
+  border-color: rgba(216,241,255,0.75);
+}
+
+@keyframes cliveDanmakuMove {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-180vw); }
+}
