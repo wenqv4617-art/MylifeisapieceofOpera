@@ -264,56 +264,60 @@
     `;
   }
 
-  async function renderWorldbookPanel(state) {
-    const all = await window.DB.getAll("worldbooks");
-    if (!all.length) {
-      return `
-        <div class="clive-panel">
-          <div class="clive-panel-title">${ICONS.book}<span>LIVE WORLDBOOK</span></div>
-          <div class="clive-empty">暂无世界书</div>
-        </div>
-      `;
-    }
-
-    const groups = {};
-    all.forEach(w => {
-      const g = w.group || "未分组";
-      if (!groups[g]) groups[g] = [];
-      groups[g].push(w);
-    });
-
-    const groupHtml = Object.keys(groups).sort().map(groupName => {
-      const list = groups[groupName];
-      const checkedCount = list.filter(w => state.worldbookIds.includes(w.id)).length;
-      return `
-        <div class="clive-wb-group ${checkedCount ? "" : "collapsed"}">
-          <div class="clive-wb-group-head">
-            <span>${esc(groupName)}</span>
-            <span>${checkedCount}/${list.length}</span>
-          </div>
-          <div class="clive-wb-group-body">
-            ${list.map(w => `
-              <label class="clive-wb-check">
-                <input type="checkbox" class="cliveWbCheck" value="${esc(w.id)}" ${state.worldbookIds.includes(w.id) ? "checked" : ""}>
-                <div>
-                  <div class="ive-titleesc(w.title || "未命名")}</div>
-                  <div class="clive-wb-preview">${esc((w.content || "").slice(0, 80))}${(w.content || "").length > 80 ?div>
- </>
-).}
-          </div>
-        </div>
-      `;
-    }).join("");
-
+async function renderWorldbookPanel(state) {
+  const all = await window.DB.getAll("worldbooks");
+  if (!all.length) {
     return `
       <div class="clive-panel">
         <div class="clive-panel-title">${ICONS.book}<span>LIVE WORLDBOOK</span></div>
-        <div class="clive-sub" style="margin-bottom:10px;">直播世界书独立于线上/线下聊天，仅用于弹幕、粉丝群和私信。</div>
-        ${groupHtml}
-        <button class="clive-save-btn" id="cliveSaveWbBtn">SAVE WORLDBOOKS</button>
+        <div class="clive-empty">暂无世界书</div>
       </div>
     `;
   }
+
+  const groups = {};
+  all.forEach(w => {
+    const g = w.group || "未分组";
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(w);
+  });
+
+  const groupHtml = Object.keys(groups).sort().map(groupName => {
+    const list = groups[groupName];
+    const checkedCount = list.filter(w => state.worldbookIds.includes(w.id)).length;
+    return `
+      <div class="clive-wb-group ${checkedCount ? "" : "collapsed"}">
+        <div class="clive-wb-group-head">
+          <span>${esc(groupName)}</span>
+          <span>${checkedCount}/${list.length}</span>
+        </div>
+        <div class="clive-wb-group-body">
+          ${list.map(w => `
+            <label class="clive-wb-check">
+              <input type="checkbox" class="cliveWbCheck" value="${esc(w.id)}" ${state.worldbookIds.includes(w.id) ? "checked" : ""}>
+              <div>
+                <div class="ive-title">${esc(w.title || "未命名")}</div>
+                <div class="clive-wb-preview">
+                  ${esc((w.content || "").slice(0, 80))}
+                  ${(w.content || "").length > 80 ? "..." : ""}
+                </div>
+              </div>
+            </label>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="clive-panel">
+      <div class="clive-panel-title">${ICONS.book}<span>LIVE WORLDBOOK</span></div>
+      <div class="clive-sub" style="margin-bottom:10px;">直播世界书独立于线上/线下聊天，仅用于弹幕、粉丝群和私信。</div>
+      ${groupHtml}
+      <button class="clive-save-btn" id="cliveSaveWbBtn">SAVE WORLDBOOKS</button>
+    </div>
+  `;
+}
 
   function renderFanChannel(state, names) {
     const tab = state.currentTab || "group";
@@ -871,37 +875,37 @@ ${chatObj.role}: ${String(chatObj.content || "").replace(/<[^>]*>/g, "").slice(0
   }
 
   function injectEventsToFanChannel(state, events, names) {
-    const comments = events.filter(e => e.type === "comment").slice(0, 4);
-    comments.forEach(e => {
-      const idx = e.text.indexOf(":");
-      state.fanGroup.messages.push({
-        role: "fan",
-        sender: idx > -1 ? e.text.slice(0, idx).trim() : e.name || "Viewer",
-        content: idx > -1 ? e.text.slice(idx + 1).trim() : e.text,
-        time: Date.now()
-      });
+  const comments = events.filter(e => e.type === "comment").slice(0, 4);
+  comments.forEach(e => {
+    const idx = e.text.indexOf(":");
+    state.fanGroup.messages.push({
+      role: "fan",
+      sender: idx > -1 ? e.text.slice(0, idx).trim() : e.name || "Viewer",
+      content: idx > -1 ? e.text.slice(idx + 1).trim() : e.text,
+      time: Date.now()
     });
+  });
 
-    // 少量弹幕转化为私信，制造玩法
-    const maybe = events.find(e => e.type === "comment" && /私信|想问|告诉|磕|刺激|真心/.test(e.text));
-    if (maybe && Math.random() 0.45) {
-      const target = Math.random() < 0.5 ? "char" : "user";
-      const from = maybe.name || guessName(maybe.text) || "Viewer";
-      state.inbox[target].unshift({
-        id: "dm_" + target + "_" + Date.now() + "_" + Math.random().toString(36).slice(2),
-        from,
-        messages: [
-          {
-            role: "fan",
-            sender: from,
-            content: maybe.text.replace(/^([^:：]+)[:：]/, "").trim(),
-            time: Date.now()
-          }
-        ]
-      });
-      state.inbox[target] = state.inbox[target].slice(0, 50);
-    }
+  // 少量弹幕转化为私信，制造玩法
+  const maybe = events.find(e => e.type === "comment" && /私信|想问|告诉|磕|刺激|真心/.test(e.text));
+  if (maybe && Math.random() < 0.45) {
+    const target = Math.random() < 0.5 ? "char" : "user";
+    const from = maybe.name || guessName(maybe.text) || "Viewer";
+    state.inbox[target].unshift({
+      id: "dm_" + target + "_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+      from,
+      messages: [
+        {
+          role: "fan",
+          sender: from,
+          content: maybe.text.replace(/^([^:：]+)[:：]/, "").trim(),
+          time: Date.now()
+        }
+      ]
+    });
+    state.inbox[target] = state.inbox[target].slice(0, 50);
   }
+}
 
   async function patchDBPut() {
     if (!window.DB || window.DB._clivePutPatched) return;
