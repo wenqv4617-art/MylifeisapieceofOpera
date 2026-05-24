@@ -1,574 +1,563 @@
 /* ============================================================
- * couple-live.css - Couple Space Cyber B&W Live Styling
- * Colors: Minimalist Cyber Black, White, Tech Grays
+ * couple-live.css - 情侣空间 · 直播系统
+ * 科技黑白风格，无 emoji
  * ============================================================ */
 
-#page-couple-live,
-#page-couple-live-fangroup,
-#page-couple-live-pmdetail {
-  background: #000000;
-  color: #ffffff;
-  font-family: 'SF Mono', Monaco, 'Inconsolata', monospace;
+#page-couple-space[data-cl-theme="live"] {
+  background: linear-gradient(180deg, #f7f7f7 0%, #e9e9e9 100%) !important;
+  color: #101010;
 }
 
-.live-header {
-  background: #0d0d0d !important;
-  border-bottom: 1.5px solid #ffffff !important;
+#page-couple-space[data-cl-theme="live"] .cs-header {
+  background: rgba(245, 245, 245, 0.9);
+  border-bottom: 1px solid #1a1a1a;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.live-title {
-  font-size: 19px !important;
-  color: #ffffff !important;
-  letter-spacing: 2px !important;
-  text-transform: uppercase;
+#page-couple-space[data-cl-theme="live"] .cs-title {
+  color: #111 !important;
 }
 
-#page-couple-live .back-btn,
-#page-couple-live-fangroup .back-btn,
-#page-couple-live-pmdetail .back-btn {
-  color: #ffffff !important;
-}
-
-.live-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 12px 28px;
-}
-
-/* Common Box Grid System */
-.live-panel-box {
-  background: #0d0d0d;
-  border: 1.5px solid #ffffff;
-  border-radius: 0px; /* Tech Sharp borders */
-  padding: 16px;
-  margin-bottom: 14px;
-}
-
-.live-panel-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  background: #ffffff;
-  color: #000000;
-  padding: 4px 8px;
-  display: inline-block;
-  margin-bottom: 16px;
-  letter-spacing: 1.5px;
-}
-
-.live-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #222222;
-  padding: 12px 0;
-}
-
-.live-label {
-  font-size: 12px;
-  color: #aaaaaa;
-  letter-spacing: 1px;
-}
-
-/* Minimal Switches */
-.live-switch-btn {
-  background: #000000;
-  color: #ffffff;
-  border: 1.5px solid #ffffff;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  letter-spacing: 1px;
-}
-
-.live-switch-btn.on {
-  background: #ffffff;
-  color: #000000;
-}
-
-/* Number inputs */
-.live-range-ctrl {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.live-input-num {
-  width: 46px;
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #ffffff;
-  text-align: center;
-  padding: 4px;
-  font-size: 13px;
-}
-
-.live-separator {
-  color: #666666;
-}
-
-/* Live Stats */
-.live-stats-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.live-stat-card {
-  border: 1px solid #333333;
-  padding: 12px;
-  text-align: center;
-  background: #050505;
-}
-
-.live-stat-num {
-  font-size: 24px;
-  font-weight: bold;
-  color: #ffffff;
-}
-
-.live-stat-label {
-  font-size: 9px;
-  color: #666666;
-  margin-top: 4px;
-  letter-spacing: 1px;
-}
-
-.live-sub-title {
-  font-size: 11px;
-  font-weight: bold;
-  color: #888888;
-  margin: 18px 0 10px;
-  letter-spacing: 1px;
-}
-
-/* Donation Leaderboard */
-.live-rank-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.live-rank-item {
-  display: flex;
-  align-items: center;
-  font-size: 11px;
-  border-bottom: 1px dashed #222222;
-  padding-bottom: 6px;
-}
-
-.live-rank-index {
-  color: #000000;
-  background: #ffffff;
-  font-weight: bold;
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-}
-
-.live-rank-name {
-  font-weight: bold;
-  color: #ffffff;
-  margin-right: 12px;
-  min-width: 90px;
-}
-
-.live-rank-msg {
-  color: #666666;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.live-rank-amount {
-  font-weight: bold;
-  color: #ffffff;
-  margin-left: 8px;
-}
-
-/* Worldbooks List Box */
-.live-wb-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.live-wb-group {
-  border: 1px solid #222222;
-  padding: 8px;
-}
-
-.live-wb-group-title {
-  font-size: 11px;
-  font-weight: bold;
-  color: #ffffff;
-  border-bottom: 1px solid #222222;
-  padding-bottom: 4px;
-  margin-bottom: 6px;
-}
-
-.live-wb-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #888888;
-  margin-bottom: 4px;
-  cursor: pointer;
-}
-
-.live-wb-checkbox-label input[type="checkbox"] {
-  accent-color: #ffffff;
-}
-
-.live-wb-title-span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* sticky fan card */
-.live-fan-group-card {
+/* 情侣空间入口卡片 */
+.cl-entry-card {
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1.5px solid #ffffff;
-  padding: 14px;
+  padding: 16px 18px;
+  background: #f5f5f5;
+  border: 1.5px solid #111;
+  border-radius: 0;
   cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
 }
 
-.live-fan-icon {
-  background: #ffffff;
-  color: #000000;
-  width: 44px;
-  height: 44px;
+.cl-entry-card:active {
+  background: #111;
+  color: #fff;
+  transform: scale(0.99);
+}
+
+.cl-entry-icon {
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid currentColor;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.live-fan-info {
+.cl-entry-text {
   flex: 1;
   min-width: 0;
 }
 
-.live-fan-name {
-  font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-}
-
-.live-fan-desc {
-  font-size: 10px;
-  color: #666666;
-  margin-top: 4px;
-}
-
-.live-fan-go {
-  color: #666666;
-}
-
-/* Live PM Tabs */
-.live-tabs {
-  display: flex;
-  gap: 6px;
-  margin-top: 14px;
-  border-bottom: 1px solid #333333;
-}
-
-.live-tab {
-  flex: 1;
-  text-align: center;
-  background: none;
-  border: none;
-  color: #666666;
-  font-size: 11px;
-  font-weight: bold;
-  padding: 10px 0;
-  cursor: pointer;
+.cl-entry-title {
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: 1px;
 }
 
-.live-tab.active {
-  color: #ffffff;
-  border-bottom: 2px solid #ffffff;
-}
-
-/* Inbox Messages List */
-.live-inbox-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.live-pm-item {
-  border: 1px solid #222222;
-  padding: 10px;
-}
-
-.live-pm-item:active {
-  border-color: #ffffff;
-}
-
-.live-pm-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.live-pm-sender {
-  font-size: 11px;
-  font-weight: bold;
-  color: #ffffff;
-}
-
-.live-pm-status {
-  font-size: 9px;
-  padding: 2px 6px;
-  border: 1px solid;
-}
-
-.live-pm-status.pending {
-  border-color: #ffffff;
-  color: #ffffff;
-}
-
-.live-pm-status.replied {
-  background: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
-}
-
-.live-pm-preview {
-  font-size: 11px;
-  color: #888888;
+.cl-entry-desc {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-top: 3px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* Fan group chat screen */
-.live-fg-messages {
+.cl-entry-go {
+  color: currentColor;
+  opacity: 0.6;
+}
+
+/* 主页面 */
+.cl-page {
+  background: #f2f2f2;
+}
+
+.cl-scroll {
   flex: 1;
   overflow-y: auto;
   padding: 14px;
+  background: linear-gradient(180deg, #f7f7f7, #e9e9e9);
+}
+
+.cl-panel {
+  background: #fff;
+  border: 1.5px solid #111;
+  border-radius: 0;
+  margin-bottom: 14px;
+}
+
+.cl-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px;
+  border-bottom: 1.5px solid #111;
+  background: #111;
+  color: #fff;
+}
+
+.cl-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.cl-panel-body {
+  padding: 12px;
+}
+
+.cl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cl-row:last-child {
+  margin-bottom: 0;
+}
+
+.cl-label {
+  font-size: 13px;
+  color: #111;
+  font-weight: 600;
+}
+
+.cl-sub {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* 开关 */
+.cl-switch {
+  width: 50px;
+  height: 26px;
+  border: 1.5px solid #111;
+  background: #fff;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cl-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #111;
+  transition: transform 0.18s;
+}
+
+.cl-switch.on {
+  background: #111;
+}
+
+.cl-switch.on::after {
+  background: #fff;
+  transform: translateX(24px);
+}
+
+/* 数字输入 */
+.cl-num-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cl-num-input {
+  width: 64px;
+  padding: 7px 8px;
+  border: 1.5px solid #111;
+  background: #fff;
+  color: #111;
+  font-size: 13px;
+  outline: none;
+  border-radius: 0;
+  text-align: center;
+}
+
+/* 数据卡 */
+.cl-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cl-stat-card {
+  border: 1.5px solid #111;
+  padding: 12px;
+  background: #f8f8f8;
+}
+
+.cl-stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: #111;
+}
+
+.cl-stat-label {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* 榜单 */
+.cl-rank-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 
-.live-fg-msg-row {
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.live-fg-msg-sender {
-  font-weight: bold;
-  color: #ffffff;
-  margin-right: 6px;
-}
-
-.live-fg-msg-text {
-  color: #cccccc;
-}
-
-.live-fg-input-row {
-  border-top: 1.5px solid #ffffff;
-  padding: 10px;
+.cl-rank-row {
   display: flex;
+  align-items: center;
   gap: 8px;
-  background: #000;
+  border-bottom: 1px solid #d0d0d0;
+  padding-bottom: 7px;
 }
 
-.live-fg-input-row input {
+.cl-rank-index {
+  width: 22px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-weight: 700;
+  color: #111;
+}
+
+.cl-rank-name {
   flex: 1;
-  background: #0d0d0d;
-  border: 1px solid #333333;
-  color: #ffffff;
-  padding: 10px 14px;
-  font-family: inherit;
-  outline: none;
+  font-size: 13px;
+  color: #111;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.live-fg-input-row input:focus {
-  border-color: #ffffff;
+.cl-rank-money {
+  font-size: 12px;
+  color: #111;
+  font-weight: 700;
 }
 
-.live-fg-icon-btn {
-  background: #ffffff;
-  color: #000000;
-  border: none;
-  width: 42px;
-  height: 42px;
+/* 世界书 */
+.cl-wb-group {
+  border: 1.5px solid #111;
+  margin-bottom: 8px;
+  background: #fff;
+}
+
+.cl-wb-group-head {
+  padding: 9px 10px;
+  background: #f0f0f0;
+  border-bottom: 1.5px solid #111;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+
+.cl-wb-group-body {
+  padding: 8px;
+}
+
+.cl-wb-group.collapsed .cl-wb-group-body {
+  display: none;
+}
+
+.cl-wb-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.cl-wb-item:last-child {
+  border-bottom: none;
+}
+
+.cl-wb-item input {
+  margin-top: 2px;
+  accent-color: #111;
+}
+
+.cl-wb-title {
+  font-weight: 700;
+  color: #111;
+}
+
+.cl-wb-preview {
+  font-size: 11px;
+  color: #777;
+  margin-top: 2px;
+}
+
+/* 粉丝通道 */
+.cl-channel-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1.5px solid #111;
+  background: #fff;
+  padding: 14px 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cl-channel-card:active {
+  background: #111;
+  color: #fff;
+}
+
+.cl-channel-icon {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid currentColor;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
-/* PM Detail screen */
-.live-pm-detail-body {
+.cl-channel-info {
   flex: 1;
-  overflow-y: auto;
-  padding: 14px;
+  min-width: 0;
 }
 
-.live-pm-orig-card {
-  border: 1.5px solid #ffffff;
-  padding: 14px;
-  background: #0d0d0d;
-  margin-bottom: 16px;
+.cl-channel-name {
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.live-pm-orig-sender {
-  font-size: 12px;
-  font-weight: bold;
-  color: #ffffff;
-  margin-bottom: 6px;
+.cl-channel-desc {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 3px;
 }
 
-.live-pm-orig-text {
+/* 私信页 */
+.cl-tabs {
+  display: flex;
+  border: 1.5px solid #111;
+  margin-bottom: 12px;
+}
+
+.cl-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
   font-size: 13px;
-  line-height: 1.5;
-  color: #cccccc;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  color: #111;
+  border-right: 1.5px solid #111;
 }
 
-.live-pm-thread {
+.cl-tab:last-child {
+  border-right: none;
+}
+
+.cl-tab.active {
+  background: #111;
+  color: #fff;
+}
+
+.cl-thread-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.live-pm-bubble-row {
-  display: flex;
-}
-
-.live-pm-bubble-row.self {
-  justify-content: flex-end;
-}
-
-.live-pm-bubble-row.other {
-  justify-content: flex-start;
-}
-
-.live-pm-bubble {
-  max-width: 80%;
-  border: 1px solid #333333;
-  padding: 8px 12px;
-  font-size: 12px;
-}
-
-.live-pm-bubble-row.self .live-pm-bubble {
-  background: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
-}
-
-.live-pm-bubble-sender {
-  font-weight: bold;
-  display: block;
-  font-size: 10px;
-  margin-bottom: 4px;
-}
-
-.live-pm-action-row {
-  border-top: 1.5px solid #ffffff;
-  padding: 14px;
-  background: #000000;
-}
-
-.live-pm-btn-block {
-  width: 100%;
-  background: #ffffff;
-  color: #000000;
-  border: none;
-  font-weight: bold;
-  padding: 12px;
-  cursor: pointer;
-  letter-spacing: 1px;
-}
-
-.live-pm-reply-input-wrap {
-  display: flex;
   gap: 8px;
 }
 
-.live-pm-reply-input-wrap input {
-  flex: 1;
-  background: #0d0d0d;
-  border: 1px solid #333333;
-  color: #ffffff;
-  padding: 10px;
-  font-family: inherit;
-  outline: none;
+.cl-thread-card {
+  border: 1.5px solid #111;
+  padding: 11px 12px;
+  background: #fff;
+  cursor: pointer;
 }
 
-.live-pm-reply-input-wrap input:focus {
-  border-color: #ffffff;
+.cl-thread-card:active {
+  background: #111;
+  color: #fff;
 }
 
-.live-empty-text {
-  text-align: center;
-  padding: 24px;
+.cl-thread-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.cl-thread-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cl-thread-time {
   font-size: 11px;
-  color: #555555;
-  border: 1px dashed #222222;
+  opacity: 0.6;
 }
 
-/* ============================================================
- * Live Barrage (Danmaku) Rendering over Chat Room Screen
- * ============================================================ */
-
-.cs-barrage-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 60%; /* Float barrages across upper part of chat room screen */
-  pointer-events: none;
-  z-index: 1000;
-  overflow: hidden;
-}
-
-/* Danmaku Item Styling */
-.cs-barrage-item {
-  position: absolute;
-  right: 0;
-  white-space: nowrap;
+.cl-thread-preview {
   font-size: 12px;
-  font-weight: 500;
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid #ffffff;
-  padding: 4px 10px;
-  transform: translateX(100%);
-  animation: cs-danmaku-fly-animation 8s linear forwards;
-  font-family: 'SF Mono', Monaco, monospace;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* System notifications style */
-.cs-barrage-item.system {
-  background: #ffffff;
-  color: #000000;
-  border: 1.5px solid #000000;
-  font-weight: bold;
+/* 聊天 */
+.cl-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
 }
 
-@keyframes cs-danmaku-fly-animation {
+.cl-msg-row {
+  display: flex;
+}
+
+.cl-msg-row.self {
+  justify-content: flex-end;
+}
+
+.cl-msg-row.other {
+  justify-content: flex-start;
+}
+
+.cl-msg-bubble {
+  max-width: 78%;
+  border: 1.5px solid #111;
+  padding: 9px 11px;
+  background: #fff;
+  color: #111;
+  font-size: 13px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.cl-msg-row.self .cl-msg-bubble {
+  background: #111;
+  color: #fff;
+}
+
+.cl-input-row {
+  display: flex;
+  gap: 8px;
+  border-top: 1.5px solid #111;
+  padding-top: 10px;
+}
+
+.cl-text-input {
+  flex: 1;
+  border: 1.5px solid #111;
+  padding: 9px 10px;
+  font-size: 13px;
+  outline: none;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+}
+
+.cl-send-btn,
+.cl-small-btn {
+  border: 1.5px solid #111;
+  background: #111;
+  color: #fff;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.cl-small-btn.ghost {
+  background: #fff;
+  color: #111;
+}
+
+.cl-send-btn:active,
+.cl-small-btn:active {
+  transform: scale(0.96);
+}
+
+/* 空状态 */
+.cl-empty {
+  border: 1.5px dashed #777;
+  padding: 24px 14px;
+  text-align: center;
+  color: #666;
+  font-size: 13px;
+  background: #fff;
+}
+
+/* 弹幕层 */
+.cl-danmaku-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 54px;
+  bottom: 92px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1200;
+}
+
+.cl-danmaku-item {
+  position: absolute;
+  right: -120%;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 3px 8px;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  animation-name: clDanmakuMove;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.cl-danmaku-item.notice {
+  color: #111;
+  background: rgba(255, 255, 255, 0.88);
+  border-color: #111;
+}
+
+@keyframes clDanmakuMove {
   from {
-    transform: translateX(100%);
+    transform: translateX(0);
   }
   to {
-    transform: translateX(-150%);
+    transform: translateX(-180vw);
+  }
+}
+
+/* 响应式 */
+@media (min-width: 768px) {
+  .cl-scroll {
+    padding: 20px 24px;
+  }
+
+  .cl-danmaku-layer {
+    top: 64px;
+    bottom: 104px;
   }
 }
