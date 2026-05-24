@@ -3,7 +3,7 @@
  * 功能：
  * 1) 单聊展开菜单点击「情侣空间」→ 打开本页
  * 2) 顶部展示双方头像（与对话同步）+ 已相遇 N 天
- * 3) 四个功能栏：同人 / 查岗 / 约会大作战 / 真心话大冒险
+ * 3) 四个功能栏 + 直播系统栏
  * 依赖：window.DB, window.escapeHtml, window.showStatus,
  *      window.getAvatarColor, window.switchPage, window.currentConversationId
  * ================================================================ */
@@ -17,14 +17,16 @@
     fanfic:  '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>',
     checkin: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
     date:    '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 18.5c-2.5-1.8-4-3.2-4-4.7 0-1.1.9-2 2-2 .7 0 1.4.4 1.7 1 .3-.6 1-1 1.7-1 1.1 0 2 .9 2 2 0 1.5-1.5 2.9-4 4.7z" fill="currentColor" stroke="none"/></svg>',
-    truth:   '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    truth:   '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    live:    '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="13" rx="2" ry="2"/><line x1="12" y1="20" x2="12" y2="15"/><line x1="8" y1="20" x2="16" y2="20"/><circle cx="12" cy="8" r="2"/></svg>'
   };
 
   const SECTIONS = [
     { key: "fanfic",  label: "同人",         desc: "为你们的故事书写新章节",   icon: SECTION_ICONS.fanfic },
     { key: "checkin", label: "查岗",         desc: "看看 Ta 此刻在做什么",     icon: SECTION_ICONS.checkin },
     { key: "date",    label: "约会大作战",   desc: "策划一场特别的约会",       icon: SECTION_ICONS.date },
-    { key: "truth",   label: "真心话大冒险", desc: "敢说出心里的那句话吗",     icon: SECTION_ICONS.truth }
+    { key: "truth",   label: "真心话大冒险", desc: "敢说出心里的那句话吗",     icon: SECTION_ICONS.truth },
+    { key: "live",    label: "直播系统",     desc: "科技黑白质感，高能弹幕飘飞", icon: SECTION_ICONS.live }
   ];
 
   const BACK_ICON  = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -157,7 +159,7 @@
       <div class="cs-sections">
         ${SECTIONS.map(s => `
           <div class="cs-section clickable" data-cs-key="${s.key}">
-            <div class="cs-section-icon-wrap">${s.icon}</div>
+            <div class="cs-section-icon-wrap" style="${s.key === 'live' ? 'background: #111; color: #fff; border: 1px solid #fff;' : ''}">${s.icon}</div>
             <div class="cs-section-text">
               <div class="cs-section-title">${esc(s.label)}</div>
               <div class="cs-section-desc">${esc(s.desc)}</div>
@@ -186,29 +188,33 @@
     if (scroll) {
       scroll.innerHTML = headerHtml + sectionsHtml;
       scroll.querySelectorAll("[data-cs-key]").forEach(el => {
-  el.addEventListener("click", () => {
-    const key = el.dataset.csKey;
-    if (key === "fanfic" && window.coupleFanficModule) {
-      window.coupleFanficModule.open(convId);
-      return;
-    }
-    if (key === "checkin" && window.coupleCheckinModule) {
-      window.coupleCheckinModule.open(convId);
-      return;
-    }
-    if (key === "truth" && window.coupleTruthModule) {
-      window.coupleTruthModule.open(convId);
-      return;
-    }
-    if (key === "date" && window.coupleDateModule) {
-      window.coupleDateModule.open(convId);
-      return;
-    }
-    const titleEl = el.querySelector(".cs-section-title");
-    const title = titleEl ? titleEl.textContent : "敬请期待";
-    if (window.showStatus) window.showStatus(title + "：开发中", "info");
-  });
-});
+        el.addEventListener("click", () => {
+          const key = el.dataset.csKey;
+          if (key === "fanfic" && window.coupleFanficModule) {
+            window.coupleFanficModule.open(convId);
+            return;
+          }
+          if (key === "checkin" && window.coupleCheckinModule) {
+            window.coupleCheckinModule.open(convId);
+            return;
+          }
+          if (key === "truth" && window.coupleTruthModule) {
+            window.coupleTruthModule.open(convId);
+            return;
+          }
+          if (key === "date" && window.coupleDateModule) {
+            window.coupleDateModule.open(convId);
+            return;
+          }
+          if (key === "live" && window.coupleLiveModule) {
+            window.coupleLiveModule.open(convId);
+            return;
+          }
+          const titleEl = el.querySelector(".cs-section-title");
+          const title = titleEl ? titleEl.textContent : "敬请期待";
+          if (window.showStatus) window.showStatus(title + "：开发中", "info");
+        });
+      });
     }
 
     window._currentCoupleSpaceConvId = convId;
@@ -218,16 +224,17 @@
   function activatePage() {
     const cspId = "page-couple-space";
 
-    // 用 .page 全局选择器，覆盖所有页面（不限于 .app-main 直接子元素）
-    // 同时清除可能存在的内联 display 样式（moments / guangguang 等模块用内联控制显示）
     document.querySelectorAll(".page").forEach(p => {
-      if (p.id === cspId) return;
+      if (p.id === cspId) {
+        p.classList.add("active");
+        p.style.display = ""; // 强力清除可能残留的 display: none
+        return;
+      }
       p.classList.remove("active");
       const ds = p.style.display;
       if (ds && ds !== "none") p.style.display = "none";
     });
 
-    // 顺手把朋友圈 FAB 按钮也隐藏，避免漏网
     const momentsFab = document.getElementById("momentsFabBtn");
     if (momentsFab) momentsFab.style.display = "none";
 
@@ -242,10 +249,7 @@
     if (pageInd)  pageInd.style.display  = "none";
     if (appMain)  appMain.style.display  = "";
     if (tabBar)   tabBar.style.display   = "none";
-
-    const page = document.getElementById("page-couple-space");
-    if (page) page.classList.add("active");
-}
+  }
 
   /* ------------ 给 switchPage 打补丁 ------------ */
   function patchSwitchPage() {
@@ -253,6 +257,16 @@
     const orig = window.switchPage;
     window.switchPage = function (pageId) {
       const page = document.getElementById("page-couple-space");
+      
+      // 直播系统相关的子路由触发时，通知情侣空间释放 active 控制权
+      if (pageId === "couple-live" || pageId === "couple-live-fangroup" || pageId === "couple-live-pmdetail") {
+        if (page) {
+          page.classList.remove("active");
+          page.style.display = "none";
+        }
+        return orig.apply(this, arguments);
+      }
+
       if (pageId === "couple-space") {
         activatePage();
         return;

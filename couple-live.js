@@ -63,7 +63,6 @@
     const config = await DB.getSetting("couple_live_config_" + convId);
     if (config) return config;
 
-    // Default configuration if none exists
     const defaultCfg = {
       enabled: false,
       minBarrage: 2,
@@ -275,7 +274,6 @@
       return;
     }
 
-    // Grouping
     const groups = {};
     allWorldbooks.forEach(wb => {
       const g = wb.group || "UNGROUPED";
@@ -404,12 +402,10 @@
       const txt = input.value.trim();
       if (!txt) return;
 
-      // Add user message
       config.fanGroupChat.push({ sender: "YOU", text: txt });
       input.value = "";
       renderMsgs();
 
-      // Trigger Simulated Fan Reactions (高网感)
       setTimeout(async () => {
         const reactions = await generateFanGroupReactions(convId, txt);
         reactions.forEach(r => config.fanGroupChat.push(r));
@@ -418,7 +414,6 @@
       }, 1000);
     };
 
-    // Re-bind to avoid duplicate listeners
     sendBtn.onclick = handleSend;
     input.onkeypress = (e) => { if (e.key === 'Enter') handleSend(); };
   }
@@ -461,7 +456,6 @@ Format:
       console.warn("LLM fan-group synthesis failed, fallback applied.");
     }
 
-    // Fallback Slang
     return [
       { sender: "CP_CHRONICLES", text: `HOLY CRAP, PRESENTER APART FROM THE SCRIPT SHE LITERALLY SAID: ${userMsg}` },
       { sender: "STREAM_STALKER", text: "THE TENSION HAS RISEN BY 500 UNITS. THIS GROUP CHAT IS PEAKING." }
@@ -535,7 +529,6 @@ Format:
     renderThread();
 
     if (inboxType === "char") {
-      // CHAR Box: AI generates reply in Char's persona
       actionRow.innerHTML = `
         <button id="livePmGenReplyBtn" class="live-pm-btn-block">GENERATE CHAR'S RESPONSE</button>
       `;
@@ -550,7 +543,6 @@ Format:
         genBtn.style.display = "none";
       };
     } else {
-      // USER Box: User types reply, then fan follows up
       actionRow.innerHTML = `
         <div class="live-pm-reply-input-wrap">
           <input type="text" id="livePmUserInput" placeholder="REPLY AS USER..." autocomplete="off">
@@ -568,7 +560,6 @@ Format:
         userInput.value = "";
         renderThread();
 
-        // Simulated Fan Follow-Up
         setTimeout(async () => {
           const followUp = await generateFanPMFollowUp(convId, pm.content, txt, pm.sender);
           pm.replies.push({ sender: pm.sender, text: followUp });
@@ -630,7 +621,6 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
     const chatWindow = document.getElementById("convChatMessages");
     if (!chatWindow) return;
 
-    // Ensure Barrage Container exists
     let barrageWrap = chatWindow.querySelector(".cs-barrage-overlay");
     if (!barrageWrap) {
       barrageWrap = document.createElement("div");
@@ -638,7 +628,6 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
       chatWindow.appendChild(barrageWrap);
     }
 
-    // Dynamic Barrage Generator
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
         createBarrageElement(barrageWrap, config, msg);
@@ -652,24 +641,20 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
     let isSystem = false;
 
     if (randType < 0.1) {
-      // System alert: Follower count increases
       const user = SYSTEM_FOLLOWERS[Math.floor(Math.random() * SYSTEM_FOLLOWERS.length)];
       text = `>>> @${user} HAS INSCRIBED TO THE SYSTEM CHANNEL.`;
       isSystem = true;
       config.followers += 1;
       updateLiveDashboardStats(config);
     } else if (randType < 0.2) {
-      // System alert: Donation
       const user = SYSTEM_DONORS[Math.floor(Math.random() * SYSTEM_DONORS.length)];
       const amount = [50, 100, 200, 500, 1000][Math.floor(Math.random() * 5)];
       const donationMessage = BARRAGE_TEMPLATES[Math.floor(Math.random() * BARRAGE_TEMPLATES.length)];
       text = `$$$ @${user} HAS GRANTED ¥${amount} : "${donationMessage}"`;
       isSystem = true;
 
-      // Update statistics
       config.totalDonations += amount;
       
-      // Update Contribution array
       const existing = config.contributions.find(c => c.name === user);
       if (existing) {
         existing.amount += amount;
@@ -680,25 +665,21 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
       config.contributions.sort((a, b) => b.amount - a.amount);
       updateLiveDashboardStats(config);
     } else {
-      // Regular fan comments
       const rawText = BARRAGE_TEMPLATES[Math.floor(Math.random() * BARRAGE_TEMPLATES.length)];
       const users = [...SYSTEM_DONORS, ...SYSTEM_FOLLOWERS];
       const randomUser = users[Math.floor(Math.random() * users.length)];
       text = `@${randomUser}: ${rawText}`;
     }
 
-    // Create the HTML Span
     const item = document.createElement("span");
     item.className = `cs-barrage-item ${isSystem ? 'system' : ''}`;
     item.textContent = text;
 
-    // Track generation (0 to 6 Lanes to prevent collision)
     const lane = Math.floor(Math.random() * 7);
     item.style.top = `${12 + lane * 13}%`;
 
     container.appendChild(item);
 
-    // Garbage collection on completion of CSS Animation (8s)
     setTimeout(() => {
       item.remove();
     }, 8100);
@@ -721,21 +702,58 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
         </div>
       `).join("");
     }
-    // Async save
     const convId = window.currentConversationId || window._currentCoupleSpaceConvId;
     if (convId) saveLiveConfig(convId, config);
   }
 
-  /* ------------ switchPage Patches Integration ------------ */
+  /* ------------ Global Routing Registration & Integration ------------ */
+  function registerPagesToGlobal() {
+    const livePage = ensureLivePage();
+    const fgPage = ensureFanGroupPage();
+    const pmPage = ensurePMDetailPage();
+
+    if (window.pages) {
+      window.pages["couple-live"] = livePage;
+      window.pages["couple-live-fangroup"] = fgPage;
+      window.pages["couple-live-pmdetail"] = pmPage;
+      console.log("▲ Couple Live registered to global window.pages router map successfully");
+    }
+  }
+
+  /* ------------ 显示与隐藏控制 (强力清除残留的 display: none) ------------ */
+  function activatePage(id) {
+    document.querySelectorAll(".page").forEach(p => {
+      if (p.id === id) {
+        p.classList.add("active");
+        p.style.display = ""; // 强力清除可能因为其他模块重置而残留的 display: none 样式 [1]
+        return;
+      }
+      p.classList.remove("active");
+      const ds = p.style.display;
+      if (ds && ds !== "none") p.style.display = "none";
+    });
+
+    const homeMain = document.getElementById("homeMain");
+    const homeDock = document.querySelector(".home-dock");
+    const pageInd = document.querySelector(".page-indicator");
+    const appMain = document.querySelector(".app-main");
+    const tabBar = document.getElementById("mainTabBar");
+    const momentsFab = document.getElementById("momentsFabBtn");
+
+    if (homeMain) homeMain.style.display = "none";
+    if (homeDock) homeDock.style.display = "none";
+    if (pageInd) pageInd.style.display = "none";
+    if (appMain) appMain.style.display = "";
+    if (tabBar) tabBar.style.display = "none";
+    if (momentsFab) momentsFab.style.display = "none";
+  }
+
+  /* ------------ switchPage 强力显示链 patch ------------ */
   function patchSwitchPage() {
     if (!window.switchPage || window.switchPage._livePatched) return;
     const originalSwitch = window.switchPage;
 
     window.switchPage = function (pageId) {
-      const livePage = document.getElementById("page-couple-live");
-      const fgPage = document.getElementById("page-couple-live-fangroup");
-      const pmPage = document.getElementById("page-couple-live-pmdetail");
-
       if (pageId === "couple-live") {
         activatePage("page-couple-live");
         return;
@@ -749,100 +767,22 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
         return;
       }
 
-      if (livePage) livePage.classList.remove("active");
-      if (fgPage) fgPage.classList.remove("active");
-      if (pmPage) pmPage.classList.remove("active");
-
       return originalSwitch.apply(this, arguments);
     };
     window.switchPage._livePatched = true;
   }
 
-  function activatePage(id) {
-    document.querySelectorAll(".page").forEach(p => {
-      if (p.id === id) return;
-      p.classList.remove("active");
-      if (p.style.display && p.style.display !== "none") p.style.display = "none";
-    });
-
-    const homeMain = document.getElementById("homeMain");
-    const homeDock = document.querySelector(".home-dock");
-    const pageInd = document.querySelector(".page-indicator");
-    const appMain = document.querySelector(".app-main");
-    const tabBar = document.getElementById("mainTabBar");
-
-    if (homeMain) homeMain.style.display = "none";
-    if (homeDock) homeDock.style.display = "none";
-    if (pageInd) pageInd.style.display = "none";
-    if (appMain) appMain.style.display = "";
-    if (tabBar) tabBar.style.display = "none";
-
-    const target = document.getElementById(id);
-    if (target) target.classList.add("active");
-  }
-
-  /* ------------ Dynamic Couple Space Injections ------------ */
-  function injectLiveSection(convId) {
-    const sectionsContainer = document.querySelector(".cs-sections");
-    if (!sectionsContainer) return;
-    if (sectionsContainer.querySelector('[data-cs-key="live"]')) return; // Already exists
-
-    const liveCard = document.createElement("div");
-    liveCard.className = "cs-section clickable";
-    liveCard.dataset.csKey = "live";
-    liveCard.innerHTML = `
-      <div class="cs-section-icon-wrap" style="background: #111; color: #fff; border: 1px solid #ffffff;">
-        ${ICONS.screen}
-      </div>
-      <div class="cs-section-text">
-        <div class="cs-section-title">直播系统</div>
-        <div class="cs-section-desc">科技黑白质感，高能弹幕飘飞</div>
-      </div>
-      <div class="cs-section-go">${ICONS.arrow}</div>
-    `;
-
-    sectionsContainer.appendChild(liveCard);
-    liveCard.addEventListener("click", () => {
-      openLiveDashboard(convId);
-    });
-  }
-
   async function openLiveDashboard(convId) {
-    ensureLivePage();
     await renderLiveDashboard(convId);
+    registerPagesToGlobal(); 
     if (window.switchPage) window.switchPage("couple-live");
-  }
-
-  /* ------------ Hooking into DOM Updates via MutationObserver ------------ */
-  function initLiveObserver() {
-    const appMain = document.querySelector(".app-main") || document.body;
-    const observer = new MutationObserver(() => {
-      const sectionsContainer = document.querySelector(".cs-sections");
-      if (sectionsContainer && !sectionsContainer.querySelector('[data-cs-key="live"]')) {
-        const convId = window.currentConversationId || window._currentCoupleSpaceConvId;
-        if (convId) {
-          injectLiveSection(convId);
-        }
-      }
-    });
-    observer.observe(appMain, { childList: true, subtree: true });
   }
 
   /* ------------ Hooking into System Events ------------ */
   function bootstrap() {
+    registerPagesToGlobal();
     patchSwitchPage();
-    initLiveObserver();
 
-    // Immediate manual execution in case of already rendered DOM state on load
-    const sectionsContainer = document.querySelector(".cs-sections");
-    if (sectionsContainer && !sectionsContainer.querySelector('[data-cs-key="live"]')) {
-      const convId = window.currentConversationId || window._currentCoupleSpaceConvId;
-      if (convId) {
-        injectLiveSection(convId);
-      }
-    }
-
-    // Intercept database transactions to trigger broadcast barrages when message added
     if (window.DB && window.DB.put) {
       const origPut = window.DB.put;
       window.DB.put = async function (store, obj) {
@@ -855,10 +795,9 @@ DO NOT USE EMOJIS. Speak in minimal cyber slang.`;
     }
   }
 
-  // Setup loop
   let checkAttempts = 0;
   const initInterval = setInterval(() => {
-    if (window.coupleSpaceModule && window.DB) {
+    if (window.coupleSpaceModule && window.DB && window.pages) {
       bootstrap();
       clearInterval(initInterval);
     } else if (++checkAttempts > 60) {
