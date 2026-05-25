@@ -925,3 +925,761 @@ ${lastAction}
   window.coupleDateModule = { open: openDate };
   console.log("✅ couple-date 模块就绪");
 })();
+
+
+/* ================================================================
+ * couple-date-mall addon
+ * 约会大作战 · 快穿商城
+ * 直接追加在 couple-date.js 后面
+ * ================================================================ */
+
+(function () {
+  "use strict";
+
+  const MALL_SVG = {
+    shop: '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1 10H5L4 10Z"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/><path d="M9 14h6"/></svg>',
+    coin: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/><path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    bag: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 14H5L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    buy: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    use: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8Z"/></svg>',
+    close: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+  };
+
+  const LEVEL_COST = {
+    D: 10,
+    C: 40,
+    B: 100,
+    A: 300,
+    S: 800
+  };
+
+  const LEVEL_ORDER = ["D", "C", "B", "A", "S"];
+
+  const state = {
+    convId: null,
+    pendingItem: null,
+    observerBound: false,
+    callLLMPatched: false,
+    lastRewardAt: 0
+  };
+
+  function esc(s) {
+    return window.escapeHtml
+      ? window.escapeHtml(s)
+      : String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
+  }
+
+  function toast(msg, type) {
+    if (window.showStatus) window.showStatus(msg, type || "info");
+  }
+
+  function uid(prefix) {
+    return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  async function getData(convId) {
+    const data = await window.DB.getSetting("date_" + convId, null);
+    if (!data) return null;
+    if (typeof data.points !== "number") data.points = 0;
+    if (!Array.isArray(data.inventory)) data.inventory = [];
+    if (!Array.isArray(data.shopItems)) data.shopItems = [];
+    if (!data.mallMeta) data.mallMeta = {};
+    return data;
+  }
+
+  async function saveData(convId, data) {
+    await window.DB.setSetting("date_" + convId, data);
+  }
+
+  function getCurrentConvId() {
+    return state.convId || window._currentCoupleSpaceConvId || window.currentConversationId;
+  }
+
+  async function awardPoints(convId, amount, reason) {
+    if (!convId || !amount || amount <= 0) return;
+
+    const now = Date.now();
+    if (now - state.lastRewardAt < 800) return;
+    state.lastRewardAt = now;
+
+    const data = await getData(convId);
+    if (!data) return;
+
+    data.points = Math.max(0, (data.points || 0) + amount);
+    data.mallMeta.lastReward = {
+      amount,
+      reason: reason || "",
+      time: Date.now()
+    };
+
+    await saveData(convId, data);
+
+    toast("获得 " + amount + " 积分", "success");
+    refreshMallBadges();
+  }
+
+  function parsePointBlock(reply) {
+    const m = String(reply || "").match(/---积分---([\s\S]*?)---积分理由---([\s\S]*?)(?=---|$)/);
+    if (!m) return null;
+
+    const amount = parseInt((m[1] || "").replace(/[^\d-]/g, ""), 10);
+    const reason = (m[2] || "").trim();
+
+    if (Number.isNaN(amount)) return null;
+    return {
+      amount: Math.max(0, Math.min(200, amount)),
+      reason
+    };
+  }
+
+  function stripPointBlock(reply) {
+    return String(reply || "")
+      .replace(/---积分---[\s\S]*?---积分理由---[\s\S]*?(?=---|$)/g, "")
+      .trim();
+  }
+
+  function patchCallLLMForDateReward() {
+    if (state.callLLMPatched) return;
+    if (!window.callLLM) return;
+
+    const original = window.callLLM;
+
+    window.callLLM = async function patchedDateMallCallLLM(messages, options) {
+      let shouldPatch = false;
+
+      try {
+        if (Array.isArray(messages)) {
+          const joined = messages.map(m => m && m.content ? String(m.content) : "").join("\n");
+          shouldPatch =
+            joined.includes("【小世界设定】") &&
+            joined.includes("【输出格式】") &&
+            joined.includes("---叙述---") &&
+            joined.includes("---选项1---");
+        }
+
+        if (shouldPatch) {
+          messages = messages.map(m => {
+            if (!m || !m.content || typeof m.content !== "string") return m;
+
+            if (!m.content.includes("---叙述---")) return m;
+
+            return {
+              ...m,
+              content: m.content + `
+
+【积分判定】
+本轮叙事完成后，请根据以下标准给介入者发放积分：
+- 推进主线目标、发现关键线索、改变角色命运：20-60 分
+- 做出高风险选择、承担代价、完成困难行动：20-80 分
+- 只是普通互动或低风险行动：5-20 分
+- 行动无效、拖延、偏离目标：0-10 分
+- 不要过度慷慨，积分应与剧情贡献匹配。
+
+请在原本输出格式后追加：
+---积分---
+一个整数
+---积分理由---
+一句简短理由
+
+注意：积分区块不能影响选项内容。`
+            };
+          });
+        }
+      } catch (e) {
+        console.warn("[date mall] patch prompt failed", e);
+      }
+
+      const reply = await original.call(this, messages, options);
+
+      if (shouldPatch) {
+        try {
+          const result = parsePointBlock(reply);
+          const convId = getCurrentConvId();
+          if (result && convId) {
+            await awardPoints(convId, result.amount, result.reason);
+          }
+          return stripPointBlock(reply);
+        } catch (e) {
+          console.warn("[date mall] parse reward failed", e);
+          return stripPointBlock(reply);
+        }
+      }
+
+      return reply;
+    };
+
+    window.callLLM._dateMallPatched = true;
+    state.callLLMPatched = true;
+  }
+
+  function patchCoupleDateOpen() {
+    if (!window.coupleDateModule || !window.coupleDateModule.open) {
+      setTimeout(patchCoupleDateOpen, 100);
+      return;
+    }
+
+    if (window.coupleDateModule._mallPatched) return;
+
+    const originalOpen = window.coupleDateModule.open;
+
+    window.coupleDateModule.open = async function patchedOpen(convId) {
+      state.convId = convId;
+      const ret = await originalOpen.apply(this, arguments);
+      setTimeout(() => {
+        enhanceCurrentDateView();
+        bindScrollObserver();
+      }, 80);
+      return ret;
+    };
+
+    window.coupleDateModule._mallPatched = true;
+  }
+
+  function bindScrollObserver() {
+    if (state.observerBound) return;
+
+    const scroll = document.getElementById("csScroll");
+    if (!scroll) return;
+
+    const observer = new MutationObserver(() => {
+      enhanceCurrentDateView();
+    });
+
+    observer.observe(scroll, {
+      childList: true,
+      subtree: true
+    });
+
+    state.observerBound = true;
+  }
+
+  async function getPointText() {
+    const convId = getCurrentConvId();
+    if (!convId) return "0";
+    const data = await getData(convId);
+    return String(data?.points || 0);
+  }
+
+  async function refreshMallBadges() {
+    const point = await getPointText();
+
+    document.querySelectorAll("[data-dt-point-display]").forEach(el => {
+      el.textContent = point;
+    });
+
+    const convId = getCurrentConvId();
+    if (!convId) return;
+
+    const data = await getData(convId);
+    const count = data?.inventory?.length || 0;
+
+    document.querySelectorAll("[data-dt-bag-count]").forEach(el => {
+      el.textContent = String(count);
+    });
+  }
+
+  function enhanceCurrentDateView() {
+    const scroll = document.getElementById("csScroll");
+    if (!scroll) return;
+
+    const isHome = !!scroll.querySelector(".dt-type-grid");
+    const isWorld = !!scroll.querySelector(".dt-choices") && !!scroll.querySelector(".dt-input-row");
+
+    if (isHome) injectMallEntry(scroll);
+    if (isWorld) injectBagEntry(scroll);
+
+    refreshMallBadges();
+  }
+
+  function injectMallEntry(scroll) {
+    if (scroll.querySelector("#dtMallEntry")) return;
+
+    const grid = scroll.querySelector(".dt-type-grid");
+    if (!grid) return;
+
+    const entry = document.createElement("div");
+    entry.id = "dtMallEntry";
+    entry.className = "dt-mall-entry clickable";
+    entry.innerHTML = `
+      <div class="dt-mall-entry-bg"></div>
+      <div class="dt-mall-entry-icon">${MALL_SVG.shop}</div>
+      <div class="dt-mall-entry-main">
+        <div class="dt-mall-entry-title">快穿商城</div>
+        <div class="dt-mall-entry-sub">购买道具，改变小世界走向</div>
+      </div>
+      <div class="dt-mall-entry-points">
+        ${MALL_SVG.coin}
+        <span data-dt-point-display>0</span>
+      </div>
+    `;
+
+    grid.insertAdjacentElement("afterend", entry);
+
+    entry.addEventListener("click", () => {
+      renderMallHome();
+    });
+  }
+
+  function injectBagEntry(scroll) {
+    if (scroll.querySelector("#dtBagBar")) return;
+
+    const actionTitle = scroll.querySelector(".dt-act-title");
+    if (!actionTitle) return;
+
+    const bar = document.createElement("div");
+    bar.id = "dtBagBar";
+    bar.className = "dt-bag-bar";
+    bar.innerHTML = `
+      <button class="dt-bag-btn" id="dtOpenBagBtn">
+        ${MALL_SVG.bag}
+        <span>道具背包</span>
+        <span class="dt-bag-count" data-dt-bag-count>0</span>
+      </button>
+      <div class="dt-bag-pending" id="dtPendingItemBox" style="display:none;"></div>
+    `;
+
+    actionTitle.insertAdjacentElement("afterend", bar);
+
+    bar.querySelector("#dtOpenBagBtn").addEventListener("click", () => {
+      renderBagModal();
+    });
+
+    updatePendingItemBox();
+  }
+
+  function updatePendingItemBox() {
+    const box = document.getElementById("dtPendingItemBox");
+    if (!box) return;
+
+    if (!state.pendingItem) {
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    box.style.display = "flex";
+    box.innerHTML = `
+      <span class="dt-pending-label">待使用</span>
+      <span class="dt-pending-name">${esc(state.pendingItem.name)}</span>
+      <button class="dt-pending-clear" id="dtClearPendingItem">${MALL_SVG.close}</button>
+    `;
+
+    box.querySelector("#dtClearPendingItem")?.addEventListener("click", () => {
+      state.pendingItem = null;
+      updatePendingItemBox();
+    });
+  }
+
+  async function renderMallHome() {
+    const scroll = document.getElementById("csScroll");
+    const convId = getCurrentConvId();
+    if (!scroll || !convId) return;
+
+    const data = await getData(convId);
+    const points = data?.points || 0;
+    const items = data?.shopItems || [];
+
+    setupMallBackButton();
+
+    scroll.innerHTML = `
+      <div class="dt-mall-page">
+        <div class="dt-mall-hero">
+          <div class="dt-mall-hero-glow"></div>
+          <div class="dt-mall-title-row">
+            <div class="dt-mall-title-icon">${MALL_SVG.shop}</div>
+            <div>
+              <div class="dt-mall-title">快穿商城</div>
+              <div class="dt-mall-subtitle">Neon Transit Market</div>
+            </div>
+          </div>
+          <div class="dt-mall-point-card">
+            <div class="dt-mall-point-label">当前积分</div>
+            <div class="dt-mall-point-value">
+              ${MALL_SVG.coin}
+              <span data-dt-point-display>${points}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dt-mall-action-row">
+          <button class="dt-mall-action-btn" id="dtRefreshShopBtn">
+            ${MALL_SVG.refresh}
+            <span>刷新商品</span>
+          </button>
+          <button class="dt-mall-action-btn" id="dtOpenBagFromMallBtn">
+            ${MALL_SVG.bag}
+            <span>查看背包</span>
+          </button>
+        </div>
+
+        <div class="dt-mall-section-head">
+          <span>在售道具</span>
+          <span class="dt-mall-section-note">D / C / B / A / S</span>
+        </div>
+
+        <div class="dt-mall-goods-list" id="dtMallGoodsList">
+          ${items.length ? items.map(renderShopItemCard).join("") : `<div class="dt-mall-empty">暂无商品，请刷新商城</div>`}
+        </div>
+      </div>
+    `;
+
+    scroll.querySelector("#dtRefreshShopBtn")?.addEventListener("click", refreshShopItems);
+    scroll.querySelector("#dtOpenBagFromMallBtn")?.addEventListener("click", renderBagModal);
+
+    scroll.querySelectorAll("[data-buy-item]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        await buyItem(btn.dataset.buyItem);
+      });
+    });
+  }
+
+  function setupMallBackButton() {
+    let btn = document.getElementById("csBackBtn");
+    if (!btn) return;
+
+    const fresh = btn.cloneNode(true);
+    fresh.onclick = () => {
+      if (window.coupleDateModule && state.convId) {
+        window.coupleDateModule.open(state.convId);
+      }
+    };
+    btn.parentNode.replaceChild(fresh, btn);
+  }
+
+  function renderShopItemCard(item) {
+    const level = item.level || "D";
+    return `
+      <div class="dt-goods-card dt-level-${esc(level)}" data-item-id="${esc(item.id)}">
+        <div class="dt-goods-top">
+          <span class="dt-level-badge">${esc(level)}</span>
+          <span class="dt-goods-type">${esc(item.type || "道具")}</span>
+        </div>
+        <div class="dt-goods-name">${esc(item.name)}</div>
+        <div class="dt-goods-desc">${esc(item.description)}</div>
+        <div class="dt-goods-effect">
+          <span>效果</span>
+          <p>${esc(item.effect)}</p>
+        </div>
+        <div class="dt-goods-bottom">
+          <div class="dt-goods-cost">${MALL_SVG.coin}<span>${Number(item.cost || 0)}</span></div>
+          <button class="dt-buy-btn" data-buy-item="${esc(item.id)}">${MALL_SVG.buy}<span>购买</span></button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function refreshShopItems() {
+    const convId = getCurrentConvId();
+    if (!convId) return;
+
+    if (!window.callLLM) {
+      toast("API 未就绪", "error");
+      return;
+    }
+
+    const data = await getData(convId);
+    if (!data) return;
+
+    const context = await buildMallContext(convId);
+
+    toast("正在刷新商城", "info");
+    if (window.recordApiPending) window.recordApiPending();
+
+    try {
+      const prompt = `这是一个虚构创作系统中的快穿商城。请生成一批适合当前小世界使用的商城道具。
+
+【当前快穿背景】
+${context}
+
+【道具等级规则】
+D级：很弱或偏搞笑，价格约 10-30 积分
+C级：有明确辅助效果，价格约 30-80 积分
+B级：能明显改变局势，价格约 80-160 积分
+A级：强力改变剧情走向，价格约 200-400 积分
+S级：接近规则级或命运级道具，价格约 600-1000 积分
+
+【道具类型】
+可以包含光环、丹药、设备、契约、身份卡、一次性技能、天降NPC、线索生成器、伪装道具、剧情干涉器等。
+道具应当有趣，并适合甜蜜、推理或恐怖剧情。
+
+【输出要求】
+只输出 JSON，不要解释，不要代码块。
+格式如下：
+[
+  {
+    "name": "道具名",
+    "level": "D/C/B/A/S",
+    "type": "道具类型",
+    "cost": 数字,
+    "description": "商品描述",
+    "effect": "使用后对剧情的具体影响"
+  }
+]
+
+请生成 8 个道具，等级要混合，至少包含 1 个 S 级和 1 个 D 级。`;
+
+      const reply = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 1800, temperature: 0.9 });
+      const arr = parseItemsJson(reply);
+
+      if (!arr.length) throw new Error("商城返回为空");
+
+      data.shopItems = arr.map(normalizeItem);
+      data.mallMeta.lastRefresh = Date.now();
+
+      await saveData(convId, data);
+      renderMallHome();
+      toast("商城已刷新", "success");
+    } catch (e) {
+      toast("刷新失败：" + e.message, "error");
+    }
+  }
+
+  function parseItemsJson(reply) {
+    let text = String(reply || "").trim();
+    text = text.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+
+    const start = text.indexOf("[");
+    const end = text.lastIndexOf("]");
+    if (start >= 0 && end > start) {
+      text = text.slice(start, end + 1);
+    }
+
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
+  }
+
+  function normalizeItem(raw) {
+    const level = LEVEL_ORDER.includes(raw.level) ? raw.level : "D";
+    const baseCost = LEVEL_COST[level] || 10;
+
+    return {
+      id: uid("item"),
+      name: String(raw.name || "未命名道具").slice(0, 20),
+      level,
+      type: String(raw.type || "道具").slice(0, 16),
+      cost: Math.max(1, parseInt(raw.cost, 10) || baseCost),
+      description: String(raw.description || "").slice(0, 120),
+      effect: String(raw.effect || "").slice(0, 180),
+      boughtAt: null,
+      usedAt: null
+    };
+  }
+
+  async function buildMallContext(convId) {
+    const data = await getData(convId);
+    if (!data) return "暂无快穿数据。";
+
+    const current = [...(data.worlds || [])].reverse().find(w => w.chosenNodeId) || [...(data.worlds || [])].reverse()[0];
+
+    if (!current) return "用户尚未进入小世界。请生成通用快穿道具。";
+
+    const latestRound = current.rounds && current.rounds.length
+      ? current.rounds[current.rounds.length - 1]
+      : null;
+
+    return `
+小世界名称：${current.name || ""}
+小世界类型：${current.type || ""}
+世界元素：${(current.worldTags || []).join("、")}
+主线目标：${current.mainGoal || ""}
+用户身份：${current.userIdentity || ""}
+对方身份：${current.charIdentity || ""}
+最新剧情：${latestRound ? latestRound.narration : "尚未开始"}
+`;
+  }
+
+  async function buyItem(itemId) {
+    const convId = getCurrentConvId();
+    if (!convId) return;
+
+    const data = await getData(convId);
+    if (!data) return;
+
+    const item = (data.shopItems || []).find(x => x.id === itemId);
+    if (!item) return;
+
+    if ((data.points || 0) < item.cost) {
+      toast("积分不足", "error");
+      return;
+    }
+
+    data.points -= item.cost;
+
+    const bought = {
+      ...item,
+      id: uid("own"),
+      sourceItemId: item.id,
+      boughtAt: Date.now(),
+      usedAt: null
+    };
+
+    data.inventory.push(bought);
+    await saveData(convId, data);
+
+    toast("购买成功", "success");
+    renderMallHome();
+  }
+
+  async function renderBagModal() {
+    const convId = getCurrentConvId();
+    if (!convId) return;
+
+    const old = document.getElementById("dtBagModal");
+    if (old) old.remove();
+
+    const data = await getData(convId);
+    const inventory = (data?.inventory || []).filter(x => !x.usedAt);
+
+    const modal = document.createElement("div");
+    modal.id = "dtBagModal";
+    modal.className = "dt-bag-modal";
+    modal.innerHTML = `
+      <div class="dt-bag-panel">
+        <div class="dt-bag-head">
+          <div class="dt-bag-head-title">
+            ${MALL_SVG.bag}
+            <span>道具背包</span>
+          </div>
+          <button class="dt-bag-close" id="dtBagCloseBtn">${MALL_SVG.close}</button>
+        </div>
+
+        <div class="dt-bag-points">
+          ${MALL_SVG.coin}
+          <span>当前积分</span>
+          <b data-dt-point-display>${data?.points || 0}</b>
+        </div>
+
+        <div class="dt-bag-list">
+          ${inventory.length ? inventory.map(renderBagItemCard).join("") : `<div class="dt-bag-empty">背包为空</div>`}
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector("#dtBagCloseBtn")?.addEventListener("click", () => modal.remove());
+    modal.addEventListener("click", e => {
+      if (e.target === modal) modal.remove();
+    });
+
+    modal.querySelectorAll("[data-use-item]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.useItem;
+        await selectItemForUse(id);
+        modal.remove();
+      });
+    });
+  }
+
+  function renderBagItemCard(item) {
+    return `
+      <div class="dt-bag-item dt-level-${esc(item.level)}">
+        <div class="dt-bag-item-top">
+          <span class="dt-level-badge">${esc(item.level)}</span>
+          <span class="dt-bag-item-type">${esc(item.type || "道具")}</span>
+        </div>
+        <div class="dt-bag-item-name">${esc(item.name)}</div>
+        <div class="dt-bag-item-effect">${esc(item.effect)}</div>
+        <button class="dt-use-btn" data-use-item="${esc(item.id)}">${MALL_SVG.use}<span>选择使用</span></button>
+      </div>
+    `;
+  }
+
+  async function selectItemForUse(ownedItemId) {
+    const convId = getCurrentConvId();
+    if (!convId) return;
+
+    const data = await getData(convId);
+    if (!data) return;
+
+    const item = (data.inventory || []).find(x => x.id === ownedItemId && !x.usedAt);
+    if (!item) return;
+
+    state.pendingItem = item;
+
+    const input = document.getElementById("dtCustomInput");
+    const usageText = buildItemUsageText(item);
+
+    if (input) {
+      const current = input.value.trim();
+      input.value = current ? current + "\n" + usageText : usageText;
+      input.focus();
+    }
+
+    updatePendingItemBox();
+    toast("已选择道具", "success");
+  }
+
+  function buildItemUsageText(item) {
+    return `【使用道具】${item.name}（${item.level}级）：${item.effect}`;
+  }
+
+  async function consumePendingItem() {
+    const convId = getCurrentConvId();
+    const item = state.pendingItem;
+    if (!convId || !item) return;
+
+    const data = await getData(convId);
+    if (!data) return;
+
+    const owned = (data.inventory || []).find(x => x.id === item.id && !x.usedAt);
+    if (owned) {
+      owned.usedAt = Date.now();
+      await saveData(convId, data);
+    }
+
+    state.pendingItem = null;
+    updatePendingItemBox();
+    refreshMallBadges();
+  }
+
+  function bindChoiceInterception() {
+    document.addEventListener("click", async e => {
+      const card = e.target.closest(".dt-choice-card[data-choice-idx]");
+      if (!card || !state.pendingItem) return;
+
+      const input = document.getElementById("dtCustomInput");
+      const text = card.querySelector(".dt-choice-text")?.textContent?.trim() || "";
+
+      if (!input) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      input.value = text + "\n" + buildItemUsageText(state.pendingItem);
+
+      const send = document.getElementById("dtCustomSendBtn");
+      if (send) {
+        await consumePendingItem();
+        send.click();
+      }
+    }, true);
+
+    document.addEventListener("click", async e => {
+      const send = e.target.closest("#dtCustomSendBtn");
+      if (!send || !state.pendingItem) return;
+
+      const input = document.getElementById("dtCustomInput");
+      if (!input || !input.value.includes("【使用道具】")) return;
+
+      await consumePendingItem();
+    }, true);
+  }
+
+  patchCallLLMForDateReward();
+  patchCoupleDateOpen();
+  bindChoiceInterception();
+
+  window.coupleDateMallModule = {
+    renderMallHome,
+    renderBagModal,
+    awardPoints,
+    refreshShopItems
+  };
+
+  console.log("couple-date mall addon ready");
+})();
