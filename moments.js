@@ -84,6 +84,7 @@
   }
 
   async function ensureStoreObject() {
+    // 已切换到 localStorage fallback
     if (__MM_USE_LS_FALLBACK__) {
       let ls = readLSStore();
       if (!ls) {
@@ -93,6 +94,7 @@
       return ls;
     }
 
+    // 先尝试 IndexedDB
     try {
       let rec = await window.DB.get(STORE, KEY);
       if (!rec) {
@@ -101,6 +103,7 @@
       }
       return rec;
     } catch (err) {
+      // 表不存在时自动降级
       const msg = String(err && err.message || err);
       if (
         msg.includes("object stores was not found") ||
@@ -168,6 +171,7 @@
 
   // ---------- 朋友圈生成上下文 ----------
   async function buildCharMomentPrompt(char, convId) {
+    // 取近期消息 + 记忆 + 世界书，尽量和线上一致（简化版）
     const chats = await window.DB.queryByIndex("chats", "conversationId", convId);
     chats.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
     const recent = chats.filter(x => x.messageType !== "innerVoice").slice(-16);
@@ -261,7 +265,27 @@ ${charList}
 `.trim();
   }
 
-  // ---------- AI 数据解析 ----------
+  // ─── 补充缺失定义：在朋友圈交互中被调用的核心 Prompt 发生器 ───
+  async function buildCharCommentPrompt(char, ownerName, postText) {
+    return `
+你是${char.name}。
+你的说话风格和人设如下：
+${char.detail || "（无）"}
+
+你现在在刷朋友圈。你看到了好友 ${ownerName} 发布了以下动态：
+「${postText}」
+
+请根据你的人设和你们之间的关系，决定是否进行互动。
+你可以选择：点赞、发表一条简短评论、或者没有任何反应。
+评论内容必须简短自然，且完全符合你的语气（30字以内）。
+
+请严格按照以下格式输出你的反应，不要有任何多余的客套话或解释文字：
+[LIKE]true 或 false
+[COMMENT]你的评论内容（如果决定不评论，请写 none）
+`.trim();
+  }
+
+  // ---------- AI 解析 ----------
   function parseMomentAI(raw) {
     const textM = raw.match(/\[TEXT\]([\s\S]*?)(?:\n\[IMAGES\]|$)/);
     const imgM = raw.match(/\[IMAGES\]([\s\S]*)$/);
@@ -278,10 +302,14 @@ ${charList}
 
   function parseReactAI(raw) {
     const result = { like: false, comment: null };
+
+    // 解析 [LIKE]
     const likeMatch = raw.match(/\[LIKE\]\s*(true|false)/i);
     if (likeMatch) {
       result.like = likeMatch[1].toLowerCase() === "true";
     }
+
+    // 解析 [COMMENT]
     const commentMatch = raw.match(/\[COMMENT\]\s*([\s\S]*?)$/i);
     if (commentMatch && commentMatch[1]) {
       const content = commentMatch[1].trim().slice(0, 80);
@@ -289,6 +317,8 @@ ${charList}
         result.comment = content;
       }
     }
+
+    // 容错：如果没有标签但包含关键词
     if (!likeMatch && !commentMatch) {
       const lower = raw.toLowerCase();
       if (lower.includes("点赞") || lower.includes("like") || lower.includes("赞")) {
@@ -299,11 +329,14 @@ ${charList}
         result.comment = trimmed.slice(0, 30);
       }
     }
+
     return result;
   }
 
+
   function parseBatchReactAI(raw, charNames) {
     const results = {};
+    // 初始化
     charNames.forEach(name => { results[name] = { like: false, comment: null }; });
 
     const lines = (raw || "").split("\n").filter(l => l.trim());
@@ -315,6 +348,7 @@ ${charList}
       const commentStr = (m[3] || "").trim();
 
       if (!results[name]) {
+        // 模糊匹配
         const found = charNames.find(n => name.includes(n) || n.includes(name));
         if (found) {
           results[found] = {
@@ -355,6 +389,7 @@ ${charList}
       const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 280 });
       const parsed = parseMomentAI(raw);
       text = parsed.text || text;
+      // char 图片默认先不自动生成真实图，IMAGES做文字图占位
       imgs = parsed.images.map(desc => ({ type: "textcard", value: desc }));
     } catch (e) {
       // fallback
@@ -365,7 +400,7 @@ ${charList}
       authorType: "char",
       charId: char.id,
       charGroup: char.group || "默认",
-      userMaskId: conv.maskId, // ─── 核心修改：记录该动态所属的面具 ───
+      userMaskId: conv.maskId, // ─── 核心修改：定时生成的动态完美锁定面具 ID ───
       text,
       images: imgs,
       visibleGroups: [(char.group || "默认")],
@@ -376,6 +411,8 @@ ${charList}
       createdAt: nowTs()
     };
     await createPost(post);
+
+    // 异步触发同组互动
     triggerGroupInteraction(post.id).catch(()=>{});
   }
 
@@ -385,7 +422,7 @@ ${charList}
     const post = {
       id: uuid("post"),
       authorType: "user",
-      userMaskId: mask.id, // ─── 记录动态归属的活跃面具 ───
+      userMaskId: mask.id, // ─── 核心修改：用户主动发朋友圈锁定当前面具 ───
       text: (text || "").trim().slice(0, 500),
       images: (images || []).slice(0, 9).map(src => ({ type: "photo", value: src })),
       visibleGroups: visibleGroups || [],
@@ -408,6 +445,7 @@ ${charList}
     const candidates = await resolveVisibleChars(post);
     if (!candidates.length) return;
 
+    // 一次 API 调用获取所有角色反应
     const ownerName = await getPostOwnerName(post);
     const existingComments = await buildCommentSummary(post);
 
@@ -418,13 +456,15 @@ ${charList}
       batchResult = parseBatchReactAI(raw, candidates.map(c => c.name));
     } catch (e) {
       console.warn("[triggerGroupInteraction] batch LLM error:", e);
+      // fallback: 全部点赞
       candidates.forEach(c => { batchResult[c.name] = { like: true, comment: null }; });
     }
 
+    // 逐个写入（带延迟模拟异步出现，但不再调 API）
     let delay = 800;
     for (const ch of candidates) {
       const reaction = batchResult[ch.name] || { like: false, comment: null };
-      if (!reaction.like && !reaction.comment) continue;
+      if (!reaction.like && !reaction.comment) continue; // 不反应的跳过
 
       setTimeout(async () => {
         await withStoreLock(async () => {
@@ -459,6 +499,7 @@ ${charList}
   async function resolveVisibleChars(post) {
     const allChars = await window.DB.getAll("characters");
 
+    // char 发帖：默认同组
     if (post.authorType === "char") {
       return allChars.filter(c =>
         (c.group || "默认") === (post.charGroup || "默认") &&
@@ -466,6 +507,7 @@ ${charList}
       );
     }
 
+    // user 发帖：按可见分组/可见联系人
     const set = new Map();
     for (const gid of (post.visibleGroups || [])) {
       allChars.filter(c => (c.group || "默认") === gid).forEach(c => set.set(c.id, c));
@@ -475,6 +517,55 @@ ${charList}
       if (c) set.set(c.id, c);
     }
     return [...set.values()];
+  }
+
+  async function interactOne(actorChar, postId) {
+    await withStoreLock(async () => {
+      const rec = await ensureStoreObject();
+      const post = rec.posts.find(p => p.id === postId);
+      if (!post) return;
+
+      const ownerName = await getPostOwnerName(post);
+
+      let reaction = { like: false, comment: null };
+      try {
+        const raw = await window.callLLM([{
+          role: "user",
+          content: await buildCharCommentPrompt(actorChar, ownerName, post.text || "")
+        }], { maxTokens: 120 });
+        reaction = parseReactAI(raw);
+      } catch (e) {
+        console.warn("[interactOne] LLM error, fallback to like only:", e);
+        reaction = { like: true, comment: null };
+      }
+
+      if (reaction.like) {
+        if (!post.likes.some(x => x.charId === actorChar.id)) {
+          post.likes.push({ charId: actorChar.id, ts: nowTs() });
+        }
+      }
+
+      if (reaction.comment && reaction.comment.trim()) {
+        const recentSame = (post.comments || []).find(c =>
+          c.fromType === "char" &&
+          c.fromCharId === actorChar.id &&
+          Math.abs((c.ts || 0) - nowTs()) < 90 * 1000
+        );
+        if (!recentSame) {
+          post.comments.push({
+            id: uuid("cmt"),
+            fromType: "char",
+            fromCharId: actorChar.id,
+            toCommentId: null,
+            content: reaction.comment,
+            ts: nowTs()
+          });
+        }
+      }
+
+      await saveStore(rec);
+      await renderFeed();
+    });
   }
 
   async function userComment(postId, text) {
@@ -496,6 +587,7 @@ ${charList}
     await saveStore(rec);
     await renderFeed();
 
+    // 帖主回复（如果是角色发的帖）
     if (post.authorType === "char") {
       setTimeout(async () => {
         await withStoreLock(async () => {
@@ -507,18 +599,19 @@ ${charList}
           if (owner) {
             try {
               const prompt = `
-你是${owner.name}。
-你的人设：${owner.detail || "（无）"}
+  你是${owner.name}。
+  你的人设：${owner.detail || "（无）"}
 
-用户在你的朋友圈评论：${text}
+  用户在你的朋友圈评论：${text}
 
-请输出你的反应，格式如下（可以同时选一个或多个）：
-[LIKE]true 或 false
-[COMMENT]评论内容（如果不想评论，写 none）
+  请输出你的反应，格式如下（可以同时选一个或多个）：
+  [LIKE]true 或 false
+  [COMMENT]评论内容（如果不想评论，写 none）
 
-要求：
-- 严格按上面格式输出
-- 不要输出其他任何文字`;
+  要求：
+  - 严格按上面格式输出
+  - 不要输出其他任何文字
+  `;
               const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 120 });
               const reaction = parseReactAI(raw);
 
@@ -549,6 +642,7 @@ ${charList}
       }, 1200 + Math.random() * 2800);
     }
 
+    // 其他可见 char 可能跟评（批量一次调用）
     setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 2000);
   }
 
@@ -569,6 +663,7 @@ ${charList}
 
   // ---------- 转发 ----------
   async function forwardPostToConversation(postId, target) {
+    // target: {type:'single'|'group', id}
     const rec = await ensureStoreObject();
     const post = rec.posts.find(p => p.id === postId);
     if (!post) return;
@@ -625,6 +720,7 @@ ${charList}
         timestamp: nowTs()
       });
 
+      // 目标角色看后反应（LLM决定点赞/评论）
       setTimeout(async () => {
         const rec2 = await ensureStoreObject();
         const p2 = rec2.posts.find(x => x.id === post.id);
@@ -638,27 +734,28 @@ ${charList}
 
         try {
           const prompt = `
-你是${ch.name}。
-你的人设：${ch.detail || "（无）"}
+  你是${ch.name}。
+  你的人设：${ch.detail || "（无）"}
 
-用户转发给你一条朋友圈：
-发送人：${owner}
-内容：${post.text || ""}
-评论摘要：${commentsText || "无"}
+  用户转发给你一条朋友圈：
+  发送人：${owner}
+  内容：${post.text || ""}
+  评论摘要：${commentsText || "无"}
 
-请做出反应，格式如下：
-[LIKE]true 或 false
-[COMMENT]评论内容（如果不想评论，写 none）
+  请做出反应，格式如下：
+  [LIKE]true 或 false
+  [COMMENT]评论内容（如果不想评论，写 none）
 
-要求：
-- 严格按上面格式输出
-- 不要输出其他任何文字`;
+  要求：
+  - 严格按上面格式输出
+  - 不要输出其他任何文字`;
 
           const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
           const parsed = parseReactAI(raw);
           actionType = parsed.comment ? "comment" : "like";
           actionContent = parsed.comment || "none";
         } catch (e) {
+          // fallback
           actionType = Math.random() < 0.6 ? "like" : "comment";
           actionContent = "这条我有点想法。";
         }
@@ -704,6 +801,7 @@ ${charList}
       return;
     }
 
+    // 群聊转发
     await window.DB.put("groupMessages", {
       groupId: target.id,
       senderType: "user",
@@ -774,7 +872,7 @@ ${charList}
     return rec.autoRules?.[String(convId)] || { enabled: false, timeHM: "09:00", lastSentDay: null };
   }
 
-  // ---------- UI 渲染与过滤 ----------
+  // ---------- UI 呈现渲染与实时过滤 ----------
   async function getPostOwnerName(post) {
     if (post.authorType === "char") {
       const c = await getCharInfo(post.charId);
@@ -835,7 +933,7 @@ ${charList}
     const rec = await ensureStoreObject();
     const posts = rec.posts || [];
 
-    // ─── 核心修改 1：获取当前活跃面具，进行朋友圈动态的严格隔离 ───
+    // ─── 核心修改 1：获取当前活跃面具，进行朋友圈动态的严格身份隔离与过滤 ───
     const mask = await getActiveMaskSafe();
     const activeMaskId = mask ? mask.id : null;
 
@@ -913,7 +1011,6 @@ ${charList}
       postEl.querySelector('[data-act="share"]')?.addEventListener("click", () => openSharePicker(pid));
       postEl.addEventListener("dblclick", () => openPostDetail(pid));
     });
-
     wrap.querySelectorAll(".mm-comment-line[data-comment-id]").forEach(line => {
       line.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -950,75 +1047,9 @@ ${charList}
       await renderFeed();
     });
 
+    // 触发帖主+其他人反应（一次调用）
     setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 1500);
   }
-  
-  
-    // ---------- 对话详情：自动发朋友圈配置 ----------
-  async function injectAutoMomentsIntoConvDetail() {
-  const page = document.getElementById("page-conv-detail");
-  if (!page) return;
-  if (document.getElementById("convDetailMomentsSection")) return;
-
-  // 优先插在“角色与你的关系”块后面
-  let anchor = null;
-  const sections = page.querySelectorAll(".worldbook-section");
-  sections.forEach(sec => {
-    const h3 = sec.querySelector("h3");
-    if (h3 && (h3.textContent || "").includes("角色与你的关系")) {
-      anchor = sec;
-    }
-  });
-
-  const sec = document.createElement("div");
-  sec.className = "worldbook-section";
-  sec.id = "convDetailMomentsSection";
-  sec.innerHTML = `
-    <h3 style="margin-bottom:12px;">自动发朋友圈</h3>
-    <div class="form-group">
-      <label style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="convAutoMomentEnabled">
-        启用自动定时
-      </label>
-    </div>
-    <div class="form-group">
-      <label>时间</label>
-      <input type="time" id="convAutoMomentTime" value="09:00">
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="small-btn" id="convAutoMomentSaveBtn">保存设置</button>
-      <button class="small-btn" id="convAutoMomentPostNowBtn">立即发一条</button>
-    </div>
-  `;
-
-  if (anchor && anchor.parentNode) {
-    anchor.parentNode.insertBefore(sec, anchor.nextSibling);
-  } else {
-    const scroller = page.querySelector('div[style*="overflow-y:auto"]');
-    if (scroller) scroller.appendChild(sec);
-    else page.appendChild(sec);
-  }
-
-  document.getElementById("convAutoMomentSaveBtn")?.addEventListener("click", async () => {
-    const convId = window.currentEditingConvId;
-    if (!convId) return;
-    const enabled = !!document.getElementById("convAutoMomentEnabled")?.checked;
-    const timeHM = document.getElementById("convAutoMomentTime")?.value || "09:00";
-    await setAutoRule(convId, enabled, timeHM);
-    window.showStatus?.("自动发朋友圈设置已保存", "success");
-  });
-
-  document.getElementById("convAutoMomentPostNowBtn")?.addEventListener("click", async () => {
-    const convId = window.currentEditingConvId;
-    if (!convId) return;
-    await charPostNowByConversation(convId);
-    window.showStatus?.("已发送一条朋友圈", "success");
-    if (window.currentConversationId === Number(convId) && window.loadConversationMessages) {
-      await window.loadConversationMessages(Number(convId));
-    }
-  });
-}
-
 
   async function renderHeader() {
     const rec = await ensureStoreObject();
@@ -1115,8 +1146,8 @@ ${charList}
     if (textImgBox) textImgBox.style.display = "none";
     if (textImgInput) textImgInput.value = "";
 
-    // ─── 核心修改 2：朋友圈观众范围隔离 ───
-    // 在发布动态时，仅仅拉取和展示【当前活跃面具下】有过对话交往的联系人及分组，彻底避免跨身份穿帮
+    // ─── 核心修改 2：朋友圈观众范围面具隔离 ───
+    // 在发布动态时，仅仅拉取和展示【当前活跃面具下】建立过单人会话交往的联系人及分组，彻底避免跨身份穿帮
     const mask = await getActiveMaskSafe();
     const activeMaskId = mask ? mask.id : null;
     const allConvs = await window.DB.getAll("conversations");
@@ -1193,6 +1224,7 @@ ${charList}
     if (cur) lines.push(cur);
     lines = lines.slice(0, 8);
 
+    // ✅ 修复后的循环
     const totalH = lines.length * lineHeight;
     let y = 450 - totalH / 2 + lineHeight / 2;
     for (const ln of lines) {
@@ -1239,211 +1271,126 @@ ${charList}
     document.getElementById("momentsComposerModal")?.classList.remove("show");
   }
 
-  // ---------- 转发 ----------
-  async function forwardPostToConversation(postId, target) {
-    const rec = await ensureStoreObject();
-    const post = rec.posts.find(p => p.id === postId);
-    if (!post) return;
+  // ---------- 转发选择 ----------
+  let __MM_SHARE_POST_ID__ = null;
 
-    const owner = await getPostOwnerName(post);
-    const commentsText = await buildCommentSummary(post);
+  async function openSharePicker(postId) {
+    __MM_SHARE_POST_ID__ = postId;
+    const listEl = document.getElementById("momentsShareList");
+    const modal = document.getElementById("momentsShareModal");
+    if (!listEl || !modal) return;
 
-    const previewText = (post.text || "").slice(0, 90);
-    const imgCount = (post.images || []).length;
-    const hasImage = imgCount > 0;
+    const singles = await window.DB.getAll("conversations");
+    const groups = await window.DB.getAll("groupChats");
 
-    const cardHTML = `
-<div class="mm-forward-card" data-moment-post-id="${post.id}">
-  <div class="mmf-head">
-    <div class="mmf-dot"></div>
-    <div class="mmf-label">MOMENT SHARE</div>
-  </div>
+    let html = "";
 
-  <div class="mmf-body">
-    <div class="mmf-owner">${esc(owner)}</div>
-    <div class="mmf-text">${esc(previewText)}${(post.text || "").length > 90 ? "..." : ""}</div>
-
-    ${hasImage ? `
-      <div class="mmf-photo-strip">
-        <div class="mmf-photo-badge">${imgCount} PHOTOS</div>
-      </div>
-    ` : `
-      <div class="mmf-photo-strip empty">
-        <div class="mmf-photo-badge">TEXT ONLY</div>
-      </div>
-    `}
-  </div>
-
-  <div class="mmf-foot">
-    <span class="mmf-meta">Tap to view details</span>
-    <span class="mmf-arrow">›</span>
-  </div>
-</div>`.trim();
-
-    const contextText = `user转发了一条朋友圈，发送人${owner}，内容${post.text || ""}，评论有:${commentsText || "无"}`;
-
-    if (target.type === "single") {
-      const conv = await window.DB.get("conversations", target.id);
-      if (!conv) return;
-
-      await window.DB.put("chats", {
-        role: "user",
-        content: cardHTML,
-        messageType: "moments_forward_card",
-        extraContext: contextText,
-        refPostId: post.id,
-        conversationId: conv.id,
-        charId: conv.charId,
-        timestamp: nowTs()
-      });
-
-      setTimeout(async () => {
-        const rec2 = await ensureStoreObject();
-        const p2 = rec2.posts.find(x => x.id === post.id);
-        if (!p2) return;
-
-        const ch = await getCharInfo(conv.charId);
-        if (!ch) return;
-
-        let actionType = "like";
-        let actionContent = "none";
-
-        try {
-          const prompt = `
-你是${ch.name}。
-你的人设：${ch.detail || "（无）"}
-
-用户转发给你一条朋友圈：
-发送人：${owner}
-内容：${post.text || ""}
-评论摘要：${commentsText || "无"}
-
-请做出反应，格式如下：
-[LIKE]true 或 false
-[COMMENT]评论内容（如果不想评论，写 none）
-
-要求：
-- 严格按上面格式输出
-- 不要输出其他任何文字`;
-
-          const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
-          const parsed = parseReactAI(raw);
-          actionType = parsed.comment ? "comment" : "like";
-          actionContent = parsed.comment || "none";
-        } catch (e) {
-          actionType = Math.random() < 0.6 ? "like" : "comment";
-          actionContent = "这条我有点想法。";
-        }
-
-        if (actionType === "like") {
-          if (!p2.likes.some(x => x.charId === ch.id)) {
-            p2.likes.push({ charId: ch.id, ts: nowTs() });
-          }
-          await window.DB.put("chats", {
-            role: "system",
-            content: "Ta给你转发的朋友圈点了个赞",
-            messageType: "mode_switch",
-            conversationId: conv.id,
-            charId: conv.charId,
-            timestamp: nowTs()
-          });
-        } else {
-          const txt = (actionContent || "这条我有点想法。").slice(0, 30);
-          p2.comments.push({
-            id: uuid("cmt"),
-            fromType: "char",
-            fromCharId: ch.id,
-            content: txt,
-            toCommentId: null,
-            ts: nowTs()
-          });
-          await window.DB.put("chats", {
-            role: "system",
-            content: `Ta给你转发的朋友圈评论: ${txt}`,
-            messageType: "mode_switch",
-            conversationId: conv.id,
-            charId: conv.charId,
-            timestamp: nowTs()
-          });
-        }
-
-        await saveStore(rec2);
-        await renderFeed();
-        if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
-      }, 1800 + Math.random() * 2800);
-
-      if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
-      return;
+    for (const c of singles) {
+      const ch = await getCharInfo(c.charId);
+      html += `
+        <label class="mm-share-item">
+          <input type="checkbox" data-type="single" data-id="${c.id}">
+          <div>
+            <div>单聊 · ${esc(ch?.name || String(c.id))}</div>
+            <div class="mm-share-meta">会话ID: ${esc(String(c.id))}</div>
+          </div>
+        </label>
+      `;
     }
 
-    await window.DB.put("groupMessages", {
-      groupId: target.id,
-      senderType: "user",
-      senderId: "user",
-      content: cardHTML,
-      messageType: "moments_forward_card",
-      extraContext: contextText,
-      refPostId: post.id,
-      timestamp: nowTs()
+    for (const g of groups) {
+      html += `
+        <label class="mm-share-item">
+          <input type="checkbox" data-type="group" data-id="${g.id}">
+          <div>
+            <div>群聊 · ${esc(g.name || String(g.id))}</div>
+            <div class="mm-share-meta">群ID: ${esc(String(g.id))}</div>
+          </div>
+        </label>
+      `;
+    }
+
+    if (!html) {
+      html = `<div style="text-align:center;color:#999;padding:24px 0;">暂无可转发会话</div>`;
+    }
+
+    listEl.innerHTML = html;
+    modal.classList.add("show");
+  }
+
+  // ---------- 对话详情：自动发朋友圈配置 ----------
+  async function injectAutoMomentsIntoConvDetail() {
+    const page = document.getElementById("page-conv-detail");
+    if (!page) return;
+    if (document.getElementById("convDetailMomentsSection")) return;
+
+    // 优先插在“角色与你的关系”块后面
+    let anchor = null;
+    const sections = page.querySelectorAll(".worldbook-section");
+    sections.forEach(sec => {
+      const h3 = sec.querySelector("h3");
+      if (h3 && (h3.textContent || "").includes("角色与你的关系")) {
+        anchor = sec;
+      }
     });
-    if (window.loadGroupMessages) await window.loadGroupMessages(target.id);
-  }
 
-  async function buildCommentSummary(post) {
-    const lines = [];
-    for (const c of (post.comments || []).slice(-8)) {
-      const from = await getCommentFromName(c);
-      if (c.toCommentId) {
-        const to = post.comments.find(x => x.id === c.toCommentId);
-        const toName = to ? await getCommentFromName(to) : "某人";
-        lines.push(`${from}回复${toName}说${c.content}`);
-      } else {
-        lines.push(`${from}说${c.content}`);
-      }
+    const sec = document.createElement("div");
+    sec.className = "worldbook-section";
+    sec.id = "convDetailMomentsSection";
+    sec.innerHTML = `
+      <h3 style="margin-bottom:12px;">自动发朋友圈</h3>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="convAutoMomentEnabled" style="width:16px;height:16px;">
+          启用自动定时
+        </label>
+      </div>
+      <div class="form-group">
+        <label>发布时间</label>
+        <input type="time" id="convAutoMomentTime" value="09:00" style="width:100%;padding:8px;border-radius:8px;border:1px solid #d4cdc2;margin-top:4px;">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="small-btn clickable" id="convAutoMomentSaveBtn" style="flex:1;background:#d7e4ee;color:#4a5568;border:none;padding:8px;border-radius:20px;font-weight:500;">保存设置</button>
+        <button class="small-btn clickable" id="convAutoMomentPostNowBtn" style="flex:1;background:#faf9f6;color:#4a5568;border:1px solid #c9bfae;padding:8px;border-radius:20px;font-weight:500;">立即发一条</button>
+      </div>
+    `;
+
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(sec, anchor.nextSibling);
+    } else {
+      const scroller = page.querySelector('div[style*="overflow-y:auto"]');
+      if (scroller) scroller.appendChild(sec);
+      else page.appendChild(sec);
     }
-    return lines.join("，");
-  }
 
-  // ---------- 自动发 ----------
-  autoTimer = null;
-  async function tickAutoPost() {
-    const rec = await ensureStoreObject();
-    const rules = rec.autoRules || {};
-    const keys = Object.keys(rules);
-    for (const convId of keys) {
-      const r = rules[convId];
-      if (!r?.enabled || !r?.timeHM) continue;
-      const day = todayKey();
-      const doneToday = r.lastSentDay === day;
-      if (doneToday) continue;
-      if (atLeastReached(r.timeHM)) {
-        await charPostNowByConversation(Number(convId));
-        r.lastSentDay = day;
+    document.getElementById("convAutoMomentSaveBtn")?.addEventListener("click", async () => {
+      const convId = window.currentEditingConvId;
+      if (!convId) return;
+      const enabled = !!document.getElementById("convAutoMomentEnabled")?.checked;
+      const timeHM = document.getElementById("convAutoMomentTime")?.value || "09:00";
+      await setAutoRule(convId, enabled, timeHM);
+      window.showStatus?.("自动发朋友圈设置已保存", "success");
+    });
+
+    document.getElementById("convAutoMomentPostNowBtn")?.addEventListener("click", async () => {
+      const convId = window.currentEditingConvId;
+      if (!convId) return;
+      await charPostNowByConversation(convId);
+      window.showStatus?.("已发送一条朋友圈", "success");
+      if (window.currentConversationId === Number(convId) && window.loadConversationMessages) {
+        await window.loadConversationMessages(Number(convId));
       }
-    }
-    await saveStore(rec);
+    });
   }
 
-  function startAutoLoop() {
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = setInterval(() => { tickAutoPost().catch(()=>{}); }, 60 * 1000);
-    tickAutoPost().catch(()=>{});
-  }
-
-  async function setAutoRule(convId, enabled, timeHM) {
-    const rec = await ensureStoreObject();
-    rec.autoRules = rec.autoRules || {};
-    rec.autoRules[String(convId)] = {
-      enabled: !!enabled,
-      timeHM: timeHM || "09:00",
-      lastSentDay: rec.autoRules[String(convId)]?.lastSentDay || null
-    };
-    await saveStore(rec);
-  }
-
-  async function getAutoRule(convId) {
-    const rec = await ensureStoreObject();
-    return rec.autoRules?.[String(convId)] || { enabled: false, timeHM: "09:00", lastSentDay: null };
+  async function syncAutoMomentUI() {
+    const convId = window.currentEditingConvId;
+    if (!convId) return;
+    const rule = await getAutoRule(convId);
+    const en = document.getElementById("convAutoMomentEnabled");
+    const tm = document.getElementById("convAutoMomentTime");
+    if (en) en.checked = !!rule.enabled;
+    if (tm) tm.value = rule.timeHM || "09:00";
   }
 
   // ---------- 页面初始化 ----------
@@ -1550,6 +1497,7 @@ ${charList}
     `;
     appMain.appendChild(page);
 
+    // 注册到 pages 映射（如果你后面用 switchPage('moments')）
     if (window.pages) window.pages.moments = page;
   }
 
@@ -1575,6 +1523,7 @@ ${charList}
 
     document.getElementById("momentsFabBtn")?.addEventListener("click", openComposer);
 
+    // 上传照片
     document.getElementById("momentsComposerPhotoBtn")?.addEventListener("click", () => {
       document.getElementById("momentsComposerFile")?.click();
     });
@@ -1583,6 +1532,7 @@ ${charList}
       e.target.value = "";
     });
 
+    // 文字图入口
     document.getElementById("momentsComposerTextImgBtn")?.addEventListener("click", () => {
       const box = document.getElementById("momentsTextImgEditor");
       if (box) box.style.display = box.style.display === "none" ? "block" : "none";
@@ -1607,7 +1557,6 @@ ${charList}
       const box = document.getElementById("momentsTextImgEditor");
       if (box) box.style.display = "none";
     });
-
     document.getElementById("momentsComposerCancelBtn")?.addEventListener("click", () => {
       document.getElementById("momentsComposerModal")?.classList.remove("show");
     });
@@ -1666,6 +1615,7 @@ ${charList}
       const postId = card.getAttribute("data-moment-post-id");
       if (!postId) return;
 
+      // 打开朋友圈页面并弹详情
       if (window.switchPage) window.switchPage("moments");
       try {
         await renderHeader();
@@ -1694,6 +1644,7 @@ ${charList}
       await ensureStoreObject();
     } catch (e) {
       console.error("[moments] init store error:", e);
+      // 兜底强制启用 localStorage
       __MM_USE_LS_FALLBACK__ = true;
       const ls = readLSStore() || buildDefaultStore();
       writeLSStore(ls);
@@ -1702,7 +1653,8 @@ ${charList}
     await ensureMomentsPageElements();
     bindPageEvents();
     startAutoLoop();
-
+    
+    // 当进入对话详情时注入“自动发朋友圈”区块
     const obs = new MutationObserver(async () => {
       const active = document.querySelector("#page-conv-detail.page.active");
       if (active) {
@@ -1717,6 +1669,7 @@ ${charList}
     });
     obs.observe(document.body, { childList: true, subtree: true });
 
+    // 首次预渲染
     try {
       await renderHeader();
       await renderFeed();
@@ -1725,6 +1678,7 @@ ${charList}
       console.warn("[moments] pre-render skipped:", e);
     }
 
+    // 供外部调用
     window.momentsModule = {
       openMomentsPage,
       charPostNowByConversation,
@@ -1737,7 +1691,46 @@ ${charList}
         await syncAutoMomentUI();
       }
     };
+
+    // ─── 核心修改 3：动态劫持 switchPage，使其支持动态追加的 page-moments 页面 ───
+    (function patchSwitchPage() {
+      const originalSwitchPage = window.switchPage;
+      if (originalSwitchPage) {
+        window.switchPage = function (pageId) {
+          originalSwitchPage(pageId);
+
+          const momentsPage = document.getElementById("page-moments");
+          if (momentsPage) {
+            if (pageId === "moments") {
+              momentsPage.classList.add("active");
+            } else {
+              momentsPage.classList.remove("active");
+            }
+          }
+        };
+      }
+    })();
   }
 
   window.initMomentsModule = initMomentsModule;
+
+  // ─── 核心修改 4：自动初始化 ───
+  // 解决 moments.js 因 defer 延迟加载，导致 inline init() 执行时 window.initMomentsModule 尚未定义的问题
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    setTimeout(async () => {
+      if (window.initMomentsModule && !window.momentsModule) {
+        console.log("⚡ [moments] 检测到页面已就绪，开始自动初始化...");
+        await window.initMomentsModule();
+      }
+    }, 50);
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(async () => {
+        if (window.initMomentsModule && !window.momentsModule) {
+          console.log("⚡ [moments] DOMContentLoaded，开始自动初始化...");
+          await window.initMomentsModule();
+        }
+      }, 50);
+    });
+  }
 })();
