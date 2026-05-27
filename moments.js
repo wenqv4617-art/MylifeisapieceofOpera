@@ -11,7 +11,7 @@
   const LS_FALLBACK_KEY = "moments_store_fallback_v1";
   let __MM_USE_LS_FALLBACK__ = false;
 
-  // ---------- 工具 ----------
+  // ---------- 工作工具 ----------
   function nowTs() { return Date.now(); }
 
   // 简单写锁，防止并发覆盖
@@ -56,7 +56,7 @@
     close: `<svg viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`
   };
 
-  // ---------- 数据层 ----------
+  // ---------- 数据存储层 ----------
   function buildDefaultStore() {
     return {
       key: KEY,
@@ -140,7 +140,7 @@
     }
   }
 
-  // ---------- 角色信息 ----------
+  // ---------- 角色与联系人 ----------
   async function getMaskInfo(maskId) {
     const m = await window.DB.get("userProfiles", maskId);
     return m || null;
@@ -166,7 +166,7 @@
     return all.find(c => c.charId === charId) || null;
   }
 
-  // ---------- 上下文构建 ----------
+  // ---------- 朋友圈生成上下文 ----------
   async function buildCharMomentPrompt(char, convId) {
     const chats = await window.DB.queryByIndex("chats", "conversationId", convId);
     chats.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
@@ -261,7 +261,7 @@ ${charList}
 `.trim();
   }
 
-  // ---------- AI 解析 ----------
+  // ---------- AI 数据解析 ----------
   function parseMomentAI(raw) {
     const textM = raw.match(/\[TEXT\]([\s\S]*?)(?:\n\[IMAGES\]|$)/);
     const imgM = raw.match(/\[IMAGES\]([\s\S]*)$/);
@@ -332,7 +332,7 @@ ${charList}
     return results;
   }
 
-  // ---------- 发布 ----------
+  // ---------- 朋友圈发布 ----------
   async function createPost(post) {
     const rec = await ensureStoreObject();
     rec.posts.unshift(post);
@@ -398,7 +398,7 @@ ${charList}
     triggerGroupInteraction(post.id).catch(()=>{});
   }
 
-  // ---------- 互动 ----------
+  // ---------- 朋友圈互动 ----------
   async function triggerGroupInteraction(postId) {
     const rec = await ensureStoreObject();
     const post = rec.posts.find(p => p.id === postId);
@@ -566,7 +566,7 @@ ${charList}
     await renderFeed();
   }
 
-  // ---------- 转发 ----------
+  // ---------- 朋友圈转发 ----------
   async function forwardPostToConversation(postId, target) {
     const rec = await ensureStoreObject();
     const post = rec.posts.find(p => p.id === postId);
@@ -731,7 +731,7 @@ ${charList}
     return lines.join("，");
   }
 
-  // ---------- 自动发 ----------
+  // ---------- 自动定时发布 ----------
   let autoTimer = null;
   async function tickAutoPost() {
     const rec = await ensureStoreObject();
@@ -773,7 +773,7 @@ ${charList}
     return rec.autoRules?.[String(convId)] || { enabled: false, timeHM: "09:00", lastSentDay: null };
   }
 
-  // ---------- UI 渲染 ----------
+  // ---------- UI 数据呈现渲染 ----------
   async function getPostOwnerName(post) {
     if (post.authorType === "char") {
       const c = await getCharInfo(post.charId);
@@ -978,7 +978,7 @@ ${charList}
     await renderHeader();
   }
 
-  // ---------- 详情弹窗 ----------
+  // ---------- 朋友圈详情弹窗 ----------
   async function openPostDetail(postId) {
     const rec = await ensureStoreObject();
     const p = rec.posts.find(x => x.id === postId);
@@ -1018,7 +1018,7 @@ ${charList}
     modal.classList.add("show");
   }
 
-  // ---------- 发帖弹窗 ----------
+  // ---------- 发布动态编辑器弹窗 ----------
   let editorImages = [];
 
   async function openComposer() {
@@ -1155,7 +1155,7 @@ ${charList}
     document.getElementById("momentsComposerModal")?.classList.remove("show");
   }
 
-  // ---------- 转发选择 ----------
+  // ---------- 转发会话选择器 ----------
   let __MM_SHARE_POST_ID__ = null;
 
   async function openSharePicker(postId) {
@@ -1276,12 +1276,15 @@ ${charList}
     if (tm) tm.value = rule.timeHM || "09:00";
   }
 
-  // ---------- 页面初始化 ----------
-  async function ensureMomentsPageElements() {
+  // ---------- DOM 骨架创建 (同步方法) ----------
+  function ensureMomentsPageElements() {
     if (document.getElementById("page-moments")) return;
 
     const appMain = document.querySelector(".app-main");
-    if (!appMain) return;
+    if (!appMain) {
+      console.warn("[moments] 未找到 .app-main 容器，挂载骨架延迟中...");
+      return;
+    }
 
     const page = document.createElement("div");
     page.id = "page-moments";
@@ -1507,7 +1510,7 @@ ${charList}
     });
   }
 
-  // ---------- 对外 ----------
+  // ---------- 对外公开入口 ----------
   async function openMomentsPage() {
     try {
       await renderHeader();
@@ -1520,6 +1523,29 @@ ${charList}
   }
 
   async function initMomentsModule() {
+    // ─── 核心修改 1：立即同步挂载 DOM 骨架与路由劫持，决不给白屏留机会 ───
+    ensureMomentsPageElements();
+    bindPageEvents();
+
+    (function patchSwitchPage() {
+      const originalSwitchPage = window.switchPage;
+      if (originalSwitchPage) {
+        window.switchPage = function (pageId) {
+          originalSwitchPage(pageId);
+
+          const momentsPage = document.getElementById("page-moments");
+          if (momentsPage) {
+            if (pageId === "moments") {
+              momentsPage.classList.add("active");
+            } else {
+              momentsPage.classList.remove("active");
+            }
+          }
+        };
+      }
+    })();
+
+    // ─── 核心修改 2：安全异步地读取存储，允许在后台耗时加载 ───
     try {
       await ensureStoreObject();
     } catch (e) {
@@ -1529,8 +1555,6 @@ ${charList}
       writeLSStore(ls);
     }
 
-    await ensureMomentsPageElements();
-    bindPageEvents();
     startAutoLoop();
 
     const obs = new MutationObserver(async () => {
@@ -1567,30 +1591,11 @@ ${charList}
         await syncAutoMomentUI();
       }
     };
-
-    // ─── 核心修改：动态劫持 switchPage，使其支持动态追加的 page-moments 页面 ───
-    (function patchSwitchPage() {
-      const originalSwitchPage = window.switchPage;
-      if (originalSwitchPage) {
-        window.switchPage = function (pageId) {
-          originalSwitchPage(pageId);
-
-          const momentsPage = document.getElementById("page-moments");
-          if (momentsPage) {
-            if (pageId === "moments") {
-              momentsPage.classList.add("active");
-            } else {
-              momentsPage.classList.remove("active");
-            }
-          }
-        };
-      }
-    })();
   }
 
   window.initMomentsModule = initMomentsModule;
 
-  // ─── 新增：自动初始化 ───
+  // ─── 自动初始化 ───
   // 解决 moments.js 因 defer 延迟加载，导致 inline init() 执行时 window.initMomentsModule 尚未定义的问题
   if (document.readyState === "complete" || document.readyState === "interactive") {
     setTimeout(async () => {
