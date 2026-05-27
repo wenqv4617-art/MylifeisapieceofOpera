@@ -952,6 +952,73 @@ ${charList}
 
     setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 1500);
   }
+  
+  
+    // ---------- 对话详情：自动发朋友圈配置 ----------
+  async function injectAutoMomentsIntoConvDetail() {
+  const page = document.getElementById("page-conv-detail");
+  if (!page) return;
+  if (document.getElementById("convDetailMomentsSection")) return;
+
+  // 优先插在“角色与你的关系”块后面
+  let anchor = null;
+  const sections = page.querySelectorAll(".worldbook-section");
+  sections.forEach(sec => {
+    const h3 = sec.querySelector("h3");
+    if (h3 && (h3.textContent || "").includes("角色与你的关系")) {
+      anchor = sec;
+    }
+  });
+
+  const sec = document.createElement("div");
+  sec.className = "worldbook-section";
+  sec.id = "convDetailMomentsSection";
+  sec.innerHTML = `
+    <h3 style="margin-bottom:12px;">自动发朋友圈</h3>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="convAutoMomentEnabled">
+        启用自动定时
+      </label>
+    </div>
+    <div class="form-group">
+      <label>时间</label>
+      <input type="time" id="convAutoMomentTime" value="09:00">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="small-btn" id="convAutoMomentSaveBtn">保存设置</button>
+      <button class="small-btn" id="convAutoMomentPostNowBtn">立即发一条</button>
+    </div>
+  `;
+
+  if (anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(sec, anchor.nextSibling);
+  } else {
+    const scroller = page.querySelector('div[style*="overflow-y:auto"]');
+    if (scroller) scroller.appendChild(sec);
+    else page.appendChild(sec);
+  }
+
+  document.getElementById("convAutoMomentSaveBtn")?.addEventListener("click", async () => {
+    const convId = window.currentEditingConvId;
+    if (!convId) return;
+    const enabled = !!document.getElementById("convAutoMomentEnabled")?.checked;
+    const timeHM = document.getElementById("convAutoMomentTime")?.value || "09:00";
+    await setAutoRule(convId, enabled, timeHM);
+    window.showStatus?.("自动发朋友圈设置已保存", "success");
+  });
+
+  document.getElementById("convAutoMomentPostNowBtn")?.addEventListener("click", async () => {
+    const convId = window.currentEditingConvId;
+    if (!convId) return;
+    await charPostNowByConversation(convId);
+    window.showStatus?.("已发送一条朋友圈", "success");
+    if (window.currentConversationId === Number(convId) && window.loadConversationMessages) {
+      await window.loadConversationMessages(Number(convId));
+    }
+  });
+}
+
 
   async function renderHeader() {
     const rec = await ensureStoreObject();
