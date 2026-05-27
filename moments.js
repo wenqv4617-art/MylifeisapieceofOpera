@@ -353,7 +353,7 @@ ${char.detail || "（无）"}
     // 解析 [COMMENT]
     const commentMatch = raw.match(/\[COMMENT\]\s*([\s\S]*?)$/i);
     if (commentMatch && commentMatch[1]) {
-      const content = commentMatch[1].trim().slice(0, 80);
+      const content = commentMatch[1].trim().slice(0, 150);
       if (content && content.toLowerCase() !== "none" && content.toLowerCase() !== "无") {
         result.comment = content;
       }
@@ -367,7 +367,7 @@ ${char.detail || "（无）"}
       }
       const trimmed = raw.trim();
       if (trimmed && trimmed.length > 0 && !trimmed.match(/^(none|无|点赞|like|赞)$/i)) {
-        result.comment = trimmed.slice(0, 30);
+        result.comment = trimmed.slice(0, 150);
       }
     }
 
@@ -535,7 +535,7 @@ ${char.detail || "（无）"}
     );
 
     // 关键：按候选人数动态增加 token，避免截断
-    const maxTokens = Math.min(2000, Math.max(600, candidates.length * 120));
+    const maxTokens = Math.min(5000, Math.max(1000, candidates.length * 120));
 
     const raw = await window.callLLM(
       [{ role: "user", content: prompt }],
@@ -585,7 +585,7 @@ ${char.detail || "（无）"}
             fromType: "char",
             fromCharId: ch.id,
             toCommentId: null,
-            content: String(reaction.comment).slice(0, 80),
+            content: String(reaction.comment).slice(0, 150),
             ts: nowTs()
           });
         }
@@ -654,7 +654,7 @@ ${char.detail || "（无）"}
         const raw = await window.callLLM([{
           role: "user",
           content: await buildCharCommentPrompt(actorChar, ownerName, post.authorType, maskName, post.text || "")
-        }], { maxTokens: 120 });
+        }], { maxTokens: 1000 });
         reaction = parseReactAI(raw);
       } catch (e) {
         console.warn("[interactOne] LLM error, fallback to like only:", e);
@@ -703,7 +703,7 @@ ${char.detail || "（无）"}
         fromType: "user",
         fromMaskId: mask.id,
         toCommentId: null,
-        content: (text || "").trim().slice(0, 80),
+        content: (text || "").trim().slice(0, 800),
         ts: nowTs()
       };
       post.comments.push(cmt);
@@ -754,7 +754,7 @@ ${owner.detail || "（无）"}
 - 严格按格式输出。
 - 不要输出其他任何文字。
 `.trim();
-                const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 520, temperature: 0.85 });
+                const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 600, temperature: 0.85 });
                 const reaction = parseReactAI(raw);
 
                 if (reaction.like && !p2.likes.some(x => x.charId === owner.id)) {
@@ -814,7 +814,7 @@ ${owner.detail || "（无）"}
     const owner = await getPostOwnerName(post);
     const commentsText = await buildCommentSummary(post);
 
-    const previewText = (post.text || "").slice(0, 90);
+    const previewText = (post.text || "").slice(0, 900);
     const imgCount = (post.images || []).length;
     const hasImage = imgCount > 0;
 
@@ -894,7 +894,7 @@ ${owner.detail || "（无）"}
   - 严格按上面格式输出
   - 不要输出其他任何文字`;
 
-            const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
+            const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 1000 });
             const parsed = parseReactAI(raw);
             actionType = parsed.comment ? "comment" : "like";
             actionContent = parsed.comment || "none";
@@ -917,7 +917,7 @@ ${owner.detail || "（无）"}
               timestamp: nowTs()
             });
           } else {
-            const txt = (actionContent || "这条我有点想法。").slice(0, 30);
+            const txt = (actionContent || "这条我有点想法。").slice(0, 300);
             p2.comments.push({
               id: uuid("cmt"),
               fromType: "char",
@@ -1187,7 +1187,7 @@ ${owner.detail || "（无）"}
       fromType: "user",
       fromMaskId: mask.id,
       toCommentId: toCommentId,
-      content: text.slice(0, 80),
+      content: text.slice(0, 800),
       ts: nowTs()
     });
 
@@ -1225,7 +1225,7 @@ ${owner.detail || "（无）"}
   async function saveSignature(v) {
     await withStoreLock(async () => {
       const rec = await ensureStoreObject();
-      rec.signature = (v || "").trim().slice(0, 80);
+      rec.signature = (v || "").trim().slice(0, 800);
       await saveStore(rec);
     });
   }
