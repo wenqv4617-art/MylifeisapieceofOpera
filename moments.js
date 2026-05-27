@@ -332,7 +332,7 @@ ${charList}
     return results;
   }
 
-  // ---------- 发布 ----------
+  // ---------- 朋友圈发布 ----------
   async function createPost(post) {
     const rec = await ensureStoreObject();
     rec.posts.unshift(post);
@@ -365,7 +365,6 @@ ${charList}
       authorType: "char",
       charId: char.id,
       charGroup: char.group || "默认",
-      userMaskId: conv.maskId, // ─── 核心修改：记录该动态所属的面具 ───
       text,
       images: imgs,
       visibleGroups: [(char.group || "默认")],
@@ -385,7 +384,7 @@ ${charList}
     const post = {
       id: uuid("post"),
       authorType: "user",
-      userMaskId: mask.id, // ─── 记录动态归属的活跃面具 ───
+      userMaskId: mask.id,
       text: (text || "").trim().slice(0, 500),
       images: (images || []).slice(0, 9).map(src => ({ type: "photo", value: src })),
       visibleGroups: visibleGroups || [],
@@ -399,7 +398,7 @@ ${charList}
     triggerGroupInteraction(post.id).catch(()=>{});
   }
 
-  // ---------- 互动 ----------
+  // ---------- 朋友圈互动 ----------
   async function triggerGroupInteraction(postId) {
     const rec = await ensureStoreObject();
     const post = rec.posts.find(p => p.id === postId);
@@ -732,7 +731,7 @@ ${charList}
     return lines.join("，");
   }
 
-  // ---------- 自动发 ----------
+  // ---------- 自动定时发布 ----------
   let autoTimer = null;
   async function tickAutoPost() {
     const rec = await ensureStoreObject();
@@ -774,7 +773,7 @@ ${charList}
     return rec.autoRules?.[String(convId)] || { enabled: false, timeHM: "09:00", lastSentDay: null };
   }
 
-  // ---------- UI 渲染与过滤 ----------
+  // ---------- UI 数据呈现渲染 ----------
   async function getPostOwnerName(post) {
     if (post.authorType === "char") {
       const c = await getCharInfo(post.charId);
@@ -835,23 +834,13 @@ ${charList}
     const rec = await ensureStoreObject();
     const posts = rec.posts || [];
 
-    // ─── 核心修改 1：获取当前活跃面具，进行朋友圈动态的严格隔离 ───
-    const mask = await getActiveMaskSafe();
-    const activeMaskId = mask ? mask.id : null;
-
-    const filteredPosts = posts.filter(p => {
-      // 兼容历史未标记面具的老动态；对于新发动态，只展现匹配当前面具的动态
-      if (!p.userMaskId) return true;
-      return p.userMaskId === activeMaskId;
-    });
-
-    if (!filteredPosts.length) {
-      wrap.innerHTML = `<div style="text-align:center;color:#9aa0aa;padding:40px 0;">当前面具下暂无动态</div>`;
+    if (!posts.length) {
+      wrap.innerHTML = `<div style="text-align:center;color:#9aa0aa;padding:40px 0;">暂无动态</div>`;
       return;
     }
 
     let html = "";
-    for (const p of filteredPosts) {
+    for (const p of posts) {
       const ownerName = await getPostOwnerName(p);
       const avatar = await getPostOwnerAvatar(p);
       const likesNames = [];
@@ -1048,13 +1037,7 @@ ${charList}
     if (textImgBox) textImgBox.style.display = "none";
     if (textImgInput) textImgInput.value = "";
 
-    // ─── 核心修改 2：朋友圈观众范围隔离 ───
-    // 在发布动态时，仅仅拉取和展示【当前活跃面具下】有过对话交往的联系人及分组，彻底避免跨身份穿帮
-    const mask = await getActiveMaskSafe();
-    const activeMaskId = mask ? mask.id : null;
-    const allConvs = await window.DB.getAll("conversations");
-    const convs = allConvs.filter(c => c.maskId === activeMaskId);
-
+    const convs = await window.DB.getAll("conversations");
     const charIds = [...new Set((convs || []).map(c => c.charId).filter(Boolean))];
     const allChars = await window.DB.getAll("characters");
     const chars = allChars.filter(c => charIds.includes(c.id));
@@ -1172,214 +1155,128 @@ ${charList}
     document.getElementById("momentsComposerModal")?.classList.remove("show");
   }
 
-  // ---------- 转发 ----------
-  async function forwardPostToConversation(postId, target) {
-    const rec = await ensureStoreObject();
-    const post = rec.posts.find(p => p.id === postId);
-    if (!post) return;
+  // ---------- 转发选择 ----------
+  let __MM_SHARE_POST_ID__ = null;
 
-    const owner = await getPostOwnerName(post);
-    const commentsText = await buildCommentSummary(post);
+  async function openSharePicker(postId) {
+    __MM_SHARE_POST_ID__ = postId;
+    const listEl = document.getElementById("momentsShareList");
+    const modal = document.getElementById("momentsShareModal");
+    if (!listEl || !modal) return;
 
-    const previewText = (post.text || "").slice(0, 90);
-    const imgCount = (post.images || []).length;
-    const hasImage = imgCount > 0;
+    const singles = await window.DB.getAll("conversations");
+    const groups = await window.DB.getAll("groupChats");
 
-    const cardHTML = `
-<div class="mm-forward-card" data-moment-post-id="${post.id}">
-  <div class="mmf-head">
-    <div class="mmf-dot"></div>
-    <div class="mmf-label">MOMENT SHARE</div>
-  </div>
+    let html = "";
 
-  <div class="mmf-body">
-    <div class="mmf-owner">${esc(owner)}</div>
-    <div class="mmf-text">${esc(previewText)}${(post.text || "").length > 90 ? "..." : ""}</div>
-
-    ${hasImage ? `
-      <div class="mmf-photo-strip">
-        <div class="mmf-photo-badge">${imgCount} PHOTOS</div>
-      </div>
-    ` : `
-      <div class="mmf-photo-strip empty">
-        <div class="mmf-photo-badge">TEXT ONLY</div>
-      </div>
-    `}
-  </div>
-
-  <div class="mmf-foot">
-    <span class="mmf-meta">Tap to view details</span>
-    <span class="mmf-arrow">›</span>
-  </div>
-</div>`.trim();
-
-    const contextText = `user转发了一条朋友圈，发送人${owner}，内容${post.text || ""}，评论有:${commentsText || "无"}`;
-
-    if (target.type === "single") {
-      const conv = await window.DB.get("conversations", target.id);
-      if (!conv) return;
-
-      await window.DB.put("chats", {
-        role: "user",
-        content: cardHTML,
-        messageType: "moments_forward_card",
-        extraContext: contextText,
-        refPostId: post.id,
-        conversationId: conv.id,
-        charId: conv.charId,
-        timestamp: nowTs()
-      });
-
-      setTimeout(async () => {
-        const rec2 = await ensureStoreObject();
-        const p2 = rec2.posts.find(x => x.id === post.id);
-        if (!p2) return;
-
-        const ch = await getCharInfo(conv.charId);
-        if (!ch) return;
-
-        let actionType = "like";
-        let actionContent = "none";
-
-        try {
-          const prompt = `
-你是${ch.name}。
-你的人设：${ch.detail || "（无）"}
-
-用户转发给你一条朋友圈：
-发送人：${owner}
-内容：${post.text || ""}
-评论摘要：${commentsText || "无"}
-
-请做出反应，格式如下：
-[LIKE]true 或 false
-[COMMENT]评论内容（如果不想评论，写 none）
-
-要求：
-- 严格按上面格式输出
-- 不要输出其他任何文字`;
-
-          const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
-          const parsed = parseReactAI(raw);
-          actionType = parsed.comment ? "comment" : "like";
-          actionContent = parsed.comment || "none";
-        } catch (e) {
-          actionType = Math.random() < 0.6 ? "like" : "comment";
-          actionContent = "这条我有点想法。";
-        }
-
-        if (actionType === "like") {
-          if (!p2.likes.some(x => x.charId === ch.id)) {
-            p2.likes.push({ charId: ch.id, ts: nowTs() });
-          }
-          await window.DB.put("chats", {
-            role: "system",
-            content: "Ta给你转发的朋友圈点了个赞",
-            messageType: "mode_switch",
-            conversationId: conv.id,
-            charId: conv.charId,
-            timestamp: nowTs()
-          });
-        } else {
-          const txt = (actionContent || "这条我有点想法。").slice(0, 30);
-          p2.comments.push({
-            id: uuid("cmt"),
-            fromType: "char",
-            fromCharId: ch.id,
-            content: txt,
-            toCommentId: null,
-            ts: nowTs()
-          });
-          await window.DB.put("chats", {
-            role: "system",
-            content: `Ta给你转发的朋友圈评论: ${txt}`,
-            messageType: "mode_switch",
-            conversationId: conv.id,
-            charId: conv.charId,
-            timestamp: nowTs()
-          });
-        }
-
-        await saveStore(rec2);
-        await renderFeed();
-        if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
-      }, 1800 + Math.random() * 2800);
-
-      if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
-      return;
+    for (const c of singles) {
+      const ch = await getCharInfo(c.charId);
+      html += `
+        <label class="mm-share-item">
+          <input type="checkbox" data-type="single" data-id="${c.id}">
+          <div>
+            <div>单聊 · ${esc(ch?.name || String(c.id))}</div>
+            <div class="mm-share-meta">会话ID: ${esc(String(c.id))}</div>
+          </div>
+        </label>
+      `;
     }
 
-    await window.DB.put("groupMessages", {
-      groupId: target.id,
-      senderType: "user",
-      senderId: "user",
-      content: cardHTML,
-      messageType: "moments_forward_card",
-      extraContext: contextText,
-      refPostId: post.id,
-      timestamp: nowTs()
+    for (const g of groups) {
+      html += `
+        <label class="mm-share-item">
+          <input type="checkbox" data-type="group" data-id="${g.id}">
+          <div>
+            <div>群聊 · ${esc(g.name || String(g.id))}</div>
+            <div class="mm-share-meta">群ID: ${esc(String(g.id))}</div>
+          </div>
+        </label>
+      `;
+    }
+
+    if (!html) {
+      html = `<div style="text-align:center;color:#999;padding:24px 0;">暂无可转发会话</div>`;
+    }
+
+    listEl.innerHTML = html;
+    modal.classList.add("show");
+  }
+
+  // ---------- 对话详情：自动发朋友圈配置 ----------
+  async function injectAutoMomentsIntoConvDetail() {
+    const page = document.getElementById("page-conv-detail");
+    if (!page) return;
+    if (document.getElementById("convDetailMomentsSection")) return;
+
+    let anchor = null;
+    const sections = page.querySelectorAll(".worldbook-section");
+    sections.forEach(sec => {
+      const h3 = sec.querySelector("h3");
+      if (h3 && (h3.textContent || "").includes("角色与你的关系")) {
+        anchor = sec;
+      }
     });
-    if (window.loadGroupMessages) await window.loadGroupMessages(target.id);
-  }
 
-  async function buildCommentSummary(post) {
-    const lines = [];
-    for (const c of (post.comments || []).slice(-8)) {
-      const from = await getCommentFromName(c);
-      if (c.toCommentId) {
-        const to = post.comments.find(x => x.id === c.toCommentId);
-        const toName = to ? await getCommentFromName(to) : "某人";
-        lines.push(`${from}回复${toName}说${c.content}`);
-      } else {
-        lines.push(`${from}说${c.content}`);
-      }
+    const sec = document.createElement("div");
+    sec.className = "worldbook-section";
+    sec.id = "convDetailMomentsSection";
+    sec.innerHTML = `
+      <h3 style="margin-bottom:12px;">自动发朋友圈</h3>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="convAutoMomentEnabled">
+          启用自动定时
+        </label>
+      </div>
+      <div class="form-group">
+        <label>时间</label>
+        <input type="time" id="convAutoMomentTime" value="09:00">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="small-btn" id="convAutoMomentSaveBtn">保存设置</button>
+        <button class="small-btn" id="convAutoMomentPostNowBtn">立即发一条</button>
+      </div>
+    `;
+
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(sec, anchor.nextSibling);
+    } else {
+      const scroller = page.querySelector('div[style*="overflow-y:auto"]');
+      if (scroller) scroller.appendChild(sec);
+      else page.appendChild(sec);
     }
-    return lines.join("，");
-  }
 
-  // ---------- 自动发 ----------
-  let autoTimer = null;
-  async function tickAutoPost() {
-    const rec = await ensureStoreObject();
-    const rules = rec.autoRules || {};
-    const keys = Object.keys(rules);
-    for (const convId of keys) {
-      const r = rules[convId];
-      if (!r?.enabled || !r?.timeHM) continue;
-      const day = todayKey();
-      const doneToday = r.lastSentDay === day;
-      if (doneToday) continue;
-      if (atLeastReached(r.timeHM)) {
-        await charPostNowByConversation(Number(convId));
-        r.lastSentDay = day;
+    document.getElementById("convAutoMomentSaveBtn")?.addEventListener("click", async () => {
+      const convId = window.currentEditingConvId;
+      if (!convId) return;
+      const enabled = !!document.getElementById("convAutoMomentEnabled")?.checked;
+      const timeHM = document.getElementById("convAutoMomentTime")?.value || "09:00";
+      await setAutoRule(convId, enabled, timeHM);
+      window.showStatus?.("自动发朋友圈设置已保存", "success");
+    });
+
+    document.getElementById("convAutoMomentPostNowBtn")?.addEventListener("click", async () => {
+      const convId = window.currentEditingConvId;
+      if (!convId) return;
+      await charPostNowByConversation(convId);
+      window.showStatus?.("已发送一条朋友圈", "success");
+      if (window.currentConversationId === Number(convId) && window.loadConversationMessages) {
+        await window.loadConversationMessages(Number(convId));
       }
-    }
-    await saveStore(rec);
+    });
   }
 
-  function startAutoLoop() {
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = setInterval(() => { tickAutoPost().catch(()=>{}); }, 60 * 1000);
-    tickAutoPost().catch(()=>{});
+  async function syncAutoMomentUI() {
+    const convId = window.currentEditingConvId;
+    if (!convId) return;
+    const rule = await getAutoRule(convId);
+    const en = document.getElementById("convAutoMomentEnabled");
+    const tm = document.getElementById("convAutoMomentTime");
+    if (en) en.checked = !!rule.enabled;
+    if (tm) tm.value = rule.timeHM || "09:00";
   }
 
-  async function setAutoRule(convId, enabled, timeHM) {
-    const rec = await ensureStoreObject();
-    rec.autoRules = rec.autoRules || {};
-    rec.autoRules[String(convId)] = {
-      enabled: !!enabled,
-      timeHM: timeHM || "09:00",
-      lastSentDay: rec.autoRules[String(convId)]?.lastSentDay || null
-    };
-    await saveStore(rec);
-  }
-
-  async function getAutoRule(convId) {
-    const rec = await ensureStoreObject();
-    return rec.autoRules?.[String(convId)] || { enabled: false, timeHM: "09:00", lastSentDay: null };
-  }
-
-  // ---------- 页面初始化 ----------
+  // ---------- 页面初始化与挂载 ----------
   async function ensureMomentsPageElements() {
     if (document.getElementById("page-moments")) return;
 
@@ -1610,7 +1507,7 @@ ${charList}
     });
   }
 
-  // ---------- 对外 ----------
+  // ---------- 外部入口 ----------
   async function openMomentsPage() {
     try {
       await renderHeader();
