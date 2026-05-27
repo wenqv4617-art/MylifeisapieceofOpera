@@ -1573,7 +1573,6 @@ ${charList}
       const originalSwitchPage = window.switchPage;
       if (originalSwitchPage) {
         window.switchPage = function (pageId) {
-          // 运行原始路由切换（会清除其他页面的 active 类）
           originalSwitchPage(pageId);
 
           const momentsPage = document.getElementById("page-moments");
@@ -1590,4 +1589,24 @@ ${charList}
   }
 
   window.initMomentsModule = initMomentsModule;
+
+  // ─── 新增：自动初始化 ───
+  // 解决 moments.js 因 defer 延迟加载，导致 inline init() 执行时 window.initMomentsModule 尚未定义的问题
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    setTimeout(async () => {
+      if (window.initMomentsModule && !window.momentsModule) {
+        console.log("⚡ [moments] 检测到页面已就绪，开始自动初始化...");
+        await window.initMomentsModule();
+      }
+    }, 50);
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(async () => {
+        if (window.initMomentsModule && !window.momentsModule) {
+          console.log("⚡ [moments] DOMContentLoaded，开始自动初始化...");
+          await window.initMomentsModule();
+        }
+      }, 50);
+    });
+  }
 })();
