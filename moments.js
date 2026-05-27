@@ -161,10 +161,30 @@
     return all.filter(c => (c.group || "默认") === (groupName || "默认"));
   }
 
+
+
   async function getConversationByChar(charId) {
     const all = await window.DB.getAll("conversations");
     return all.find(c => c.charId === charId) || null;
   }
+
+
+async function getActiveMaskConversationChars() {
+  const mask = await getActiveMaskSafe();
+  const activeMaskId = mask ? mask.id : null;
+
+  const allConvs = await window.DB.getAll("conversations");
+  const convs = allConvs.filter(c => {
+    // 兼容旧数据：没有 maskId 的会话也算可见
+    if (!activeMaskId) return true;
+    return !c.maskId || c.maskId === activeMaskId;
+  });
+
+  const charIds = [...new Set(convs.map(c => c.charId).filter(Boolean))];
+  const allChars = await window.DB.getAll("characters");
+
+  return allChars.filter(c => charIds.includes(c.id));
+}
 
   // ---------- 朋友圈生成上下文 ----------
   async function buildCharMomentPrompt(char, convId) {
@@ -225,32 +245,52 @@ ${wbText || "（无）"}
 
   // ─── 核心修改 1：重构群发评论提示词，注入面具上下文，杜绝对话身份错乱 ───
   async function buildBatchReactPrompt(chars, postOwnerName, postOwnerType, activeMaskName, postText, existingComments) {
-    const charList = chars.map((c, i) => `${i+1}. ${c.name}（人设：${(c.detail || "无").slice(0, 60)}）`).join("\n");
-    const commentsText = existingComments || "暂无评论";
-    const isOwnerChar = postOwnerType === "char";
+  const charList = chars.map((c, i) => {
+    return `${i + 1}. ${c.name}
+人设：${(c.detail || "无").slice(0, 180)}`;
+  }).join("\n\n");
 
-    return `
-【朋友圈背景环境】
-当前正在玩手机并看动态的用户面具（真实玩家）是：「${activeMaskName}」。
-当前发朋友圈动态所有人是：「${postOwnerName}」（类型：${isOwnerChar ? "另一个NPC联系人角色" : "用户面具【" + activeMaskName + "】本人"}).
+  const commentsText = existingComments || "暂无评论";
+  const isOwnerChar = postOwnerType === "char";
 
-动态内容如下：
-「${postText}」
+  return `
+【场景】
+这是朋友圈动态下的互动区。
 
-已有的评论：
+当前正在使用手机的真实用户面具是：「${activeMaskName}」。
+
+发帖人是：「${postOwnerName}」。
+发帖人类型：${isOwnerChar ? "NPC联系人，不是用户" : "用户本人，也就是当前用户面具"}。
+
+动态内容：
+「${postText || "（无正文）"}」
+
+已有评论：
 ${commentsText}
 
-【交互关系原则 · 绝对高优先级】
-1. 所有NPC角色绝对不能把发帖人混淆！
-   - ⚠️ 如果发帖人是另一个NPC（即「${postOwnerName}」是NPC，不是「${activeMaskName}」），你绝对不能和TA打情骂俏、暧昧调情。你们只能根据各自的设定进行普通的、朋友/同伴之间的吐槽、幽默调侃或正常讨论。
-   - 所有角色对玩家的爱情、好感和暧昧，只准且只能针对用户面具本人「${activeMaskName}」。
-   - 只有当发帖人是用户本人「${activeMaskName}」时，具有亲密/爱慕设定的角色才可以对 ${postOwnerName} 进行适当的暧昧互动。
-2. 保持人设的真实和多样性，不要千篇一律地追捧，根据性格冷淡、傲娇、幽默地回应。
+【身份边界，最高优先级】
+1. 「${activeMaskName}」才是用户本人。
+2. 如果已有评论里出现「${activeMaskName}」或“我”，那就是用户本人在评论。
+3. 如果发帖人是 NPC「${postOwnerName}」，其他 NPC 不能把 ta 当成用户，也不能对 ta 进行恋爱、暧昧、撒娇式互动。
+4. 所有恋爱、暧昧、占有欲、亲密感，只能指向用户「${activeMaskName}」。
+5. NPC之间可以普通评论、吐槽、调侃、关心、阴阳怪气、冷淡路过，但不要像恋人一样互动。
+6. 如果动态是用户「${activeMaskName}」发的，亲密角色可以自然表现对用户的在意。
 
-请为以下每个角色决定反应（点赞 / 评论不超过30字 / 不反应）：
+【任务】
+请为下面每个角色决定是否点赞、是否评论。
+
+角色列表：
 ${charList}
 
-严格按以下格式输出，每个角色一行，禁止多余言论：
+【评论要求】
+- 评论必须像真实朋友圈评论，短，自然，有人设差异。
+- 评论不超过35字。
+- 可以不点赞，也可以不评论。
+- 不要所有人都夸。
+- 不要重复别人说过的话。
+- 不要输出解释。
+
+【输出格式，必须每个角色一行】
 [角色名]like|评论内容
 或
 [角色名]like|none
@@ -259,7 +299,7 @@ ${charList}
 或
 [角色名]none|none
 `.trim();
-  }
+}
 
   // ─── 核心修改 1.2：重构单人评论提示词，加入身份防火墙，避免角色打情骂俏 ───
   async function buildCharCommentPrompt(char, ownerName, postOwnerType, activeMaskName, postText) {
@@ -420,110 +460,184 @@ ${char.detail || "（无）"}
   }
 
   async function userPostNow({ text, images, visibleGroups, visibleChars }) {
-    const mask = await getActiveMaskSafe();
-    if (!mask) return;
-    const post = {
-      id: uuid("post"),
-      authorType: "user",
-      userMaskId: mask.id, // ─── 核心修改：让发朋友圈的行为完美绑定当前的活跃面具 ───
-      text: (text || "").trim().slice(0, 500),
-      images: (images || []).slice(0, 9).map(src => ({ type: "photo", value: src })),
-      visibleGroups: visibleGroups || [],
-      visibleChars: visibleChars || [],
-      likes: [],
-      comments: [],
-      forwards: [],
-      createdAt: nowTs()
-    };
-    await createPost(post);
-    triggerGroupInteraction(post.id).catch(()=>{});
+  const mask = await getActiveMaskSafe();
+  if (!mask) return;
+
+  let finalGroups = visibleGroups || [];
+  let finalChars = visibleChars || [];
+
+  // 如果没有选择任何可见范围，默认当前面具会话联系人可见
+  if (!finalGroups.length && !finalChars.length) {
+    const chars = await getActiveMaskConversationChars();
+    finalChars = chars.map(c => c.id);
   }
+
+  const post = {
+    id: uuid("post"),
+    authorType: "user",
+    userMaskId: mask.id,
+    text: (text || "").trim().slice(0, 500),
+    images: (images || []).slice(0, 9).map(src => ({ type: "photo", value: src })),
+    visibleGroups: finalGroups,
+    visibleChars: finalChars,
+    likes: [],
+    comments: [],
+    forwards: [],
+    createdAt: nowTs()
+  };
+
+  await createPost(post);
+  triggerGroupInteraction(post.id).catch(()=>{});
+}
 
   // ---------- 互动 ----------
   async function triggerGroupInteraction(postId) {
-    const rec = await ensureStoreObject();
-    const post = rec.posts.find(p => p.id === postId);
-    if (!post) return;
+  const rec = await ensureStoreObject();
+  const post = rec.posts.find(p => p.id === postId);
+  if (!post) return;
 
-    const candidates = await resolveVisibleChars(post);
-    if (!candidates.length) return;
+  let candidates = await resolveVisibleChars(post);
 
-    // 一次 API 调用获取所有角色反应
-    const ownerName = await getPostOwnerName(post);
-    const ownerType = post.authorType;
-    const mask = await getActiveMaskSafe();
-    const maskName = mask ? mask.name : "用户";
-    const existingComments = await buildCommentSummary(post);
+  // 排除已经点赞或评论过的角色，避免重复刷屏
+  const reactedIds = new Set();
+  (post.likes || []).forEach(lk => {
+    if (lk.charId) reactedIds.add(lk.charId);
+  });
+  (post.comments || []).forEach(c => {
+    if (c.fromType === "char" && c.fromCharId) reactedIds.add(c.fromCharId);
+  });
 
-    let batchResult = {};
-    try {
-      const prompt = await buildBatchReactPrompt(candidates, ownerName, ownerType, maskName, post.text || "", existingComments);
-      const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 300 });
-      batchResult = parseBatchReactAI(raw, candidates.map(c => c.name));
-    } catch (e) {
-      console.warn("[triggerGroupInteraction] batch LLM error:", e);
-      // fallback: 全部点赞
-      candidates.forEach(c => { batchResult[c.name] = { like: true, comment: null }; });
-    }
+  candidates = candidates.filter(c => !reactedIds.has(c.id));
 
-    // 逐个写入（带延迟模拟异步出现，但不再调 API）
-    let delay = 800;
-    for (const ch of candidates) {
-      const reaction = batchResult[ch.name] || { like: false, comment: null };
-      if (!reaction.like && !reaction.comment) continue; // 不反应的跳过
-
-      setTimeout(async () => {
-        await withStoreLock(async () => {
-          const rec2 = await ensureStoreObject();
-          const p2 = rec2.posts.find(x => x.id === postId);
-          if (!p2) return;
-
-          if (reaction.like && !p2.likes.some(x => x.charId === ch.id)) {
-            p2.likes.push({ charId: ch.id, ts: nowTs() });
-          }
-
-          if (reaction.comment) {
-            p2.comments.push({
-              id: uuid("cmt"),
-              fromType: "char",
-              fromCharId: ch.id,
-              toCommentId: null,
-              content: reaction.comment,
-              ts: nowTs()
-            });
-          }
-
-          await saveStore(rec2);
-          await renderFeed();
-        });
-      }, delay);
-
-      delay += 1500 + Math.random() * 2000;
-    }
+  if (!candidates.length) {
+    console.warn("[moments] 无可互动候选角色", postId);
+    return;
   }
 
+  const ownerName = await getPostOwnerName(post);
+  const ownerType = post.authorType;
+  const mask = await getActiveMaskSafe();
+  const maskName = mask ? mask.name : "用户";
+  const existingComments = await buildCommentSummary(post);
+
+  let batchResult = {};
+
+  try {
+    if (window.recordApiPending) window.recordApiPending();
+
+    const prompt = await buildBatchReactPrompt(
+      candidates,
+      ownerName,
+      ownerType,
+      maskName,
+      post.text || "",
+      existingComments
+    );
+
+    // 关键：按候选人数动态增加 token，避免截断
+    const maxTokens = Math.min(2000, Math.max(600, candidates.length * 120));
+
+    const raw = await window.callLLM(
+      [{ role: "user", content: prompt }],
+      {
+        maxTokens,
+        temperature: 0.85
+      }
+    );
+
+    batchResult = parseBatchReactAI(raw, candidates.map(c => c.name));
+  } catch (e) {
+    console.warn("[triggerGroupInteraction] batch LLM error:", e);
+    // fallback：至少让部分角色有反应
+    candidates.forEach(c => {
+      batchResult[c.name] = {
+        like: Math.random() < 0.7,
+        comment: Math.random() < 0.35 ? "看到了。" : null
+      };
+    });
+  }
+
+  let delay = 800;
+
+  for (const ch of candidates) {
+    const reaction = batchResult[ch.name] || { like: false, comment: null };
+    if (!reaction.like && !reaction.comment) continue;
+
+    setTimeout(async () => {
+      await withStoreLock(async () => {
+        const rec2 = await ensureStoreObject();
+        const p2 = rec2.posts.find(x => x.id === postId);
+        if (!p2) return;
+
+        // 再次防重
+        const alreadyLiked = p2.likes.some(x => x.charId === ch.id);
+        const alreadyCommented = p2.comments.some(x =>
+          x.fromType === "char" && x.fromCharId === ch.id
+        );
+
+        if (reaction.like && !alreadyLiked) {
+          p2.likes.push({ charId: ch.id, ts: nowTs() });
+        }
+
+        if (reaction.comment && !alreadyCommented) {
+          p2.comments.push({
+            id: uuid("cmt"),
+            fromType: "char",
+            fromCharId: ch.id,
+            toCommentId: null,
+            content: String(reaction.comment).slice(0, 80),
+            ts: nowTs()
+          });
+        }
+
+        await saveStore(rec2);
+        await renderFeed();
+      });
+    }, delay);
+
+    delay += 1000 + Math.random() * 1800;
+  }
+}
   async function resolveVisibleChars(post) {
-    const allChars = await window.DB.getAll("characters");
+  const activeChars = await getActiveMaskConversationChars();
 
-    // char 发帖：默认同组
-    if (post.authorType === "char") {
-      return allChars.filter(c =>
-        (c.group || "默认") === (post.charGroup || "默认") &&
-        c.id !== post.charId
-      );
-    }
+  // 没有当前面具会话联系人时，兜底用全部联系人，避免完全无人反应
+  const allChars = activeChars.length ? activeChars : await window.DB.getAll("characters");
 
-    // user 发帖：按可见分组/可见联系人
-    const set = new Map();
-    for (const gid of (post.visibleGroups || [])) {
-      allChars.filter(c => (c.group || "默认") === gid).forEach(c => set.set(c.id, c));
-    }
-    for (const cid of (post.visibleChars || [])) {
-      const c = allChars.find(x => x.id === cid);
-      if (c) set.set(c.id, c);
-    }
-    return [...set.values()];
+  // char 发帖：优先同组角色，排除发帖人
+  if (post.authorType === "char") {
+    const sameGroup = allChars.filter(c =>
+      (c.group || "默认") === (post.charGroup || "默认") &&
+      c.id !== post.charId
+    );
+
+    // 如果同组没人，兜底让当前面具相关联系人里除帖主外的人反应
+    if (sameGroup.length) return sameGroup;
+
+    return allChars.filter(c => c.id !== post.charId);
   }
+
+  // user 发帖：按可见分组/可见联系人
+  const set = new Map();
+
+  for (const gid of (post.visibleGroups || [])) {
+    allChars
+      .filter(c => (c.group || "默认") === gid)
+      .forEach(c => set.set(c.id, c));
+  }
+
+  for (const cid of (post.visibleChars || [])) {
+    const c = allChars.find(x => x.id === cid);
+    if (c) set.set(c.id, c);
+  }
+
+  // 关键兜底：如果用户没勾选任何可见范围，就默认当前面具的所有会话联系人可见
+  if (set.size === 0) {
+    allChars.forEach(c => set.set(c.id, c));
+  }
+
+  return [...set.values()];
+}
 
   async function interactOne(actorChar, postId) {
     await withStoreLock(async () => {
@@ -607,21 +721,40 @@ ${char.detail || "（无）"}
             const owner = await getCharInfo(post.charId);
             if (owner) {
               try {
-                const prompt = `
-  你是${owner.name}。
-  你的人设：${owner.detail || "（无）"}
+                const mask = await getActiveMaskSafe();
+const maskName = mask?.name || "用户";
 
-  用户在你的朋友圈评论：${text}
+const prompt = `
+你是${owner.name}。
 
-  请输出你的反应，格式如下（可以同时选一个或多个）：
-  [LIKE]true 或 false
-  [COMMENT]评论内容（如果不想评论，写 none）
+你的人设：
+${owner.detail || "（无）"}
 
-  要求：
-  - 严格按上面格式输出
-  - 不要输出其他任何文字
-  `;
-                const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 120 });
+当前真实用户面具是：「${maskName}」。
+
+你的朋友圈动态内容：
+「${post.text || "（无正文）"}」
+
+现在用户「${maskName}」在你的朋友圈下评论：
+「${text}」
+
+【身份要求】
+- 评论者是用户本人「${maskName}」，不是其他NPC。
+- 你要根据你和用户的关系回应。
+- 如果你对用户有亲密、暧昧、在意、吃醋等情绪，可以自然体现。
+- 如果你性格冷淡或傲娇，也可以不明显示好。
+- 不要把用户当成路人或另一个NPC。
+
+请输出你的反应，格式如下：
+[LIKE]true 或 false
+[COMMENT]评论内容，如果不想评论写 none
+
+要求：
+- 评论不超过35字。
+- 严格按格式输出。
+- 不要输出其他任何文字。
+`.trim();
+                const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 520, temperature: 0.85 });
                 const reaction = parseReactAI(raw);
 
                 if (reaction.like && !p2.likes.some(x => x.charId === owner.id)) {
@@ -828,19 +961,22 @@ ${char.detail || "（无）"}
   }
 
   async function buildCommentSummary(post) {
-    const lines = [];
-    for (const c of (post.comments || []).slice(-8)) {
-      const from = await getCommentFromName(c);
-      if (c.toCommentId) {
-        const to = p.comments.find(x => x.id === c.toCommentId);
-        const toName = to ? await getCommentFromName(to) : "某人";
-        lines.push(`${from}回复${toName}说${c.content}`);
-      } else {
-        lines.push(`${from}说${c.content}`);
-      }
+  const lines = [];
+
+  for (const c of (post.comments || []).slice(-12)) {
+    const from = await getCommentFromName(c);
+
+    if (c.toCommentId) {
+      const to = (post.comments || []).find(x => x.id === c.toCommentId);
+      const toName = to ? await getCommentFromName(to) : "某人";
+      lines.push(`${from}回复${toName}说：${c.content}`);
+    } else {
+      lines.push(`${from}说：${c.content}`);
     }
-    return lines.join("，");
   }
+
+  return lines.join("\n");
+}
 
   // ---------- 自动发 ----------
   let autoTimer = null;

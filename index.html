@@ -6577,6 +6577,7 @@ window.recordApiPending = recordApiPending;
                 saveApiMonitorData(data);
                 updateApiStatusFloat();
             }
+            window.recordApiError = recordApiError;
 
             function escapeHtml(s) {
                 if (s === null || s === undefined) return '';
@@ -6649,10 +6650,24 @@ window.showStatus = showStatus;
             }
 
             async function callLLM(messages, options = {}) {
-                const config = await getLLMConfig();
-                const base = config.baseUrl.replace(/\/$/, '');
-                if (!config.apiKey) throw new Error('请先配置API Key');
-                const controller = new AbortController();
+    const config = await getLLMConfig();
+    const base = config.baseUrl.replace(/\/$/, '');
+
+    // 所有 LLM 调用一进入这里，API 悬浮窗立刻变成请求中
+    if (window.recordApiPending) {
+        window.recordApiPending();
+    } else if (typeof recordApiPending === 'function') {
+        recordApiPending();
+    }
+
+    if (!config.apiKey) {
+        if (typeof recordApiError === 'function') {
+            recordApiError('🔑 NO_API_KEY', '请先配置API Key');
+        }
+        throw new Error('请先配置API Key');
+    }
+
+    const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 120000);
                 try {
                     const requestBody = {
