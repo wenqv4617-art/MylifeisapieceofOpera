@@ -7,19 +7,19 @@
   "use strict";
 
   const STORE = "momentsStore";
-const KEY = "main";
-const LS_FALLBACK_KEY = "moments_store_fallback_v1";
-let __MM_USE_LS_FALLBACK__ = false;
+  const KEY = "main";
+  const LS_FALLBACK_KEY = "moments_store_fallback_v1";
+  let __MM_USE_LS_FALLBACK__ = false;
 
-// ---------- 工具 ----------
+  // ---------- 工具 ----------
   function nowTs() { return Date.now(); }
 
-// 简单写锁，防止并发覆盖
-let __storeLock = Promise.resolve();
-async function withStoreLock(fn) {
-  __storeLock = __storeLock.then(fn).catch(fn);
-  return __storeLock;
-}
+  // 简单写锁，防止并发覆盖
+  let __storeLock = Promise.resolve();
+  async function withStoreLock(fn) {
+    __storeLock = __storeLock.then(fn).catch(fn);
+    return __storeLock;
+  }
   function uuid(prefix = "id") { return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8); }
   function esc(s) { return (s == null ? "" : String(s)).replace(/[&<>"]/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m])); }
   function fmtTime(ts) {
@@ -58,59 +58,33 @@ async function withStoreLock(fn) {
 
   // ---------- 数据层 ----------
   function buildDefaultStore() {
-  return {
-    key: KEY,
-    coverImage: "",
-    signature: "这个人很懒，什么都没留下。",
-    posts: [],
-    autoRules: {}
-  };
-}
-
-function readLSStore() {
-  try {
-    const raw = localStorage.getItem(LS_FALLBACK_KEY);
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    if (!obj || typeof obj !== "object") return null;
-    return obj;
-  } catch (e) {
-    return null;
-  }
-}
-
-function writeLSStore(rec) {
-  localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(rec));
-}
-
-async function ensureStoreObject() {
-  // 已切换到 localStorage fallback
-  if (__MM_USE_LS_FALLBACK__) {
-    let ls = readLSStore();
-    if (!ls) {
-      ls = buildDefaultStore();
-      writeLSStore(ls);
-    }
-    return ls;
+    return {
+      key: KEY,
+      coverImage: "",
+      signature: "这个人很懒，什么都没留下。",
+      posts: [],
+      autoRules: {}
+    };
   }
 
-  // 先尝试 IndexedDB
-  try {
-    let rec = await window.DB.get(STORE, KEY);
-    if (!rec) {
-      rec = buildDefaultStore();
-      await window.DB.put(STORE, rec);
+  function readLSStore() {
+    try {
+      const raw = localStorage.getItem(LS_FALLBACK_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj !== "object") return null;
+      return obj;
+    } catch (e) {
+      return null;
     }
-    return rec;
-  } catch (err) {
-    // 表不存在时自动降级
-    const msg = String(err && err.message || err);
-    if (
-      msg.includes("object stores was not found") ||
-      msg.includes("One of the specified object stores was not found")
-    ) {
-      console.warn("[moments] momentsStore 不存在，已自动切换 localStorage fallback");
-      __MM_USE_LS_FALLBACK__ = true;
+  }
+
+  function writeLSStore(rec) {
+    localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(rec));
+  }
+
+  async function ensureStoreObject() {
+    if (__MM_USE_LS_FALLBACK__) {
       let ls = readLSStore();
       if (!ls) {
         ls = buildDefaultStore();
@@ -118,30 +92,53 @@ async function ensureStoreObject() {
       }
       return ls;
     }
-    throw err;
-  }
-}
 
-async function saveStore(rec) {
-  if (__MM_USE_LS_FALLBACK__) {
-    writeLSStore(rec);
-    return;
+    try {
+      let rec = await window.DB.get(STORE, KEY);
+      if (!rec) {
+        rec = buildDefaultStore();
+        await window.DB.put(STORE, rec);
+      }
+      return rec;
+    } catch (err) {
+      const msg = String(err && err.message || err);
+      if (
+        msg.includes("object stores was not found") ||
+        msg.includes("One of the specified object stores was not found")
+      ) {
+        console.warn("[moments] momentsStore 不存在，已自动切换 localStorage fallback");
+        __MM_USE_LS_FALLBACK__ = true;
+        let ls = readLSStore();
+        if (!ls) {
+          ls = buildDefaultStore();
+          writeLSStore(ls);
+        }
+        return ls;
+      }
+      throw err;
+    }
   }
-  try {
-    await window.DB.put(STORE, rec);
-  } catch (err) {
-    const msg = String(err && err.message || err);
-    if (
-      msg.includes("object stores was not found") ||
-      msg.includes("One of the specified object stores was not found")
-    ) {
-      __MM_USE_LS_FALLBACK__ = true;
+
+  async function saveStore(rec) {
+    if (__MM_USE_LS_FALLBACK__) {
       writeLSStore(rec);
       return;
     }
-    throw err;
+    try {
+      await window.DB.put(STORE, rec);
+    } catch (err) {
+      const msg = String(err && err.message || err);
+      if (
+        msg.includes("object stores was not found") ||
+        msg.includes("One of the specified object stores was not found")
+      ) {
+        __MM_USE_LS_FALLBACK__ = true;
+        writeLSStore(rec);
+        return;
+      }
+      throw err;
+    }
   }
-}
 
   // ---------- 角色信息 ----------
   async function getMaskInfo(maskId) {
@@ -169,9 +166,8 @@ async function saveStore(rec) {
     return all.find(c => c.charId === charId) || null;
   }
 
-  // ---------- 上下文构建（复用线上聊天） ----------
+  // ---------- 上下文构建 ----------
   async function buildCharMomentPrompt(char, convId) {
-    // 取近期消息 + 记忆 + 世界书，尽量和线上一致（简化版）
     const chats = await window.DB.queryByIndex("chats", "conversationId", convId);
     chats.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
     const recent = chats.filter(x => x.messageType !== "innerVoice").slice(-16);
@@ -228,10 +224,10 @@ ${wbText || "（无）"}
   }
 
   async function buildBatchReactPrompt(chars, postOwnerName, postText, existingComments) {
-  const charList = chars.map((c, i) => `${i+1}. ${c.name}（人设：${(c.detail || "无").slice(0, 60)}）`).join("\n");
-  const commentsText = existingComments || "暂无评论";
+    const charList = chars.map((c, i) => `${i+1}. ${c.name}（人设：${(c.detail || "无").slice(0, 60)}）`).join("\n");
+    const commentsText = existingComments || "暂无评论";
 
-  return `
+    return `
 以下角色看到了 ${postOwnerName} 发的朋友圈动态：
 「${postText}」
 
@@ -263,7 +259,7 @@ ${charList}
 - 严格按格式，不要多余文字
 - 符合各自人设
 `.trim();
-}
+  }
 
   // ---------- AI 解析 ----------
   function parseMomentAI(raw) {
@@ -280,71 +276,61 @@ ${charList}
     return { text, images };
   }
 
-function parseReactAI(raw) {
-  const result = { like: false, comment: null };
-
-  // 解析 [LIKE]
-  const likeMatch = raw.match(/\[LIKE\]\s*(true|false)/i);
-  if (likeMatch) {
-    result.like = likeMatch[1].toLowerCase() === "true";
+  function parseReactAI(raw) {
+    const result = { like: false, comment: null };
+    const likeMatch = raw.match(/\[LIKE\]\s*(true|false)/i);
+    if (likeMatch) {
+      result.like = likeMatch[1].toLowerCase() === "true";
+    }
+    const commentMatch = raw.match(/\[COMMENT\]\s*([\s\S]*?)$/i);
+    if (commentMatch && commentMatch[1]) {
+      const content = commentMatch[1].trim().slice(0, 80);
+      if (content && content.toLowerCase() !== "none" && content.toLowerCase() !== "无") {
+        result.comment = content;
+      }
+    }
+    if (!likeMatch && !commentMatch) {
+      const lower = raw.toLowerCase();
+      if (lower.includes("点赞") || lower.includes("like") || lower.includes("赞")) {
+        result.like = true;
+      }
+      const trimmed = raw.trim();
+      if (trimmed && trimmed.length > 0 && !trimmed.match(/^(none|无|点赞|like|赞)$/i)) {
+        result.comment = trimmed.slice(0, 30);
+      }
+    }
+    return result;
   }
 
-  // 解析 [COMMENT]
-  const commentMatch = raw.match(/\[COMMENT\]\s*([\s\S]*?)$/i);
-  if (commentMatch && commentMatch[1]) {
-    const content = commentMatch[1].trim().slice(0, 80);
-    if (content && content.toLowerCase() !== "none" && content.toLowerCase() !== "无") {
-      result.comment = content;
-    }
-  }
+  function parseBatchReactAI(raw, charNames) {
+    const results = {};
+    charNames.forEach(name => { results[name] = { like: false, comment: null }; });
 
-  // 容错：如果没有标签但包含关键词
-  if (!likeMatch && !commentMatch) {
-    const lower = raw.toLowerCase();
-    if (lower.includes("点赞") || lower.includes("like") || lower.includes("赞")) {
-      result.like = true;
-    }
-    const trimmed = raw.trim();
-    if (trimmed && trimmed.length > 0 && !trimmed.match(/^(none|无|点赞|like|赞)$/i)) {
-      result.comment = trimmed.slice(0, 30);
-    }
-  }
+    const lines = (raw || "").split("\n").filter(l => l.trim());
+    for (const line of lines) {
+      const m = line.match(/\[(.+?)\]\s*(like|none)\s*\|\s*(.*)/i);
+      if (!m) continue;
+      const name = m[1].trim();
+      const likeStr = m[2].toLowerCase();
+      const commentStr = (m[3] || "").trim();
 
-  return result;
-}
-
-
-function parseBatchReactAI(raw, charNames) {
-  const results = {};
-  // 初始化
-  charNames.forEach(name => { results[name] = { like: false, comment: null }; });
-
-  const lines = (raw || "").split("\n").filter(l => l.trim());
-  for (const line of lines) {
-    const m = line.match(/\[(.+?)\]\s*(like|none)\s*\|\s*(.*)/i);
-    if (!m) continue;
-    const name = m[1].trim();
-    const likeStr = m[2].toLowerCase();
-    const commentStr = (m[3] || "").trim();
-
-    if (!results[name]) {
-      // 模糊匹配
-      const found = charNames.find(n => name.includes(n) || n.includes(name));
-      if (found) {
-        results[found] = {
+      if (!results[name]) {
+        const found = charNames.find(n => name.includes(n) || n.includes(name));
+        if (found) {
+          results[found] = {
+            like: likeStr === "like",
+            comment: (commentStr && commentStr.toLowerCase() !== "none") ? commentStr.slice(0, 80) : null
+          };
+        }
+      } else {
+        results[name] = {
           like: likeStr === "like",
           comment: (commentStr && commentStr.toLowerCase() !== "none") ? commentStr.slice(0, 80) : null
         };
       }
-    } else {
-      results[name] = {
-        like: likeStr === "like",
-        comment: (commentStr && commentStr.toLowerCase() !== "none") ? commentStr.slice(0, 80) : null
-      };
     }
+    return results;
   }
-  return results;
-}
 
   // ---------- 发布 ----------
   async function createPost(post) {
@@ -369,7 +355,6 @@ function parseBatchReactAI(raw, charNames) {
       const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 280 });
       const parsed = parseMomentAI(raw);
       text = parsed.text || text;
-      // char 图片默认先不自动生成真实图，IMAGES做文字图占位
       imgs = parsed.images.map(desc => ({ type: "textcard", value: desc }));
     } catch (e) {
       // fallback
@@ -390,8 +375,6 @@ function parseBatchReactAI(raw, charNames) {
       createdAt: nowTs()
     };
     await createPost(post);
-
-    // 异步触发同组互动
     triggerGroupInteraction(post.id).catch(()=>{});
   }
 
@@ -417,68 +400,64 @@ function parseBatchReactAI(raw, charNames) {
 
   // ---------- 互动 ----------
   async function triggerGroupInteraction(postId) {
-  const rec = await ensureStoreObject();
-  const post = rec.posts.find(p => p.id === postId);
-  if (!post) return;
+    const rec = await ensureStoreObject();
+    const post = rec.posts.find(p => p.id === postId);
+    if (!post) return;
 
-  const candidates = await resolveVisibleChars(post);
-  if (!candidates.length) return;
+    const candidates = await resolveVisibleChars(post);
+    if (!candidates.length) return;
 
-  // 一次 API 调用获取所有角色反应
-  const ownerName = await getPostOwnerName(post);
-  const existingComments = await buildCommentSummary(post);
+    const ownerName = await getPostOwnerName(post);
+    const existingComments = await buildCommentSummary(post);
 
-  let batchResult = {};
-  try {
-    const prompt = await buildBatchReactPrompt(candidates, ownerName, post.text || "", existingComments);
-    const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 300 });
-    batchResult = parseBatchReactAI(raw, candidates.map(c => c.name));
-  } catch (e) {
-    console.warn("[triggerGroupInteraction] batch LLM error:", e);
-    // fallback: 全部点赞
-    candidates.forEach(c => { batchResult[c.name] = { like: true, comment: null }; });
+    let batchResult = {};
+    try {
+      const prompt = await buildBatchReactPrompt(candidates, ownerName, post.text || "", existingComments);
+      const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 300 });
+      batchResult = parseBatchReactAI(raw, candidates.map(c => c.name));
+    } catch (e) {
+      console.warn("[triggerGroupInteraction] batch LLM error:", e);
+      candidates.forEach(c => { batchResult[c.name] = { like: true, comment: null }; });
+    }
+
+    let delay = 800;
+    for (const ch of candidates) {
+      const reaction = batchResult[ch.name] || { like: false, comment: null };
+      if (!reaction.like && !reaction.comment) continue;
+
+      setTimeout(async () => {
+        await withStoreLock(async () => {
+          const rec2 = await ensureStoreObject();
+          const p2 = rec2.posts.find(x => x.id === postId);
+          if (!p2) return;
+
+          if (reaction.like && !p2.likes.some(x => x.charId === ch.id)) {
+            p2.likes.push({ charId: ch.id, ts: nowTs() });
+          }
+
+          if (reaction.comment) {
+            p2.comments.push({
+              id: uuid("cmt"),
+              fromType: "char",
+              fromCharId: ch.id,
+              toCommentId: null,
+              content: reaction.comment,
+              ts: nowTs()
+            });
+          }
+
+          await saveStore(rec2);
+          await renderFeed();
+        });
+      }, delay);
+
+      delay += 1500 + Math.random() * 2000;
+    }
   }
-
-  // 逐个写入（带延迟模拟异步出现，但不再调 API）
-  let delay = 800;
-  for (const ch of candidates) {
-    const reaction = batchResult[ch.name] || { like: false, comment: null };
-    if (!reaction.like && !reaction.comment) continue; // 不反应的跳过
-
-    setTimeout(async () => {
-      await withStoreLock(async () => {
-        const rec2 = await ensureStoreObject();
-        const p2 = rec2.posts.find(x => x.id === postId);
-        if (!p2) return;
-
-        if (reaction.like && !p2.likes.some(x => x.charId === ch.id)) {
-          p2.likes.push({ charId: ch.id, ts: nowTs() });
-        }
-
-        if (reaction.comment) {
-          p2.comments.push({
-            id: uuid("cmt"),
-            fromType: "char",
-            fromCharId: ch.id,
-            toCommentId: null,
-            content: reaction.comment,
-            ts: nowTs()
-          });
-        }
-
-        await saveStore(rec2);
-        await renderFeed();
-      });
-    }, delay);
-
-    delay += 1500 + Math.random() * 2000;
-  }
-}
 
   async function resolveVisibleChars(post) {
     const allChars = await window.DB.getAll("characters");
 
-    // char 发帖：默认同组
     if (post.authorType === "char") {
       return allChars.filter(c =>
         (c.group || "默认") === (post.charGroup || "默认") &&
@@ -486,7 +465,6 @@ function parseBatchReactAI(raw, charNames) {
       );
     }
 
-    // user 发帖：按可见分组/可见联系人
     const set = new Map();
     for (const gid of (post.visibleGroups || [])) {
       allChars.filter(c => (c.group || "默认") === gid).forEach(c => set.set(c.id, c));
@@ -498,86 +476,36 @@ function parseBatchReactAI(raw, charNames) {
     return [...set.values()];
   }
 
-  async function interactOne(actorChar, postId) {
-  await withStoreLock(async () => {
+  async function userComment(postId, text) {
     const rec = await ensureStoreObject();
     const post = rec.posts.find(p => p.id === postId);
     if (!post) return;
+    const mask = await getActiveMaskSafe();
+    if (!mask) return;
 
-    const ownerName = await getPostOwnerName(post);
-
-    let reaction = { like: false, comment: null };
-    try {
-      const raw = await window.callLLM([{
-        role: "user",
-        content: await buildCharCommentPrompt(actorChar, ownerName, post.text || "")
-      }], { maxTokens: 120 });
-      reaction = parseReactAI(raw);
-    } catch (e) {
-      console.warn("[interactOne] LLM error, fallback to like only:", e);
-      reaction = { like: true, comment: null };
-    }
-
-    if (reaction.like) {
-      if (!post.likes.some(x => x.charId === actorChar.id)) {
-        post.likes.push({ charId: actorChar.id, ts: nowTs() });
-      }
-    }
-
-    if (reaction.comment && reaction.comment.trim()) {
-      const recentSame = (post.comments || []).find(c =>
-        c.fromType === "char" &&
-        c.fromCharId === actorChar.id &&
-        Math.abs((c.ts || 0) - nowTs()) < 90 * 1000
-      );
-      if (!recentSame) {
-        post.comments.push({
-          id: uuid("cmt"),
-          fromType: "char",
-          fromCharId: actorChar.id,
-          toCommentId: null,
-          content: reaction.comment,
-          ts: nowTs()
-        });
-      }
-    }
-
+    const cmt = {
+      id: uuid("cmt"),
+      fromType: "user",
+      fromMaskId: mask.id,
+      toCommentId: null,
+      content: (text || "").trim().slice(0, 80),
+      ts: nowTs()
+    };
+    post.comments.push(cmt);
     await saveStore(rec);
     await renderFeed();
-  });
-}
 
-  async function userComment(postId, text) {
-  const rec = await ensureStoreObject();
-  const post = rec.posts.find(p => p.id === postId);
-  if (!post) return;
-  const mask = await getActiveMaskSafe();
-  if (!mask) return;
+    if (post.authorType === "char") {
+      setTimeout(async () => {
+        await withStoreLock(async () => {
+          const rec2 = await ensureStoreObject();
+          const p2 = rec2.posts.find(x => x.id === postId);
+          if (!p2) return;
 
-  const cmt = {
-    id: uuid("cmt"),
-    fromType: "user",
-    fromMaskId: mask.id,
-    toCommentId: null,
-    content: (text || "").trim().slice(0, 80),
-    ts: nowTs()
-  };
-  post.comments.push(cmt);
-  await saveStore(rec);
-  await renderFeed();
-
-  // 帖主回复（如果是角色发的帖）
-  if (post.authorType === "char") {
-    setTimeout(async () => {
-  await withStoreLock(async () => {
-    const rec2 = await ensureStoreObject();
-    const p2 = rec2.posts.find(x => x.id === postId);
-    if (!p2) return;
-
-    const owner = await getCharInfo(post.charId);
-    if (owner) {
-      try {
-        const prompt = `
+          const owner = await getCharInfo(post.charId);
+          if (owner) {
+            try {
+              const prompt = `
 你是${owner.name}。
 你的人设：${owner.detail || "（无）"}
 
@@ -589,41 +517,39 @@ function parseBatchReactAI(raw, charNames) {
 
 要求：
 - 严格按上面格式输出
-- 不要输出其他任何文字
-`;
-        const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 120 });
-        const reaction = parseReactAI(raw);
+- 不要输出其他任何文字`;
+              const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 120 });
+              const reaction = parseReactAI(raw);
 
-        if (reaction.like && !p2.likes.some(x => x.charId === owner.id)) {
-          p2.likes.push({ charId: owner.id, ts: nowTs() });
-        }
+              if (reaction.like && !p2.likes.some(x => x.charId === owner.id)) {
+                p2.likes.push({ charId: owner.id, ts: nowTs() });
+              }
 
-        if (reaction.comment) {
-          p2.comments.push({
-            id: uuid("cmt"),
-            fromType: "char",
-            fromCharId: owner.id,
-            toCommentId: cmt.id,
-            content: reaction.comment,
-            ts: nowTs()
-          });
-        }
-      } catch (e) {
-        if (!p2.likes.some(x => x.charId === owner.id)) {
-          p2.likes.push({ charId: owner.id, ts: nowTs() });
-        }
-      }
+              if (reaction.comment) {
+                p2.comments.push({
+                  id: uuid("cmt"),
+                  fromType: "char",
+                  fromCharId: owner.id,
+                  toCommentId: cmt.id,
+                  content: reaction.comment,
+                  ts: nowTs()
+                });
+              }
+            } catch (e) {
+              if (!p2.likes.some(x => x.charId === owner.id)) {
+                p2.likes.push({ charId: owner.id, ts: nowTs() });
+              }
+            }
+          }
+
+          await saveStore(rec2);
+          await renderFeed();
+        });
+      }, 1200 + Math.random() * 2800);
     }
 
-    await saveStore(rec2);
-    await renderFeed();
-  });
-}, 1200 + Math.random() * 2800);
+    setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 2000);
   }
-
-  // 其他可见 char 可能跟评（批量一次调用）
-setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 2000);
-}
 
   async function toggleLikeByUser(postId) {
     const rec = await ensureStoreObject();
@@ -642,19 +568,18 @@ setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 2000);
 
   // ---------- 转发 ----------
   async function forwardPostToConversation(postId, target) {
-  // target: {type:'single'|'group', id}
-  const rec = await ensureStoreObject();
-  const post = rec.posts.find(p => p.id === postId);
-  if (!post) return;
+    const rec = await ensureStoreObject();
+    const post = rec.posts.find(p => p.id === postId);
+    if (!post) return;
 
-  const owner = await getPostOwnerName(post);
-  const commentsText = await buildCommentSummary(post);
+    const owner = await getPostOwnerName(post);
+    const commentsText = await buildCommentSummary(post);
 
-  const previewText = (post.text || "").slice(0, 90);
-const imgCount = (post.images || []).length;
-const hasImage = imgCount > 0;
+    const previewText = (post.text || "").slice(0, 90);
+    const imgCount = (post.images || []).length;
+    const hasImage = imgCount > 0;
 
-const cardHTML = `
+    const cardHTML = `
 <div class="mm-forward-card" data-moment-post-id="${post.id}">
   <div class="mmf-head">
     <div class="mmf-dot"></div>
@@ -682,37 +607,36 @@ const cardHTML = `
   </div>
 </div>`.trim();
 
-  const contextText = `user转发了一条朋友圈，发送人${owner}，内容${post.text || ""}，评论有:${commentsText || "无"}`;
+    const contextText = `user转发了一条朋友圈，发送人${owner}，内容${post.text || ""}，评论有:${commentsText || "无"}`;
 
-  if (target.type === "single") {
-    const conv = await window.DB.get("conversations", target.id);
-    if (!conv) return;
+    if (target.type === "single") {
+      const conv = await window.DB.get("conversations", target.id);
+      if (!conv) return;
 
-    await window.DB.put("chats", {
-      role: "user",
-      content: cardHTML,
-      messageType: "moments_forward_card",
-      extraContext: contextText,
-      refPostId: post.id,
-      conversationId: conv.id,
-      charId: conv.charId,
-      timestamp: nowTs()
-    });
+      await window.DB.put("chats", {
+        role: "user",
+        content: cardHTML,
+        messageType: "moments_forward_card",
+        extraContext: contextText,
+        refPostId: post.id,
+        conversationId: conv.id,
+        charId: conv.charId,
+        timestamp: nowTs()
+      });
 
-    // 目标角色看后反应（LLM决定点赞/评论）
-setTimeout(async () => {
-  const rec2 = await ensureStoreObject();
-  const p2 = rec2.posts.find(x => x.id === post.id);
-  if (!p2) return;
+      setTimeout(async () => {
+        const rec2 = await ensureStoreObject();
+        const p2 = rec2.posts.find(x => x.id === post.id);
+        if (!p2) return;
 
-  const ch = await getCharInfo(conv.charId);
-  if (!ch) return;
+        const ch = await getCharInfo(conv.charId);
+        if (!ch) return;
 
-  let actionType = "like";
-  let actionContent = "none";
+        let actionType = "like";
+        let actionContent = "none";
 
-  try {
-    const prompt = `
+        try {
+          const prompt = `
 你是${ch.name}。
 你的人设：${ch.detail || "（无）"}
 
@@ -729,70 +653,69 @@ setTimeout(async () => {
 - 严格按上面格式输出
 - 不要输出其他任何文字`;
 
-    const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
-const parsed = parseReactAI(raw);
-actionType = parsed.comment ? "comment" : "like";
-actionContent = parsed.comment || "none";
-  } catch (e) {
-    // fallback
-    actionType = Math.random() < 0.6 ? "like" : "comment";
-    actionContent = "这条我有点想法。";
-  }
+          const raw = await window.callLLM([{ role: "user", content: prompt }], { maxTokens: 100 });
+          const parsed = parseReactAI(raw);
+          actionType = parsed.comment ? "comment" : "like";
+          actionContent = parsed.comment || "none";
+        } catch (e) {
+          actionType = Math.random() < 0.6 ? "like" : "comment";
+          actionContent = "这条我有点想法。";
+        }
 
-  if (actionType === "like") {
-    if (!p2.likes.some(x => x.charId === ch.id)) {
-      p2.likes.push({ charId: ch.id, ts: nowTs() });
+        if (actionType === "like") {
+          if (!p2.likes.some(x => x.charId === ch.id)) {
+            p2.likes.push({ charId: ch.id, ts: nowTs() });
+          }
+          await window.DB.put("chats", {
+            role: "system",
+            content: "Ta给你转发的朋友圈点了个赞",
+            messageType: "mode_switch",
+            conversationId: conv.id,
+            charId: conv.charId,
+            timestamp: nowTs()
+          });
+        } else {
+          const txt = (actionContent || "这条我有点想法。").slice(0, 30);
+          p2.comments.push({
+            id: uuid("cmt"),
+            fromType: "char",
+            fromCharId: ch.id,
+            content: txt,
+            toCommentId: null,
+            ts: nowTs()
+          });
+          await window.DB.put("chats", {
+            role: "system",
+            content: `Ta给你转发的朋友圈评论: ${txt}`,
+            messageType: "mode_switch",
+            conversationId: conv.id,
+            charId: conv.charId,
+            timestamp: nowTs()
+          });
+        }
+
+        await saveStore(rec2);
+        await renderFeed();
+        if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
+      }, 1800 + Math.random() * 2800);
+
+      if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
+      return;
     }
-    await window.DB.put("chats", {
-      role: "system",
-      content: "Ta给你转发的朋友圈点了个赞",
-      messageType: "mode_switch",
-      conversationId: conv.id,
-      charId: conv.charId,
+
+    await window.DB.put("groupMessages", {
+      groupId: target.id,
+      senderType: "user",
+      senderId: "user",
+      content: cardHTML,
+      messageType: "moments_forward_card",
+      extraContext: contextText,
+      refPostId: post.id,
       timestamp: nowTs()
     });
-  } else {
-    const txt = (actionContent || "这条我有点想法。").slice(0, 30);
-    p2.comments.push({
-      id: uuid("cmt"),
-      fromType: "char",
-      fromCharId: ch.id,
-      content: txt,
-      toCommentId: null,
-      ts: nowTs()
-    });
-    await window.DB.put("chats", {
-      role: "system",
-      content: `Ta给你转发的朋友圈评论: ${txt}`,
-      messageType: "mode_switch",
-      conversationId: conv.id,
-      charId: conv.charId,
-      timestamp: nowTs()
-    });
+    if (window.loadGroupMessages) await window.loadGroupMessages(target.id);
   }
 
-  await saveStore(rec2);
-  await renderFeed();
-  if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
-}, 1800 + Math.random() * 2800);
-
-    if (window.loadConversationMessages) await window.loadConversationMessages(conv.id);
-    return;
-  }
-
-  // 群聊转发
-  await window.DB.put("groupMessages", {
-    groupId: target.id,
-    senderType: "user",
-    senderId: "user",
-    content: cardHTML,
-    messageType: "moments_forward_card",
-    extraContext: contextText,
-    refPostId: post.id,
-    timestamp: nowTs()
-  });
-  if (window.loadGroupMessages) await window.loadGroupMessages(target.id);
-}
   async function buildCommentSummary(post) {
     const lines = [];
     for (const c of (post.comments || []).slice(-8)) {
@@ -884,21 +807,21 @@ actionContent = parsed.comment || "none";
     return `<div class="mm-grid ${cls}">
       ${images.map((it, idx) => {
         const src = it.type === "photo" ? it.value : (() => {
-  const txt = (it.value || "图片");
-  const maxCharsPerLine = 12;
-  const lines = [];
-  for (let i = 0; i < txt.length; i += maxCharsPerLine) {
-    lines.push(txt.slice(i, i + maxCharsPerLine));
-  }
-  const lineH = 22;
-  const startY = 150 - (lines.length * lineH) / 2 + lineH / 2;
-  const tspans = lines.map((ln, idx) =>
-    `<tspan x='150' dy='${idx === 0 ? 0 : lineH}'>${ln.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</tspan>`
-  ).join("");
-  return `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><rect width='100%' height='100%' fill='#f3f4f6'/><text x='150' y='${startY}' text-anchor='middle' font-size='14' fill='#6b7280'>${tspans}</text></svg>`
-  )}`;
-})();
+          const txt = (it.value || "图片");
+          const maxCharsPerLine = 12;
+          const lines = [];
+          for (let i = 0; i < txt.length; i += maxCharsPerLine) {
+            lines.push(txt.slice(i, i + maxCharsPerLine));
+          }
+          const lineH = 22;
+          const startY = 150 - (lines.length * lineH) / 2 + lineH / 2;
+          const tspans = lines.map((ln, idx) =>
+            `<tspan x='150' dy='${idx === 0 ? 0 : lineH}'>${ln.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</tspan>`
+          ).join("");
+          return `data:image/svg+xml;utf8,${encodeURIComponent(
+            `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><rect width='100%' height='100%' fill='#f3f4f6'/><text x='150' y='${startY}' text-anchor='middle' font-size='14' fill='#6b7280'>${tspans}</text></svg>`
+          )}`;
+        })();
         return `<img src="${src}" data-img-index="${idx}" alt="">`;
       }).join("")}
     </div>`;
@@ -979,45 +902,45 @@ actionContent = parsed.comment || "none";
       postEl.querySelector('[data-act="share"]')?.addEventListener("click", () => openSharePicker(pid));
       postEl.addEventListener("dblclick", () => openPostDetail(pid));
     });
-    wrap.querySelectorAll(".mm-comment-line[data-comment-id]").forEach(line => {
-  line.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    const cmtId = line.dataset.commentId;
-    const postEl = line.closest(".mm-post");
-    const pid = postEl?.dataset.postId;
-    if (!pid) return;
-    const fromName = line.querySelector(".from")?.textContent || "";
-    const t = prompt(`回复 ${fromName}：`);
-    if (!t || !t.trim()) return;
-    await userReplyComment(pid, cmtId, t.trim());
-  });
-});
-  }
-  
-  async function userReplyComment(postId, toCommentId, text) {
-  await withStoreLock(async () => {
-    const rec = await ensureStoreObject();
-    const post = rec.posts.find(p => p.id === postId);
-    if (!post) return;
-    const mask = await getActiveMaskSafe();
-    if (!mask) return;
 
-    post.comments.push({
-      id: uuid("cmt"),
-      fromType: "user",
-      fromMaskId: mask.id,
-      toCommentId: toCommentId,
-      content: text.slice(0, 80),
-      ts: nowTs()
+    wrap.querySelectorAll(".mm-comment-line[data-comment-id]").forEach(line => {
+      line.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const cmtId = line.dataset.commentId;
+        const postEl = line.closest(".mm-post");
+        const pid = postEl?.dataset.postId;
+        if (!pid) return;
+        const fromName = line.querySelector(".from")?.textContent || "";
+        const t = prompt(`回复 ${fromName}：`);
+        if (!t || !t.trim()) return;
+        await userReplyComment(pid, cmtId, t.trim());
+      });
+    });
+  }
+
+  async function userReplyComment(postId, toCommentId, text) {
+    await withStoreLock(async () => {
+      const rec = await ensureStoreObject();
+      const post = rec.posts.find(p => p.id === postId);
+      if (!post) return;
+      const mask = await getActiveMaskSafe();
+      if (!mask) return;
+
+      post.comments.push({
+        id: uuid("cmt"),
+        fromType: "user",
+        fromMaskId: mask.id,
+        toCommentId: toCommentId,
+        content: text.slice(0, 80),
+        ts: nowTs()
+      });
+
+      await saveStore(rec);
+      await renderFeed();
     });
 
-    await saveStore(rec);
-    await renderFeed();
-  });
-
-  // 触发帖主+其他人反应（一次调用）
-  setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 1500);
-}
+    setTimeout(() => triggerGroupInteraction(postId).catch(()=>{}), 1500);
+  }
 
   async function renderHeader() {
     const rec = await ensureStoreObject();
@@ -1037,9 +960,9 @@ actionContent = parsed.comment || "none";
     const av = document.getElementById("momentsUserAvatar");
     if (nameEl) nameEl.textContent = mask?.name || "我";
     if (av) {
-  av.style.backgroundImage = mask?.avatar ? `url('${mask.avatar}')` : "";
-  av.style.backgroundColor = mask?.avatar ? "transparent" : "#d8d8d8";
-}
+      av.style.backgroundImage = mask?.avatar ? `url('${mask.avatar}')` : "";
+      av.style.backgroundColor = mask?.avatar ? "transparent" : "#d8d8d8";
+    }
   }
 
   async function saveSignature(v) {
@@ -1106,21 +1029,19 @@ actionContent = parsed.comment || "none";
     const scopeC = document.getElementById("momentsScopeChars");
 
     editorImages = [];
-if (area) area.value = "";
-if (prev) prev.innerHTML = "";
+    if (area) area.value = "";
+    if (prev) prev.innerHTML = "";
 
-const textImgBox = document.getElementById("momentsTextImgEditor");
-const textImgInput = document.getElementById("momentsTextImgInput");
-if (textImgBox) textImgBox.style.display = "none";
-if (textImgInput) textImgInput.value = "";
+    const textImgBox = document.getElementById("momentsTextImgEditor");
+    const textImgInput = document.getElementById("momentsTextImgInput");
+    if (textImgBox) textImgBox.style.display = "none";
+    if (textImgInput) textImgInput.value = "";
 
-    // 可见范围来源：已有单人对话的联系人（严格）
-const convs = await window.DB.getAll("conversations");
-const charIds = [...new Set((convs || []).map(c => c.charId).filter(Boolean))];
-const allChars = await window.DB.getAll("characters");
-const chars = allChars.filter(c => charIds.includes(c.id));
-
-const groups = [...new Set(chars.map(c => c.group || "默认"))];
+    const convs = await window.DB.getAll("conversations");
+    const charIds = [...new Set((convs || []).map(c => c.charId).filter(Boolean))];
+    const allChars = await window.DB.getAll("characters");
+    const chars = allChars.filter(c => charIds.includes(c.id));
+    const groups = [...new Set(chars.map(c => c.group || "默认"))];
 
     if (scopeG) {
       scopeG.innerHTML = groups.map(g => `<label class="mm-scope-item"><input type="checkbox" value="${esc(g)}"> ${esc(g)}</label>`).join("");
@@ -1188,7 +1109,6 @@ const groups = [...new Set(chars.map(c => c.group || "默认"))];
     if (cur) lines.push(cur);
     lines = lines.slice(0, 8);
 
-    // ✅ 修复后的循环
     const totalH = lines.length * lineHeight;
     let y = 450 - totalH / 2 + lineHeight / 2;
     for (const ln of lines) {
@@ -1197,14 +1117,15 @@ const groups = [...new Set(chars.map(c => c.group || "默认"))];
     }
 
     return canvas.toDataURL("image/jpeg", 0.92);
-}
-function addTextImageToComposer(text) {
+  }
+
+  function addTextImageToComposer(text) {
     if (!Array.isArray(editorImages)) editorImages = [];
     if (editorImages.length >= 9) return;
     const dataUrl = makeTextImageDataUrl(text);
     editorImages.push(dataUrl);
     refreshComposerPreview();
-}
+  }
 
   async function onComposerPickImages(files) {
     if (!files?.length) return;
@@ -1237,114 +1158,113 @@ function addTextImageToComposer(text) {
   // ---------- 转发选择 ----------
   let __MM_SHARE_POST_ID__ = null;
 
-async function openSharePicker(postId) {
-  __MM_SHARE_POST_ID__ = postId;
-  const listEl = document.getElementById("momentsShareList");
-  const modal = document.getElementById("momentsShareModal");
-  if (!listEl || !modal) return;
+  async function openSharePicker(postId) {
+    __MM_SHARE_POST_ID__ = postId;
+    const listEl = document.getElementById("momentsShareList");
+    const modal = document.getElementById("momentsShareModal");
+    if (!listEl || !modal) return;
 
-  const singles = await window.DB.getAll("conversations");
-  const groups = await window.DB.getAll("groupChats");
+    const singles = await window.DB.getAll("conversations");
+    const groups = await window.DB.getAll("groupChats");
 
-  let html = "";
+    let html = "";
 
-  for (const c of singles) {
-    const ch = await getCharInfo(c.charId);
-    html += `
-      <label class="mm-share-item">
-        <input type="checkbox" data-type="single" data-id="${c.id}">
-        <div>
-          <div>单聊 · ${esc(ch?.name || String(c.id))}</div>
-          <div class="mm-share-meta">会话ID: ${esc(String(c.id))}</div>
-        </div>
-      </label>
-    `;
+    for (const c of singles) {
+      const ch = await getCharInfo(c.charId);
+      html += `
+        <label class="mm-share-item">
+          <input type="checkbox" data-type="single" data-id="${c.id}">
+          <div>
+            <div>单聊 · ${esc(ch?.name || String(c.id))}</div>
+            <div class="mm-share-meta">会话ID: ${esc(String(c.id))}</div>
+          </div>
+        </label>
+      `;
+    }
+
+    for (const g of groups) {
+      html += `
+        <label class="mm-share-item">
+          <input type="checkbox" data-type="group" data-id="${g.id}">
+          <div>
+            <div>群聊 · ${esc(g.name || String(g.id))}</div>
+            <div class="mm-share-meta">群ID: ${esc(String(g.id))}</div>
+          </div>
+        </label>
+      `;
+    }
+
+    if (!html) {
+      html = `<div style="text-align:center;color:#999;padding:24px 0;">暂无可转发会话</div>`;
+    }
+
+    listEl.innerHTML = html;
+    modal.classList.add("show");
   }
-
-  for (const g of groups) {
-    html += `
-      <label class="mm-share-item">
-        <input type="checkbox" data-type="group" data-id="${g.id}">
-        <div>
-          <div>群聊 · ${esc(g.name || String(g.id))}</div>
-          <div class="mm-share-meta">群ID: ${esc(String(g.id))}</div>
-        </div>
-      </label>
-    `;
-  }
-
-  if (!html) {
-    html = `<div style="text-align:center;color:#999;padding:24px 0;">暂无可转发会话</div>`;
-  }
-
-  listEl.innerHTML = html;
-  modal.classList.add("show");
-}
 
   // ---------- 对话详情：自动发朋友圈配置 ----------
   async function injectAutoMomentsIntoConvDetail() {
-  const page = document.getElementById("page-conv-detail");
-  if (!page) return;
-  if (document.getElementById("convDetailMomentsSection")) return;
+    const page = document.getElementById("page-conv-detail");
+    if (!page) return;
+    if (document.getElementById("convDetailMomentsSection")) return;
 
-  // 优先插在“角色与你的关系”块后面
-  let anchor = null;
-  const sections = page.querySelectorAll(".worldbook-section");
-  sections.forEach(sec => {
-    const h3 = sec.querySelector("h3");
-    if (h3 && (h3.textContent || "").includes("角色与你的关系")) {
-      anchor = sec;
+    let anchor = null;
+    const sections = page.querySelectorAll(".worldbook-section");
+    sections.forEach(sec => {
+      const h3 = sec.querySelector("h3");
+      if (h3 && (h3.textContent || "").includes("角色与你的关系")) {
+        anchor = sec;
+      }
+    });
+
+    const sec = document.createElement("div");
+    sec.className = "worldbook-section";
+    sec.id = "convDetailMomentsSection";
+    sec.innerHTML = `
+      <h3 style="margin-bottom:12px;">自动发朋友圈</h3>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="convAutoMomentEnabled">
+          启用自动定时
+        </label>
+      </div>
+      <div class="form-group">
+        <label>时间</label>
+        <input type="time" id="convAutoMomentTime" value="09:00">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="small-btn" id="convAutoMomentSaveBtn">保存设置</button>
+        <button class="small-btn" id="convAutoMomentPostNowBtn">立即发一条</button>
+      </div>
+    `;
+
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(sec, anchor.nextSibling);
+    } else {
+      const scroller = page.querySelector('div[style*="overflow-y:auto"]');
+      if (scroller) scroller.appendChild(sec);
+      else page.appendChild(sec);
     }
-  });
 
-  const sec = document.createElement("div");
-  sec.className = "worldbook-section";
-  sec.id = "convDetailMomentsSection";
-  sec.innerHTML = `
-    <h3 style="margin-bottom:12px;">自动发朋友圈</h3>
-    <div class="form-group">
-      <label style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="convAutoMomentEnabled">
-        启用自动定时
-      </label>
-    </div>
-    <div class="form-group">
-      <label>时间</label>
-      <input type="time" id="convAutoMomentTime" value="09:00">
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="small-btn" id="convAutoMomentSaveBtn">保存设置</button>
-      <button class="small-btn" id="convAutoMomentPostNowBtn">立即发一条</button>
-    </div>
-  `;
+    document.getElementById("convAutoMomentSaveBtn")?.addEventListener("click", async () => {
+      const convId = window.currentEditingConvId;
+      if (!convId) return;
+      const enabled = !!document.getElementById("convAutoMomentEnabled")?.checked;
+      const timeHM = document.getElementById("convAutoMomentTime")?.value || "09:00";
+      await setAutoRule(convId, enabled, timeHM);
+      window.showStatus?.("自动发朋友圈设置已保存", "success");
+    });
 
-  if (anchor && anchor.parentNode) {
-    anchor.parentNode.insertBefore(sec, anchor.nextSibling);
-  } else {
-    const scroller = page.querySelector('div[style*="overflow-y:auto"]');
-    if (scroller) scroller.appendChild(sec);
-    else page.appendChild(sec);
+    document.getElementById("convAutoMomentPostNowBtn")?.addEventListener("click", async () => {
+      const convId = window.currentEditingConvId;
+      if (!convId) return;
+      await charPostNowByConversation(convId);
+      window.showStatus?.("已发送一条朋友圈", "success");
+      if (window.currentConversationId === Number(convId) && window.loadConversationMessages) {
+        await window.loadConversationMessages(Number(convId));
+      }
+    });
   }
-
-  document.getElementById("convAutoMomentSaveBtn")?.addEventListener("click", async () => {
-    const convId = window.currentEditingConvId;
-    if (!convId) return;
-    const enabled = !!document.getElementById("convAutoMomentEnabled")?.checked;
-    const timeHM = document.getElementById("convAutoMomentTime")?.value || "09:00";
-    await setAutoRule(convId, enabled, timeHM);
-    window.showStatus?.("自动发朋友圈设置已保存", "success");
-  });
-
-  document.getElementById("convAutoMomentPostNowBtn")?.addEventListener("click", async () => {
-    const convId = window.currentEditingConvId;
-    if (!convId) return;
-    await charPostNowByConversation(convId);
-    window.showStatus?.("已发送一条朋友圈", "success");
-    if (window.currentConversationId === Number(convId) && window.loadConversationMessages) {
-      await window.loadConversationMessages(Number(convId));
-    }
-  });
-}
 
   async function syncAutoMomentUI() {
     const convId = window.currentEditingConvId;
@@ -1393,9 +1313,9 @@ async function openSharePicker(postId) {
 
       <div class="moments-toolbar"></div>
 
-<div class="moments-feed" id="momentsFeed"></div>
+      <div class="moments-feed" id="momentsFeed"></div>
 
-<button class="mm-fab" id="momentsFabBtn" title="发布动态">+</button>
+      <button class="mm-fab" id="momentsFabBtn" title="发布动态">+</button>
 
       <!-- 动态详情 -->
       <div class="mm-modal" id="momentsDetailModal">
@@ -1406,61 +1326,60 @@ async function openSharePicker(postId) {
       </div>
 
       <!-- 发布动态 -->
-  <div class="mm-modal" id="momentsComposerModal">
-    <div class="mm-modal-card">
-      <div class="mm-modal-title">发布动态</div>
-      <div class="mm-editor">
-        <textarea id="momentsComposerText" placeholder="分享这一刻..."></textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-  <button class="mm-btn" id="momentsComposerTextImgBtn">文字图</button>
-  <button class="mm-btn" id="momentsComposerPhotoBtn">${Icons.camera} 上传照片</button>
-  <input type="file" id="momentsComposerFile" accept="image/*" multiple style="display:none;">
-</div>
+      <div class="mm-modal" id="momentsComposerModal">
+        <div class="mm-modal-card">
+          <div class="mm-modal-title">发布动态</div>
+          <div class="mm-editor">
+            <textarea id="momentsComposerText" placeholder="分享这一刻..."></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="mm-btn" id="momentsComposerTextImgBtn">文字图</button>
+              <button class="mm-btn" id="momentsComposerPhotoBtn">${Icons.camera} 上传照片</button>
+              <input type="file" id="momentsComposerFile" accept="image/*" multiple style="display:none;">
+            </div>
 
-<div id="momentsTextImgEditor" style="display:none;border:1px solid #e5e7eb;border-radius:8px;padding:8px;">
-  <div style="font-size:12px;color:#666;margin-bottom:6px;">输入文字图内容</div>
-  <textarea id="momentsTextImgInput" placeholder="例如：今天的心情是薄荷蓝" style="width:100%;min-height:64px;border:1px solid #e5e7eb;border-radius:6px;padding:8px;resize:vertical;"></textarea>
-  <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">
-    <button class="mm-btn" id="momentsTextImgCancelBtn">取消</button>
-    <button class="mm-btn primary" id="momentsTextImgAddBtn">加入图片</button>
-  </div>
-</div>
+            <div id="momentsTextImgEditor" style="display:none;border:1px solid #e5e7eb;border-radius:8px;padding:8px;">
+              <div style="font-size:12px;color:#666;margin-bottom:6px;">输入文字图内容</div>
+              <textarea id="momentsTextImgInput" placeholder="例如：今天的心情是薄荷蓝" style="width:100%;min-height:64px;border:1px solid #e5e7eb;border-radius:6px;padding:8px;resize:vertical;"></textarea>
+              <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">
+                <button class="mm-btn" id="momentsTextImgCancelBtn">取消</button>
+                <button class="mm-btn primary" id="momentsTextImgAddBtn">加入图片</button>
+              </div>
+            </div>
 
-<div class="mm-editor-grid-preview" id="momentsComposerPreview"></div>
+            <div class="mm-editor-grid-preview" id="momentsComposerPreview"></div>
 
-        <div class="mm-scope-box">
-          <div class="mm-scope-title">可见分组</div>
-          <div class="mm-scope-list" id="momentsScopeGroups"></div>
-        </div>
+            <div class="mm-scope-box">
+              <div class="mm-scope-title">可见分组</div>
+              <div class="mm-scope-list" id="momentsScopeGroups"></div>
+            </div>
 
-        <div class="mm-scope-box">
-          <div class="mm-scope-title">可见联系人</div>
-          <div class="mm-scope-list" id="momentsScopeChars"></div>
-        </div>
+            <div class="mm-scope-box">
+              <div class="mm-scope-title">可见联系人</div>
+              <div class="mm-scope-list" id="momentsScopeChars"></div>
+            </div>
 
-        <div style="display:flex;justify-content:flex-end;gap:8px;">
-          <button class="mm-btn" id="momentsComposerCancelBtn">取消</button>
-          <button class="mm-btn primary" id="momentsComposerSubmitBtn">发布</button>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+              <button class="mm-btn" id="momentsComposerCancelBtn">取消</button>
+              <button class="mm-btn primary" id="momentsComposerSubmitBtn">发布</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- 转发选择 -->
-  <div class="mm-modal" id="momentsShareModal">
-    <div class="mm-modal-card">
-      <div class="mm-modal-title">选择转发对象</div>
-      <div class="mm-share-list" id="momentsShareList"></div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
-        <button class="mm-btn" id="momentsShareCancelBtn">取消</button>
-        <button class="mm-btn primary" id="momentsShareConfirmBtn">确认转发</button>
+      <!-- 转发选择 -->
+      <div class="mm-modal" id="momentsShareModal">
+        <div class="mm-modal-card">
+          <div class="mm-modal-title">选择转发对象</div>
+          <div class="mm-share-list" id="momentsShareList"></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+            <button class="mm-btn" id="momentsShareCancelBtn">取消</button>
+            <button class="mm-btn primary" id="momentsShareConfirmBtn">确认转发</button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-`;
+    `;
     appMain.appendChild(page);
 
-    // 注册到 pages 映射（如果你后面用 switchPage('moments')）
     if (window.pages) window.pages.moments = page;
   }
 
@@ -1486,142 +1405,134 @@ async function openSharePicker(postId) {
 
     document.getElementById("momentsFabBtn")?.addEventListener("click", openComposer);
 
-// 上传照片
-document.getElementById("momentsComposerPhotoBtn")?.addEventListener("click", () => {
-  document.getElementById("momentsComposerFile")?.click();
-});
-document.getElementById("momentsComposerFile")?.addEventListener("change", async (e) => {
-  await onComposerPickImages(e.target.files);
-  e.target.value = "";
-});
+    document.getElementById("momentsComposerPhotoBtn")?.addEventListener("click", () => {
+      document.getElementById("momentsComposerFile")?.click();
+    });
+    document.getElementById("momentsComposerFile")?.addEventListener("change", async (e) => {
+      await onComposerPickImages(e.target.files);
+      e.target.value = "";
+    });
 
-// 文字图入口
-document.getElementById("momentsComposerTextImgBtn")?.addEventListener("click", () => {
-  const box = document.getElementById("momentsTextImgEditor");
-  if (box) box.style.display = box.style.display === "none" ? "block" : "none";
-});
+    document.getElementById("momentsComposerTextImgBtn")?.addEventListener("click", () => {
+      const box = document.getElementById("momentsTextImgEditor");
+      if (box) box.style.display = box.style.display === "none" ? "block" : "none";
+    });
 
-document.getElementById("momentsTextImgCancelBtn")?.addEventListener("click", () => {
-  const box = document.getElementById("momentsTextImgEditor");
-  if (box) box.style.display = "none";
-  const inp = document.getElementById("momentsTextImgInput");
-  if (inp) inp.value = "";
-});
+    document.getElementById("momentsTextImgCancelBtn")?.addEventListener("click", () => {
+      const box = document.getElementById("momentsTextImgEditor");
+      if (box) box.style.display = "none";
+      const inp = document.getElementById("momentsTextImgInput");
+      if (inp) inp.value = "";
+    });
 
-document.getElementById("momentsTextImgAddBtn")?.addEventListener("click", async () => {
-  const inp = document.getElementById("momentsTextImgInput");
-  const txt = (inp?.value || "").trim();
-  if (!txt) {
-    window.showStatus?.("请输入文字图内容", "info");
-    return;
-  }
-  addTextImageToComposer(txt);
-  if (inp) inp.value = "";
-  const box = document.getElementById("momentsTextImgEditor");
-  if (box) box.style.display = "none";
-});
+    document.getElementById("momentsTextImgAddBtn")?.addEventListener("click", async () => {
+      const inp = document.getElementById("momentsTextImgInput");
+      const txt = (inp?.value || "").trim();
+      if (!txt) {
+        window.showStatus?.("请输入文字图内容", "info");
+        return;
+      }
+      addTextImageToComposer(txt);
+      if (inp) inp.value = "";
+      const box = document.getElementById("momentsTextImgEditor");
+      if (box) box.style.display = "none";
+    });
+
     document.getElementById("momentsComposerCancelBtn")?.addEventListener("click", () => {
       document.getElementById("momentsComposerModal")?.classList.remove("show");
     });
     document.getElementById("momentsComposerSubmitBtn")?.addEventListener("click", submitComposer);
     
-      document.getElementById("momentsShareCancelBtn")?.addEventListener("click", () => {
-    document.getElementById("momentsShareModal")?.classList.remove("show");
-  });
+    document.getElementById("momentsShareCancelBtn")?.addEventListener("click", () => {
+      document.getElementById("momentsShareModal")?.classList.remove("show");
+    });
 
-  document.getElementById("momentsShareConfirmBtn")?.addEventListener("click", async () => {
-    const postId = __MM_SHARE_POST_ID__;
-    if (!postId) return;
+    document.getElementById("momentsShareConfirmBtn")?.addEventListener("click", async () => {
+      const postId = __MM_SHARE_POST_ID__;
+      if (!postId) return;
 
-    const picks = [...document.querySelectorAll('#momentsShareList input[type="checkbox"]:checked')];
-    if (!picks.length) {
-      window.showStatus?.("请至少选择一个会话", "info");
-      return;
-    }
+      const picks = [...document.querySelectorAll('#momentsShareList input[type="checkbox"]:checked')];
+      if (!picks.length) {
+        window.showStatus?.("请至少选择一个会话", "info");
+        return;
+      }
 
-    for (const p of picks) {
-      await forwardPostToConversation(postId, {
-        type: p.dataset.type,
-        id: Number(p.dataset.id)
-      });
-      
-    }
+      for (const p of picks) {
+        await forwardPostToConversation(postId, {
+          type: p.dataset.type,
+          id: Number(p.dataset.id)
+        });
+      }
 
-    document.getElementById("momentsShareModal")?.classList.remove("show");
-    window.showStatus?.("已转发", "success");
-  });
+      document.getElementById("momentsShareModal")?.classList.remove("show");
+      window.showStatus?.("已转发", "success");
+    });
 
-  document.getElementById("momentsShareModal")?.addEventListener("click", (e) => {
-    if (e.target.id === "momentsShareModal") e.currentTarget.classList.remove("show");
-  });
+    document.getElementById("momentsShareModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "momentsShareModal") e.currentTarget.classList.remove("show");
+    });
   
-  // ====== 新增：绑定详情弹窗关闭事件 ======
-document.getElementById("momentsDetailCloseBtn")?.addEventListener("click", () => {
-  document.getElementById("momentsDetailModal")?.classList.remove("show");
-});
+    document.getElementById("momentsDetailCloseBtn")?.addEventListener("click", () => {
+      document.getElementById("momentsDetailModal")?.classList.remove("show");
+    });
 
-document.getElementById("momentsDetailModal")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) {
-    e.currentTarget.classList.remove("show");
+    document.getElementById("momentsDetailModal")?.addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) {
+        e.currentTarget.classList.remove("show");
+      }
+    });
+
+    bindForwardCardGlobalClick();
   }
-});
 
-  bindForwardCardGlobalClick();
-}
+  function bindForwardCardGlobalClick() {
+    if (window.__MM_FORWARD_BIND__) return;
+    window.__MM_FORWARD_BIND__ = true;
 
-function bindForwardCardGlobalClick() {
-  if (window.__MM_FORWARD_BIND__) return;
-  window.__MM_FORWARD_BIND__ = true;
+    document.addEventListener("click", async (e) => {
+      const card = e.target.closest(".mm-forward-card");
+      if (!card) return;
 
-  document.addEventListener("click", async (e) => {
-    const card = e.target.closest(".mm-forward-card");
-    if (!card) return;
+      const postId = card.getAttribute("data-moment-post-id");
+      if (!postId) return;
 
-    const postId = card.getAttribute("data-moment-post-id");
-    if (!postId) return;
-
-    // 打开朋友圈页面并弹详情
-    if (window.switchPage) window.switchPage("moments");
-    try {
-      await renderHeader();
-      await renderFeed();
-      await openPostDetail(postId);
-    } catch (err) {
-      console.error("[moments] open forward post detail error:", err);
-    }
-  });
-}
+      if (window.switchPage) window.switchPage("moments");
+      try {
+        await renderHeader();
+        await renderFeed();
+        await openPostDetail(postId);
+      } catch (err) {
+        console.error("[moments] open forward post detail error:", err);
+      }
+    });
+  }
 
   // ---------- 对外 ----------
   async function openMomentsPage() {
-  // 不能再调用 switchPage("moments")，否则递归死循环
-  try {
-    await renderHeader();
-    await renderFeed();
-    
-    // 由 switchPage + CSS 控制显示，不在这里强制设置
-  } catch (e) {
-    console.error("[moments] open page error:", e);
-    const feed = document.getElementById("momentsFeed");
-    if (feed) feed.innerHTML = '<div style="text-align:center;color:#999;padding:40px 0;">朋友圈加载失败，请刷新重试</div>';
+    try {
+      await renderHeader();
+      await renderFeed();
+    } catch (e) {
+      console.error("[moments] open page error:", e);
+      const feed = document.getElementById("momentsFeed");
+      if (feed) feed.innerHTML = '<div style="text-align:center;color:#999;padding:40px 0;">朋友圈加载失败，请刷新重试</div>';
+    }
   }
-}
 
   async function initMomentsModule() {
-  try {
-    await ensureStoreObject();
-  } catch (e) {
-    console.error("[moments] init store error:", e);
-    // 兜底强制启用 localStorage
-    __MM_USE_LS_FALLBACK__ = true;
-    const ls = readLSStore() || buildDefaultStore();
-    writeLSStore(ls);
-  }
+    try {
+      await ensureStoreObject();
+    } catch (e) {
+      console.error("[moments] init store error:", e);
+      __MM_USE_LS_FALLBACK__ = true;
+      const ls = readLSStore() || buildDefaultStore();
+      writeLSStore(ls);
+    }
 
-  await ensureMomentsPageElements();
-  bindPageEvents();
-  startAutoLoop();
-    // 当进入对话详情时注入“自动发朋友圈”区块
+    await ensureMomentsPageElements();
+    bindPageEvents();
+    startAutoLoop();
+
     const obs = new MutationObserver(async () => {
       const active = document.querySelector("#page-conv-detail.page.active");
       if (active) {
@@ -1636,28 +1547,46 @@ function bindForwardCardGlobalClick() {
     });
     obs.observe(document.body, { childList: true, subtree: true });
 
-    // 首次预渲染（防首次空白）
-try {
-  await renderHeader();
-  await renderFeed();
-  setTimeout(() => { renderHeader().catch(()=>{}); }, 80);
-} catch (e) {
-  console.warn("[moments] pre-render skipped:", e);
-}
+    try {
+      await renderHeader();
+      await renderFeed();
+      setTimeout(() => { renderHeader().catch(()=>{}); }, 80);
+    } catch (e) {
+      console.warn("[moments] pre-render skipped:", e);
+    }
 
-// 供外部调用
-window.momentsModule = {
-  openMomentsPage,
-  charPostNowByConversation,
-  setAutoRule,
-  getAutoRule,
-  forwardPostToConversation,
-  openPostDetail,
-  ensureConvDetailMomentSection: async function () {
-    await injectAutoMomentsIntoConvDetail();
-    await syncAutoMomentUI();
-  }
-};
+    window.momentsModule = {
+      openMomentsPage,
+      charPostNowByConversation,
+      setAutoRule,
+      getAutoRule,
+      forwardPostToConversation,
+      openPostDetail,
+      ensureConvDetailMomentSection: async function () {
+        await injectAutoMomentsIntoConvDetail();
+        await syncAutoMomentUI();
+      }
+    };
+
+    // ─── 核心修改：动态劫持 switchPage，使其支持动态追加的 page-moments 页面 ───
+    (function patchSwitchPage() {
+      const originalSwitchPage = window.switchPage;
+      if (originalSwitchPage) {
+        window.switchPage = function (pageId) {
+          // 运行原始路由切换（会清除其他页面的 active 类）
+          originalSwitchPage(pageId);
+
+          const momentsPage = document.getElementById("page-moments");
+          if (momentsPage) {
+            if (pageId === "moments") {
+              momentsPage.classList.add("active");
+            } else {
+              momentsPage.classList.remove("active");
+            }
+          }
+        };
+      }
+    })();
   }
 
   window.initMomentsModule = initMomentsModule;

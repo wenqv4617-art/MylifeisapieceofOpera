@@ -16,8 +16,13 @@
 #page-moments {
   background: var(--mm-bg);
   height: 100%;
-  display: flex;
+  display: none; /* ─── 修改：默认隐藏，不影响其他页面 ─── */
   flex-direction: column;
+}
+
+/* ─── 新增：朋友圈处于激活状态（.active）时才显示 ─── */
+#page-moments.active {
+  display: flex !important;
 }
 
 .moments-header {
@@ -100,7 +105,7 @@
   color: var(--mm-sub);
   font-size: 14px;
   background: transparent;
-  text-align: right;  /* ← 添加这一行 */
+  text-align: right;
 }
 .moments-toolbar {
   display: flex;
