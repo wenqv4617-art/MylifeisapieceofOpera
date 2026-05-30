@@ -776,29 +776,33 @@ ${wbPart || "无"}
       }
     }
 
-    async function maybeTickSubscriptions() {
-      if (state.pushing) return;
-      state.pushing = true;
-      try {
-        const subs = await getSubsByMask(state.activeMaskId);
-        const now = nowTs();
-        for (const s of subs) {
-          if (!s.enabled) continue;
+async function maybeTickSubscriptions() {
+  if (state.pushing) return;
+  state.pushing = true;
+  try {
+    const subs = await getSubsByMask(state.activeMaskId);
+    const now = nowTs();
+    for (const s of subs) {
+      if (!s.enabled) continue;
 
-          if (s.freqType === "once") {
-            if (!s.lastPushAt) {
-              await pushOneSubMail(s);
-            }
-            continue;
-          }
-
-          const interval = clamp(parseInt(s.freqHours || 6), 1, 72) * 3600 * 1000;
-          if (!s.lastPushAt || now - s.lastPushAt >= interval) {
-            await pushOneSub        if (state.currentView === "inbox") renderInbox();
-      } finally {
-        state.pushing = false;
+      if (s.freqType === "once") {
+        if (!s.lastPushAt) {
+          await pushOneSubMail(s);
+        }
+        continue;
       }
-    }
+
+      const interval = clamp(parseInt(s.freqHours || 6), 1, 72) * 3600 * 1000;
+      if (!s.lastPushAt || now - s.lastPushAt >= interval) {
+        await pushOneSubMail(s);  // 注意这里是 pushOneSubMail 不是 pushOneSub
+      }
+    }  // <--- 这里加上了闭合大括号
+
+    if (state.currentView === "inbox") renderInbox();
+  } finally {
+    state.pushing = false;
+  }
+}
 
     function startTicker() {
       if (state.timer) clearInterval(state.timer);
