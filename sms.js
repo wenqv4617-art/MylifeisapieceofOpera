@@ -14,18 +14,22 @@
         trash: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
         refresh: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
         user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
-        star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`
+        star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+        reply: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`
     };
 
-    let activeAccount = null; 
+    let activeAccount = null;
     let currentFolder = 'primary'; // 'primary', 'sent', 'subs'
     let searchQuery = '';
 
+    let refreshRunning = false;
+
     window.initSMSModule = function({ DB, showStatus, escapeHtml, callLLM, switchPage, getActiveMask }) {
-        
+
         async function init() {
-            console.log('📬 SMS/Email 模块正常启动');
+            console.log('SMS/Email 模块启动');
             await ensureDefaultAccount();
+            await ensureBuiltinCharSubscriptions();
             await checkPeriodicalSubscriptions();
             renderInbox();
         }
@@ -52,7 +56,7 @@
 
             const savedActiveId = await DB.get('smsMeta', 'activeAccountId');
             const freshAccounts = await DB.getAll('smsAccounts');
-            
+
             if (savedActiveId && freshAccounts.some(a => a.id === savedActiveId.value)) {
                 activeAccount = await DB.get('smsAccounts', savedActiveId.value);
             } else {
@@ -70,7 +74,7 @@
             if (!shell) return;
 
             shell.innerHTML = `
-                <div class="sms-search-bar">
+                <div class="sms-search-bar" style="margin:8px 12px; padding:2px 6px; gap:2px;">
                     <button class="sms-menu-btn" id="smsInboxBackBtn">${SVGS.back}</button>
                     <button class="sms-menu-btn" id="smsMenuBtn">${SVGS.menu}</button>
                     <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}">
@@ -110,8 +114,8 @@
                                     ${activeAccount?.avatar ? '' : escapeHtml(activeAccount?.name?.charAt(0) || 'U')}
                                 </div>
                                 <div style="flex:1; min-width:0;">
-                                    <div style="font-size:13px; font-weight:500; color:#202124; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(activeAccount?.name)}</div>
-                                    <div style="font-size:11px; color:#5f6368; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(activeAccount?.address)}</div>
+                                    <div style="font-size:13px; font-weight:500; color:#202124; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(activeAccount?.name || '')}</div>
+                                    <div style="font-size:11px; color:#5f6368; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(activeAccount?.address || '')}</div>
                                 </div>
                             </div>
                         </div>
@@ -126,12 +130,34 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 刷新收信源选择弹层 -->
+                <div class="sms-drawer-overlay" id="smsRefreshSelectorOverlay">
+                    <div class="sms-drawer" style="left:0; width:100%; max-width:420px; margin:0 auto; right:0; transform:none;">
+                        <div class="sms-drawer-header">
+                            <div class="sms-drawer-title" style="font-size:18px; color:#202124;">选择来信人</div>
+                            <div style="font-size:12px; color:#5f6368; margin-top:4px;">
+                                可多选，一次生成。可勾选“掺入陌生人来信”。
+                            </div>
+                        </div>
+                        <div class="sms-drawer-menu" id="smsRefreshSelectorList" style="padding:8px 0 0 0;"></div>
+                        <div style="padding:12px 16px; border-top:1px solid #dadce0; background:#fff;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3c4043; margin-bottom:10px;">
+                                <input type="checkbox" id="smsRefreshMixStranger">
+                                <span>掺入陌生人来信（随机）</span>
+                            </label>
+                            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                                <button class="sms-btn-sm" id="smsRefreshSelectorCancelBtn">取消</button>
+                                <button class="sms-btn-sm primary" id="smsRefreshSelectorConfirmBtn">生成来信</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
 
-            // 加载邮件列表
             loadMailList();
 
-            // 1. 主页面返回键（返回桌面）
+            // 主页面返回键（返回桌面）
             document.getElementById('smsInboxBackBtn').addEventListener('click', () => {
                 switchPage('desktop');
             });
@@ -139,21 +165,13 @@
             // 侧栏展开与隐藏
             document.getElementById('smsMenuBtn').addEventListener('click', toggleDrawer);
             document.getElementById('smsDrawerOverlay').addEventListener('click', function(e) {
-                if(e.target === this) toggleDrawer();
+                if (e.target === this) toggleDrawer();
             });
 
-            // 主动收信（刷新）动作
+            // 主动收信（刷新）动作：改成先选来信人
             document.getElementById('smsRefreshBtn').addEventListener('click', async function() {
-                this.style.transform = 'rotate(360deg)';
-                this.style.transition = 'transform 0.6s ease';
-                showStatus('正在收取新邮件与更新订阅...', 'info');
-                await checkPeriodicalSubscriptions();
-                await triggerIncomingProactiveEmail();
-                await loadMailList();
-                setTimeout(() => {
-                    this.style.transform = 'none';
-                    this.style.transition = 'none';
-                }, 600);
+                if (refreshRunning) return;
+                openRefreshSelector();
             });
 
             // 搜索、头像、写信
@@ -202,7 +220,7 @@
             if (overlay) overlay.classList.toggle('active');
         }
 
-        // ================== 获取邮件数据 ==================
+        // ================== 获取邮件数据（严格当前账号隔离） ==================
         async function loadMailList() {
             const listEl = document.getElementById('smsMailList');
             if (!listEl) return;
@@ -212,13 +230,13 @@
                 return;
             }
 
+            // 只取当前账号
             const threads = await DB.queryByIndex('smsThreads', 'accountId', activeAccount.id);
             let displayThreads = [];
 
             if (currentFolder === 'subs') {
                 displayThreads = threads.filter(t => t.isSubscription);
             } else if (currentFolder === 'sent') {
-                // Sent 文件夹中展现非订阅、且最后一条由我发出的线程
                 displayThreads = threads.filter(t => !t.isSubscription);
             } else {
                 displayThreads = threads.filter(t => !t.isSubscription);
@@ -228,16 +246,30 @@
             for (const t of displayThreads) {
                 const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
                 msgs.sort((a,b) => b.timestamp - a.timestamp);
-                
-                if (msgs.length > 0) {
-                    const lastMsg = msgs[0];
-                    // 在已发送文件夹里，过滤掉完全没有我回复的消息
-                    if (currentFolder === 'sent' && lastMsg.isReceived) {
-                        continue;
-                    }
+                if (msgs.length === 0) continue;
+
+                const lastMsg = msgs[0];
+
+                if (currentFolder === 'sent') {
+                    // 已发送：线程中至少有一封我发出的消息
+                    const hasMine = msgs.some(m => !m.isReceived && m.senderAddress === activeAccount.address);
+                    if (!hasMine) continue;
+
+                    // 排序按“最后一次我发送”的时间
+                    const lastMine = msgs.find(m => !m.isReceived && m.senderAddress === activeAccount.address);
+                    if (!lastMine) continue;
+
+                    enrichedThreads.push({
+                        thread: t,
+                        lastMsg: lastMine,
+                        previewMsg: lastMine,
+                        timestamp: lastMine.timestamp
+                    });
+                } else {
                     enrichedThreads.push({
                         thread: t,
                         lastMsg: lastMsg,
+                        previewMsg: lastMsg,
                         timestamp: lastMsg.timestamp
                     });
                 }
@@ -248,9 +280,9 @@
             let filtered = enrichedThreads;
             if (searchQuery) {
                 filtered = enrichedThreads.filter(et => {
-                    const subj = et.thread.subject.toLowerCase();
-                    const body = et.lastMsg.body.toLowerCase();
-                    const sender = et.lastMsg.senderName.toLowerCase();
+                    const subj = (et.thread.subject || '').toLowerCase();
+                    const body = (et.previewMsg.body || '').toLowerCase();
+                    const sender = (et.previewMsg.senderName || '').toLowerCase();
                     return subj.includes(searchQuery) || body.includes(searchQuery) || sender.includes(searchQuery);
                 });
             }
@@ -263,7 +295,7 @@
             let html = '';
             filtered.forEach(et => {
                 const t = et.thread;
-                const m = et.lastMsg;
+                const m = et.previewMsg;
                 const isUnread = t.unread && m.isReceived;
                 const dateStr = formatCompactTime(m.timestamp);
                 const initial = m.senderName ? m.senderName.charAt(0) : '?';
@@ -279,15 +311,14 @@
                                 <span class="sms-mail-sender" style="${isUnread ? 'font-weight:700;' : ''}">${escapeHtml(m.senderName)} ${disguiseLabel}</span>
                                 <span class="sms-mail-time" style="${isUnread ? 'color:#c5221f; font-weight:700;' : ''}">${dateStr}</span>
                             </div>
-                            <div class="sms-mail-subject" style="${isUnread ? 'font-weight:700;' : ''}">${escapeHtml(t.subject)}</div>
-                            <div class="sms-mail-snippet">${escapeHtml(m.body.substring(0, 45))}</div>
+                            <div class="sms-mail-subject" style="${isUnread ? 'font-weight:700;' : ''}">${escapeHtml(t.subject || '无主题')}</div>
+                            <div class="sms-mail-snippet">${escapeHtml((m.body || '').substring(0, 45))}</div>
                         </div>
                     </div>
                 `;
             });
 
             listEl.innerHTML = html;
-
             listEl.querySelectorAll('.sms-mail-item').forEach(el => {
                 el.addEventListener('click', () => {
                     openThreadDetail(el.dataset.threadId);
@@ -300,7 +331,9 @@
             const thread = await DB.get('smsThreads', threadId);
             if (!thread) return;
 
-            // 设为已读
+            // 只允许查看当前账号线程
+            if (!activeAccount || thread.accountId !== activeAccount.id) return;
+
             thread.unread = false;
             await DB.put('smsThreads', thread);
 
@@ -315,7 +348,7 @@
                 const isLast = idx === msgs.length - 1;
                 const dateStr = new Date(m.timestamp).toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
                 const initial = m.senderName ? m.senderName.charAt(0) : '?';
-                
+
                 msgCardsHtml += `
                     <div class="sms-message-card ${!isLast ? 'collapsed' : ''}" data-msg-idx="${idx}">
                         <div class="sms-message-card-header">
@@ -323,12 +356,12 @@
                                 ${escapeHtml(initial)}
                             </div>
                             <div class="sms-message-card-sender-info">
-                                <span class="sms-message-card-sender-name">${escapeHtml(m.senderName)}</span>
-                                <span class="sms-message-card-sender-addr">&lt;${escapeHtml(m.senderAddress)}&gt;</span>
+                                <span class="sms-message-card-sender-name">${escapeHtml(m.senderName || '')}</span>
+                                <span class="sms-message-card-sender-addr">&lt;${escapeHtml(m.senderAddress || '')}&gt;</span>
                             </div>
                             <span class="sms-message-card-time">${dateStr}</span>
                         </div>
-                        <div class="sms-message-card-body">${escapeHtml(m.body)}</div>
+                        <div class="sms-message-card-body">${escapeHtml(m.body || '')}</div>
                     </div>
                 `;
             });
@@ -337,34 +370,36 @@
                 <div class="sms-detail-view">
                     <div class="sms-detail-header">
                         <button class="sms-menu-btn" id="smsDetailBackBtn">${SVGS.back}</button>
-                        <h2>${escapeHtml(thread.subject)}</h2>
+                        <h2>${escapeHtml(thread.subject || '无主题')}</h2>
+                        ${!thread.isSubscription ? `<button class="sms-menu-btn" id="smsDetailReplyBtn" title="回复">${SVGS.reply}</button>` : ``}
                         <button class="sms-menu-btn" id="smsDetailDeleteBtn">${SVGS.trash}</button>
                     </div>
                     <div class="sms-detail-body">
-                        <div class="sms-thread-subject">${escapeHtml(thread.subject)}</div>
+                        <div class="sms-thread-subject">${escapeHtml(thread.subject || '无主题')}</div>
                         ${msgCardsHtml}
                     </div>
-                    ${!thread.isSubscription ? `
-                    <div class="sms-reply-box">
-                        <textarea class="sms-reply-textarea" id="smsReplyInput" placeholder="回复电子邮件" maxlength="1500"></textarea>
-                        <div class="sms-reply-actions">
-                            <button class="sms-btn-send" id="smsReplySendBtn">
-                                ${SVGS.sent} <span>发送</span>
-                            </button>
-                        </div>
-                    </div>
-                    ` : ''}
                 </div>
             `;
 
-            // 详情页返回键 -> 返回 Inbox
+            // 返回键
             document.getElementById('smsDetailBackBtn').addEventListener('click', () => {
                 renderInbox();
             });
 
+            // 回复键：直接去撰写自动填充
+            const replyBtn = document.getElementById('smsDetailReplyBtn');
+            if (replyBtn) {
+                replyBtn.addEventListener('click', async () => {
+                    await openCompose({
+                        mode: 'reply',
+                        threadId: thread.id
+                    });
+                });
+            }
+
             // 删除线程
             document.getElementById('smsDetailDeleteBtn').addEventListener('click', async () => {
-                if(confirm('确定永久删除此邮件往来对话吗？')) {
+                if (confirm('确定永久删除此邮件往来对话吗？')) {
                     const messages = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
                     for (const m of messages) {
                         await DB.delete('smsMessages', m.id);
@@ -375,36 +410,18 @@
                 }
             });
 
-            // 消息折叠板交互
+            // 折叠交互
             shell.querySelectorAll('.sms-message-card').forEach(card => {
                 card.querySelector('.sms-message-card-header').addEventListener('click', () => {
                     card.classList.toggle('collapsed');
                 });
             });
-
-            // 回信发送执行
-            const sendBtn = document.getElementById('smsReplySendBtn');
-            if (sendBtn) {
-                sendBtn.addEventListener('click', async () => {
-                    const bodyEl = document.getElementById('smsReplyInput');
-                    const text = bodyEl.value.trim();
-                    if (!text) return;
-
-                    bodyEl.value = '';
-                    sendBtn.disabled = true;
-                    sendBtn.innerHTML = '正在发送...';
-
-                    await handleReplyMail(thread, text);
-                    openThreadDetail(thread.id);
-                });
-            }
         }
 
         // ================== 回信处理与 LLM 生成 ==================
         async function handleReplyMail(thread, text) {
-            // 保存用户回信
             const userMsg = {
-                id: 'msg_' + Date.now(),
+                id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                 threadId: thread.id,
                 senderName: activeAccount.name,
                 senderAddress: activeAccount.address,
@@ -414,7 +431,6 @@
             };
             await DB.put('smsMessages', userMsg);
 
-            // 更新 Thread 时间与状态
             thread.unread = false;
             await DB.put('smsThreads', thread);
 
@@ -428,63 +444,64 @@
                 if (thread.disguised) {
                     const realChar = await DB.get('characters', thread.disguisedCharId);
                     systemPrompt = `
-                        你当前是伪装状态。
-                        你的真实身份是：【${realChar?.name || '一个已知联系人'}】。
-                        目前你正在使用假名及地址：【${thread.subject}】<${thread.peerKey}@stranger.mail> 给用户写信。
-                        你在邮件中呈现的陌生人性格：冷淡、神秘或带有试探。
-                        
-                        用户当前的全局真实名字是：【${trueMask?.name}】。
-                        用户目前写信使用的账户名是：【${activeAccount.name}】（邮箱：${activeAccount.address}）。
-                        
-                        你需要在回信中：
-                        1. 模拟陌生人与对方交流。
-                        2. 穿透检测机制（极为重要）：
-                           - 仔细对照用户写信的语气、写信时泄露的专属秘密、或是其使用的小号发信名字【${activeAccount.name}】。
-                           - 如果名字拼音、文字透露的信息或熟人秘密非常明显，你应当在此轮回复中有所怀疑，并表达类似于“小白？是你吗？别装了，你的写信习惯我太熟悉了”这样的话，直接无情揭穿。
-                           - 穿透机制被触发后，你应在后续部分完全变回【${realChar?.name}】的说话人设和语气跟其交流。
-                           - 如果用户伪装得极好，没有破绽，则继续扮演陌生人。
-                        
-                        严格规则：
-                        - 禁止使用任何 Emoji。
-                        - 保持标准的邮件往来书面格式。
+你当前是伪装状态。
+你的真实身份是：【${realChar?.name || '一个已知联系人'}】。
+目前你正在使用假名及地址给用户写信。
+你在邮件中呈现的陌生人性格：冷淡、神秘或带有试探。
+
+用户当前的全局真实名字是：【${trueMask?.name || '用户'}】。
+用户目前写信使用的账户名是：【${activeAccount.name}】（邮箱：${activeAccount.address}）。
+
+你需要在回信中：
+1. 模拟陌生人与对方交流。
+2. 穿透检测机制（极为重要）：
+   - 仔细对照用户写信的语气、写信时泄露的专属秘密、或其使用的小号发信名字【${activeAccount.name}】。
+   - 如果名字拼音、文字透露的信息或熟人秘密非常明显，你应当在此轮回复中有所怀疑，并表达揭穿。
+   - 穿透机制被触发后，你应在后续部分完全变回【${realChar?.name || '原身份'}】的说话人设和语气跟其交流。
+   - 如果用户伪装得极好，没有破绽，则继续扮演陌生人。
+
+严格规则：
+- 禁止使用 Emoji。
+- 保持标准邮件书面格式。
                     `;
                 } else {
                     const realChar = await DB.get('characters', thread.peerKey);
                     systemPrompt = `
-                        你是【${realChar?.name}】。
-                        你收到了一封来自【${activeAccount.name}】<${activeAccount.address}> 的电子邮件。
-                        用户的真实面具主名字是：【${trueMask?.name}】。
-                        
-                        你与用户的角色关系：
-                        ${realChar?.detail || '熟人。'}
-                        
-                        你需要在回信中：
-                        1. 保持你原本的人设说话风格，按照写信而非即时聊天的格式回复。
-                        2. 穿透推导（高优先级）：
-                           - 用户写信名【${activeAccount.name}】很可能是为了试探或捉弄你而设的小号别名（例如他用‘Anonymous’）。
-                           - 如果他在写信时表现出只有你与【${trueMask?.name}】才知道的秘密/约定，或者名字很相似，请在信中果断地看穿并取笑他。
-                           - 如果伪装无破绽，则以客气、疑惑但得体的态度回复。
-                        
-                        严格规则：
-                        - 禁止使用任何 Emoji。
-                        - 保持规范的书信格式。
+你是【${realChar?.name || '联系人'}】。
+你收到了一封来自【${activeAccount.name}】<${activeAccount.address}> 的电子邮件。
+用户的真实面具主名字是：【${trueMask?.name || '用户'}】。
+
+你与用户的角色关系：
+${realChar?.detail || '熟人。'}
+
+你需要在回信中：
+1. 保持你原本人设说话风格，按写信格式回复。
+2. 穿透推导（高优先级）：
+   - 用户写信名【${activeAccount.name}】可能是试探别名。
+   - 若其表现出只有你与【${trueMask?.name || '用户'}】才知道的秘密/约定，或名字很相似，请在信中果断看穿并取笑。
+   - 若伪装无破绽，则客气、疑惑且得体回复。
+
+严格规则：
+- 禁止使用 Emoji。
+- 保持规范书信格式。
                     `;
                 }
 
                 const promptMessages = [{role: 'system', content: systemPrompt}];
                 msgs.forEach(m => {
                     const role = m.isReceived ? 'assistant' : 'user';
-                    promptMessages.push({role: role, content: `发件人: ${m.senderName}\n内容: ${m.body}`});
+                    promptMessages.push({role, content: `发件人: ${m.senderName}\n内容: ${m.body}`});
                 });
 
                 showStatus('对方正在构思邮件回信...', 'info');
+                if (window.recordApiPending) window.recordApiPending();
                 const replyText = await callLLM(promptMessages);
 
-                const aiSenderName = thread.disguised ? thread.subject : (await DB.get('characters', thread.peerKey))?.name || '未知';
+                const aiSenderName = thread.disguised ? (thread.lastKnownSenderName || thread.subject || '神秘人') : (await DB.get('characters', thread.peerKey))?.name || '未知';
                 const aiSenderAddr = thread.disguised ? `${thread.peerKey}@stranger.mail` : `${thread.peerKey}@haloes.mail`;
 
                 const aiMsg = {
-                    id: 'msg_' + Date.now(),
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                     threadId: thread.id,
                     senderName: aiSenderName,
                     senderAddress: aiSenderAddr,
@@ -494,7 +511,7 @@
                 };
 
                 await DB.put('smsMessages', aiMsg);
-                
+
                 thread.unread = true;
                 await DB.put('smsThreads', thread);
                 showStatus('收到一封新邮件', 'success');
@@ -505,23 +522,49 @@
         }
 
         // ================== 撰写新邮件页 ==================
-        async function openCompose() {
+        async function openCompose(opts = {}) {
             const shell = document.getElementById('smsShell');
             if (!shell) return;
 
             const chars = await DB.getAll('characters');
             const accounts = await DB.getAll('smsAccounts');
 
+            const mask = await getActiveMask();
+            const myAccounts = accounts.filter(a => a.maskId === (mask?.id || activeAccount?.maskId));
+            const fromAccounts = myAccounts.length ? myAccounts : accounts;
+
             let toOptions = chars.map(c => `<option value="${c.id}">${escapeHtml(c.name)} &lt;${c.id}@haloes.mail&gt;</option>`).join('');
             toOptions += `<option value="random" class="sms-random-char-option">随机漂流瓶 (未知陌生人邮件)</option>`;
 
-            const fromOptions = accounts.map(a => `<option value="${a.id}" ${a.id === activeAccount.id ? 'selected' : ''}>${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;</option>`).join('');
+            const fromOptions = fromAccounts.map(a => `<option value="${a.id}" ${a.id === activeAccount?.id ? 'selected' : ''}>${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;</option>`).join('');
+
+            let presetSubject = '';
+            let presetBody = '';
+            let presetToVal = '';
+            let presetFromId = activeAccount?.id || '';
+            let replyThread = null;
+            let replyMode = opts.mode === 'reply';
+
+            if (replyMode && opts.threadId) {
+                replyThread = await DB.get('smsThreads', opts.threadId);
+                if (replyThread) {
+                    presetSubject = replyThread.subject && replyThread.subject.toLowerCase().startsWith('re:') ? replyThread.subject : `Re: ${replyThread.subject || '无主题'}`;
+                    presetFromId = activeAccount?.id || '';
+
+                    // 推断回复目标邮箱
+                    if (replyThread.disguised) {
+                        presetToVal = '__custom__';
+                    } else {
+                        presetToVal = replyThread.peerKey;
+                    }
+                }
+            }
 
             shell.innerHTML = `
                 <div class="sms-compose-view">
                     <div class="sms-detail-header">
                         <button class="sms-menu-btn" id="smsComposeBackBtn">${SVGS.back}</button>
-                        <h2>撰写新邮件</h2>
+                        <h2>${replyMode ? '回复邮件' : '撰写新邮件'}</h2>
                         <button class="sms-menu-btn" id="smsComposeSendBtn" style="color:#1a73e8;">${SVGS.sent}</button>
                     </div>
                     <div class="sms-compose-fields">
@@ -537,24 +580,65 @@
                                 ${toOptions}
                             </select>
                         </div>
+                        <div class="sms-compose-row" id="smsComposeToCustomRow" style="display:none;">
+                            <span class="sms-compose-label">地址：</span>
+                            <input type="text" class="sms-compose-input" id="smsComposeToCustom" placeholder="name@example.com">
+                        </div>
                         <div class="sms-compose-row">
                             <span class="sms-compose-label">主题：</span>
-                            <input type="text" class="sms-compose-input" id="smsComposeSubject" placeholder="邮件主题" maxlength="150">
+                            <input type="text" class="sms-compose-input" id="smsComposeSubject" placeholder="邮件主题" maxlength="150" value="${escapeHtml(presetSubject)}">
                         </div>
-                        <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="3000"></textarea>
+                        <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="3000">${escapeHtml(presetBody)}</textarea>
                     </div>
                 </div>
             `;
 
-            // 写信返回键 -> 返回 Inbox
-            document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
-                renderInbox();
+            const fromSel = document.getElementById('smsComposeFrom');
+            const toSel = document.getElementById('smsComposeTo');
+            const toCustomRow = document.getElementById('smsComposeToCustomRow');
+            const toCustomInput = document.getElementById('smsComposeToCustom');
+
+            if (presetFromId) fromSel.value = presetFromId;
+
+            if (replyMode && replyThread) {
+                if (replyThread.disguised) {
+                    toSel.value = 'random'; // 先占位，随后改 custom
+                    toSel.insertAdjacentHTML('beforeend', `<option value="__custom__">自定义地址</option>`);
+                    toSel.value = '__custom__';
+                    toCustomRow.style.display = 'flex';
+                    toCustomInput.value = `${replyThread.peerKey}@stranger.mail`;
+                } else if (replyThread.peerKey) {
+                    const hasPeer = Array.from(toSel.options).some(o => o.value === replyThread.peerKey);
+                    if (!hasPeer) {
+                        toSel.insertAdjacentHTML('beforeend', `<option value="__custom__">自定义地址</option>`);
+                        toSel.value = '__custom__';
+                        toCustomRow.style.display = 'flex';
+                        toCustomInput.value = `${replyThread.peerKey}@haloes.mail`;
+                    } else {
+                        toSel.value = replyThread.peerKey;
+                    }
+                }
+            }
+
+            toSel.addEventListener('change', () => {
+                if (toSel.value === '__custom__') {
+                    toCustomRow.style.display = 'flex';
+                } else {
+                    toCustomRow.style.display = 'none';
+                }
             });
 
-            // 写信发送按键
+            // 返回 Inbox
+            document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
+                if (replyMode && replyThread) openThreadDetail(replyThread.id);
+                else renderInbox();
+            });
+
+            // 发送
             document.getElementById('smsComposeSendBtn').addEventListener('click', async function() {
-                const fromId = document.getElementById('smsComposeFrom').value;
-                const toVal = document.getElementById('smsComposeTo').value;
+                const fromId = fromSel.value;
+                const toVal = toSel.value;
+                const toCustom = toCustomInput.value.trim();
                 const subject = document.getElementById('smsComposeSubject').value.trim() || '无主题';
                 const body = document.getElementById('smsComposeBody').value.trim();
 
@@ -566,11 +650,18 @@
                 this.disabled = true;
                 this.innerHTML = '正在发送...';
 
-                // 保存发信账号配置
+                // 切换活动账号
                 activeAccount = await DB.get('smsAccounts', fromId);
                 await DB.put('smsMeta', { key: 'activeAccountId', value: fromId });
 
-                let threadId = 'thread_' + Date.now();
+                // 回复模式：沿用原线程
+                if (replyMode && replyThread) {
+                    await handleReplyMail(replyThread, body);
+                    await openThreadDetail(replyThread.id);
+                    return;
+                }
+
+                let threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
                 let peerKey = toVal;
                 let disguised = false;
                 let disguisedCharId = '';
@@ -580,6 +671,17 @@
                     disguised = true;
                     disguisedCharId = randomChar ? randomChar.id : '';
                     peerKey = 'stranger_' + Math.random().toString(36).substring(2, 8);
+                } else if (toVal === '__custom__') {
+                    if (!toCustom || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toCustom)) {
+                        alert('请填写有效邮箱地址');
+                        this.disabled = false;
+                        this.innerHTML = SVGS.sent;
+                        return;
+                    }
+                    // 自定义地址：映射为陌生线程
+                    disguised = true;
+                    peerKey = toCustom.split('@')[0] || ('stranger_' + Math.random().toString(36).substring(2, 8));
+                    disguisedCharId = '';
                 }
 
                 const newThread = {
@@ -617,7 +719,7 @@
                     <div class="sms-alias-item">
                         <div class="sms-alias-info">
                             <div class="sms-alias-name">
-                                ${escapeHtml(a.name)} 
+                                ${escapeHtml(a.name)}
                                 ${isDef ? '<span class="sms-mail-badge-disguise" style="color:#1a73e8; background:#e8f0fe;">主号</span>' : ''}
                                 ${isActive ? '<span class="sms-mail-badge-disguise" style="color:#2ecc71; background:#eafaf1;">正在使用</span>' : ''}
                             </div>
@@ -641,10 +743,10 @@
                     </div>
                     <div style="flex:1; overflow-y:auto; padding:16px;">
                         <div style="font-size:13px; color:#5f6368; margin-bottom:16px;">
-                            当前正在使用的主面具为【${escapeHtml(mask.name)}】。为了进行多面具或匿名试探，您可以新建多个独立的邮箱小号（别名）给联系人写信，他们会根据信件逻辑做出穿透判断。
+                            当前正在使用的主面具为【${escapeHtml(mask.name)}】。可新建多个独立邮箱小号进行试探写信。
                         </div>
                         <div class="sms-sub-card" style="margin-bottom:20px;">
-                            <div class="sms-sub-title" style="margin-bottom:12px;">✨ 新增邮箱小号</div>
+                            <div class="sms-sub-title" style="margin-bottom:12px;">新增邮箱小号</div>
                             <div class="sms-compose-row" style="padding:4px 0;">
                                 <span class="sms-compose-label">姓名：</span>
                                 <input type="text" class="sms-compose-input" id="newAliasName" placeholder="例如：小白">
@@ -659,35 +761,33 @@
                             </div>
                         </div>
 
-                        <div class="sms-sub-title" style="margin-bottom:12px;">📋 账号列表</div>
+                        <div class="sms-sub-title" style="margin-bottom:12px;">账号列表</div>
                         ${aliasHtml}
                     </div>
                 </div>
             `;
 
-            // 小号页面返回键 -> 返回 Inbox
             document.getElementById('smsAliasBackBtn').addEventListener('click', () => {
                 renderInbox();
             });
 
-            // 新增小号
             document.getElementById('smsCreateAliasBtn').addEventListener('click', async () => {
                 const name = document.getElementById('newAliasName').value.trim();
                 const prefix = document.getElementById('newAliasAddr').value.trim().toLowerCase();
 
-                if(!name || !prefix) {
+                if (!name || !prefix) {
                     alert('请完整输入别名账户信息');
                     return;
                 }
 
-                if(!/^[a-z0-9_]{2,15}$/.test(prefix)) {
+                if (!/^[a-z0-9_]{2,15}$/.test(prefix)) {
                     alert('前缀仅支持2-15位小写英文字母、数字和下划线');
                     return;
                 }
 
                 const allAccts = await DB.getAll('smsAccounts');
                 const fullAddr = prefix + '@haloes.mail';
-                if(allAccts.some(a => a.address === fullAddr)) {
+                if (allAccts.some(a => a.address === fullAddr)) {
                     alert('该别名账户已存在，请换一个名称');
                     return;
                 }
@@ -706,39 +806,41 @@
                 await DB.put('smsMeta', { key: 'activeAccountId', value: newAcct.id });
 
                 showStatus('成功创建并切换至小号账户', 'success');
-                openAliasManager();
+                renderInbox();
             });
 
-            // 切换小号动作实现
             shell.querySelectorAll('.use-alias-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const acctId = btn.dataset.id;
                     activeAccount = await DB.get('smsAccounts', acctId);
                     await DB.put('smsMeta', { key: 'activeAccountId', value: acctId });
+
+                    // 切换后仅看该账号收发（已经通过 accountId 隔离）
                     showStatus(`已切换为活动账户: ${activeAccount.name}`, 'success');
-                    openAliasManager();
+                    renderInbox();
                 });
             });
 
-            // 删除小号别名
             shell.querySelectorAll('.del-alias-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const acctId = btn.dataset.id;
-                    if(confirm('确定删除该邮箱账户吗？关联的历史往来信件也将一同清除！')) {
+                    if (confirm('确定删除该邮箱账户吗？关联历史信件也将清除。')) {
                         const threads = await DB.queryByIndex('smsThreads', 'accountId', acctId);
-                        for(const t of threads) {
+                        for (const t of threads) {
                             const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
-                            for(const m of msgs) await DB.delete('smsMessages', m.id);
+                            for (const m of msgs) await DB.delete('smsMessages', m.id);
                             await DB.delete('smsThreads', t.id);
                         }
                         await DB.delete('smsAccounts', acctId);
-                        
+
                         const maskAccts = await DB.queryByIndex('smsAccounts', 'maskId', mask.id);
                         activeAccount = maskAccts.find(a => a.isDefault) || maskAccts[0];
-                        await DB.put('smsMeta', { key: 'activeAccountId', value: activeAccount.id });
+                        if (activeAccount) {
+                            await DB.put('smsMeta', { key: 'activeAccountId', value: activeAccount.id });
+                        }
 
                         showStatus('别名账号已成功删除', 'info');
-                        openAliasManager();
+                        renderInbox();
                     }
                 });
             });
@@ -751,8 +853,8 @@
 
             const mask = await getActiveMask();
             const subs = await DB.getAll('smsSubs');
-            
-            const userSubs = subs.filter(s => s.maskId === mask.id && !s.isCharSub);
+
+            const userSubs = subs.filter(s => s.maskId === mask.id && !s.isCharSub && s.accountId === activeAccount.id);
             const charSubs = subs.filter(s => s.isCharSub);
 
             let userSubsHtml = '';
@@ -760,7 +862,7 @@
                 userSubsHtml += `
                     <div class="sms-sub-card">
                         <div class="sms-sub-header">
-                            <span class="sms-sub-title">📡 ${escapeHtml(s.name)}</span>
+                            <span class="sms-sub-title">${escapeHtml(s.name)}</span>
                             <span class="sms-sub-freq">频次: ${s.frequency === '0' ? '手动' : s.frequency + '小时'}</span>
                         </div>
                         <div class="sms-sub-desc">${escapeHtml(s.description)}</div>
@@ -777,7 +879,7 @@
                 charSubsHtml += `
                     <div class="sms-sub-card">
                         <div class="sms-sub-header">
-                            <span class="sms-sub-title">📰 ${escapeHtml(s.name)}</span>
+                            <span class="sms-sub-title">${escapeHtml(s.name)}</span>
                             <span class="sms-sub-freq">系统内置频道</span>
                         </div>
                         <div class="sms-sub-desc">${escapeHtml(s.description)}</div>
@@ -798,9 +900,9 @@
                         <h2>订阅号推送设定</h2>
                     </div>
                     <div style="flex:1; overflow-y:auto; padding:16px;">
-                        
+
                         <div class="sms-sub-card" style="margin-bottom:20px; background:#f8f9fa;">
-                            <div class="sms-sub-title" style="margin-bottom:12px;">✨ 创建我的自定义订阅号</div>
+                            <div class="sms-sub-title" style="margin-bottom:12px;">创建自定义订阅号</div>
                             <div class="sms-compose-row" style="padding:4px 0;">
                                 <span class="sms-compose-label">名称：</span>
                                 <input type="text" class="sms-compose-input" id="newSubName" placeholder="例如：废土周刊">
@@ -819,7 +921,7 @@
                             <div class="sms-compose-row" style="padding:4px 0;">
                                 <span class="sms-compose-label">频次：</span>
                                 <select class="sms-compose-select" id="newSubFreq">
-                                    <option value="0">完全由手动推送</option>
+                                    <option value="0">完全手动推送</option>
                                     <option value="1">每 1 小时检测自动推送</option>
                                     <option value="6">每 6 小时检测自动推送</option>
                                     <option value="24">每日检测自动推送</option>
@@ -830,21 +932,19 @@
                             </div>
                         </div>
 
-                        <div class="sms-sub-title" style="margin-bottom:12px;">📋 我订阅的频道</div>
+                        <div class="sms-sub-title" style="margin-bottom:12px;">我订阅的频道</div>
                         ${userSubsHtml || '<div style="color:#5f6368; font-size:13px; margin-bottom:16px;">暂无自定义订阅频道</div>'}
 
-                        <div class="sms-sub-title" style="margin-bottom:12px; margin-top:20px;">📰 推荐官方内置订阅</div>
+                        <div class="sms-sub-title" style="margin-bottom:12px; margin-top:20px;">推荐官方内置订阅</div>
                         ${charSubsHtml}
                     </div>
                 </div>
             `;
 
-            // 订阅号页面返回键 -> 返回 Inbox
             document.getElementById('smsSubBackBtn').addEventListener('click', () => {
                 renderInbox();
             });
 
-            // 确定创建订阅
             document.getElementById('smsCreateSubBtn').addEventListener('click', async () => {
                 const name = document.getElementById('newSubName').value.trim();
                 const desc = document.getElementById('newSubDesc').value.trim();
@@ -873,7 +973,6 @@
                 openSubscriptionManager();
             });
 
-            // 立刻推送一条邮件
             shell.querySelectorAll('.trigger-sub-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const subId = btn.dataset.id;
@@ -884,11 +983,10 @@
                 });
             });
 
-            // 取消订阅
             shell.querySelectorAll('.del-sub-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const subId = btn.dataset.id;
-                    if(confirm('确定退订并永久退订此频道吗？')) {
+                    if (confirm('确定退订并永久移除此频道吗？')) {
                         await DB.delete('smsSubs', subId);
                         showStatus('已成功退订', 'info');
                         openSubscriptionManager();
@@ -899,20 +997,19 @@
             await ensureBuiltinCharSubscriptions();
         }
 
-        // 绑定内置角色官方推送号
         async function ensureBuiltinCharSubscriptions() {
             const chars = await DB.getAll('characters');
             if (chars.length === 0) return;
 
             const subs = await DB.getAll('smsSubs');
-            for(const c of chars) {
+            for (const c of chars) {
                 const subId = 'sub_char_' + c.id;
-                if(!subs.some(s => s.id === subId)) {
+                if (!subs.some(s => s.id === subId)) {
                     const charSub = {
                         id: subId,
                         name: `${c.name}的每日随笔`,
-                        description: `由著名联系人【${c.name}】亲自撰写，为您推送个人的独家观察与日常思想碎片。`,
-                        frequency: '0', 
+                        description: `由联系人【${c.name}】撰写，推送其观察与日常思考。`,
+                        frequency: '0',
                         isCharSub: true,
                         charId: c.id,
                         lastPushed: 0
@@ -922,7 +1019,7 @@
             }
         }
 
-        // ================== 订阅号邮件推送生成机制 ==================
+        // ================== 订阅号邮件推送生成 ==================
         async function triggerSubscriptionPush(subId) {
             const sub = await DB.get('smsSubs', subId);
             if (!sub) return;
@@ -933,41 +1030,41 @@
             if (sub.isCharSub) {
                 const c = await DB.get('characters', sub.charId);
                 systemPrompt = `
-                    你是【${c?.name}】。你正在为自己的专属订阅号/随笔栏目撰写一期文章。
-                    人设背景：\n${c?.detail || '普通朋友'}
-                    
-                    请你撰写一篇字数约300字左右的高水平日常随笔，写一写你今天读过的书，对生活的小牢骚，或者一件小趣闻。语气需要富有你自己的独特人格张力。
-                    
-                    严格规则：
-                    - 禁止使用任何 Emoji。
-                    - 保持一封独立文章/随笔的整洁信件结构。
+你是【${c?.name}】。你正在为自己的订阅随笔栏目撰写一期文章。
+人设背景：
+${c?.detail || '普通朋友'}
+
+请撰写一篇约300字的高质量日常随笔，可涉及读书、生活观察、小插曲。
+严格规则：
+- 禁止 Emoji。
+- 保持一封整洁信件结构。
                 `;
-                userPrompt = `请为您最新的专栏《${sub.name}》撰写正文。`;
+                userPrompt = `请为专栏《${sub.name}》撰写正文。`;
             } else {
                 let wbContext = '';
-                if(sub.worldbookId) {
+                if (sub.worldbookId) {
                     const wb = await DB.get('worldbooks', sub.worldbookId);
-                    if(wb) wbContext = `背景世界书参考：\n${wb.content}`;
+                    if (wb) wbContext = `背景世界书参考：\n${wb.content}`;
                 }
 
                 systemPrompt = `
-                    您现在是一个智能订阅专栏生成器。
-                    本期专栏名：【${sub.name}】。
-                    专栏的主题与设定：【${sub.description}】。
-                    ${wbContext}
-                    
-                    请为您撰写一期最新的深度阅读邮件专栏内容。文章长度约350字，文风根据设定自行调整。
-                    
-                    严格规则：
-                    - 禁止使用任何 Emoji。
-                    - 保持邮件阅读卡片结构，不要输出 Markdown 的代码块。
+你是订阅专栏生成器。
+本期专栏名：【${sub.name}】。
+主题设定：【${sub.description}】。
+${wbContext}
+
+请生成约350字的深度阅读邮件专栏内容。
+严格规则：
+- 禁止 Emoji。
+- 不输出 Markdown 代码块。
                 `;
-                userPrompt = `请生成最新一期《${sub.name}》期刊的深度好文。`;
+                userPrompt = `请生成最新一期《${sub.name}》内容。`;
             }
 
             try {
-                showStatus(`正在抓取云端数据，生成并推送 ${sub.name}...`, 'info');
-                recordApiPending();
+                showStatus(`正在生成并推送 ${sub.name}...`, 'info');
+                if (window.recordApiPending) window.recordApiPending();
+
                 const contentText = await callLLM([
                     {role: 'system', content: systemPrompt},
                     {role: 'user', content: userPrompt}
@@ -977,7 +1074,7 @@
                 const newThread = {
                     id: threadId,
                     maskId: sub.maskId || (await getActiveMask())?.id,
-                    accountId: activeAccount?.id,
+                    accountId: sub.accountId || activeAccount?.id,
                     peerKey: sub.id,
                     subject: `[期刊] ${sub.name} 新推`,
                     isSubscription: true,
@@ -986,7 +1083,7 @@
                 };
 
                 const newMsg = {
-                    id: 'msg_' + Date.now(),
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                     threadId: threadId,
                     senderName: sub.name,
                     senderAddress: `${sub.id}@subscription.haloes`,
@@ -1001,7 +1098,7 @@
                 sub.lastPushed = Date.now();
                 await DB.put('smsSubs', sub);
 
-                showStatus(`📰 订阅专栏 ${sub.name} 投递成功`, 'success');
+                showStatus(`订阅专栏 ${sub.name} 投递成功`, 'success');
 
             } catch (e) {
                 showStatus('获取订阅内容失败，请稍后刷新: ' + e.message, 'error');
@@ -1018,77 +1115,168 @@
                     const intervalMs = parseInt(s.frequency) * 60 * 60 * 1000;
                     const elapsed = now - (s.lastPushed || 0);
                     if (elapsed >= intervalMs) {
-                        console.log(`📡 周期性自动投递触发: ${s.name}`);
                         triggerSubscriptionPush(s.id).catch(err => {
-                            console.warn('定时订阅静默投递失败', err);
+                            console.warn('定时订阅投递失败', err);
                         });
                     }
                 }
             }
         }
 
-        // ================== 刷新时主动触发随机来信（提升游戏体验） ==================
-        async function triggerIncomingProactiveEmail() {
-            const chars = await DB.getAll('characters');
-            if (chars.length === 0 || !activeAccount) return;
+        // ================== 刷新选择来信人弹层 ==================
+        async function openRefreshSelector() {
+            const overlay = document.getElementById('smsRefreshSelectorOverlay');
+            const listEl = document.getElementById('smsRefreshSelectorList');
+            if (!overlay || !listEl) return;
 
-            // 35% 几率触发一封来自联系人（或者是其伪装成陌生人）的主动邮件
-            if (Math.random() > 0.35) {
-                showStatus('信箱已是最新状态', 'success');
+            const chars = await DB.getAll('characters');
+            if (!chars.length) {
+                showStatus('暂无联系人可选', 'info');
                 return;
             }
 
-            const chosenChar = chars[Math.floor(Math.random() * chars.length)];
-            const trueMask = await getActiveMask();
+            listEl.innerHTML = chars.map(c => `
+                <label class="sms-drawer-item" style="padding:10px 18px; gap:10px;">
+                    <input type="checkbox" class="sms-refresh-char-check" value="${c.id}">
+                    <span style="display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:50%; background:${getAvatarColor(c.name)}; color:#fff; font-size:12px;">${escapeHtml((c.name||'?').charAt(0))}</span>
+                    <span>${escapeHtml(c.name)}</span>
+                </label>
+            `).join('');
 
-            const isDisguised = (Math.random() > 0.5); // 是否伪装成陌生人
+            overlay.classList.add('active');
+
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) overlay.classList.remove('active');
+            }, { once: true });
+
+            const cancelBtn = document.getElementById('smsRefreshSelectorCancelBtn');
+            const confirmBtn = document.getElementById('smsRefreshSelectorConfirmBtn');
+
+            cancelBtn.onclick = () => overlay.classList.remove('active');
+
+            confirmBtn.onclick = async () => {
+                if (refreshRunning) return;
+                const checked = Array.from(document.querySelectorAll('.sms-refresh-char-check:checked')).map(i => i.value);
+                const mixStranger = !!document.getElementById('smsRefreshMixStranger')?.checked;
+
+                overlay.classList.remove('active');
+
+                if (!checked.length && !mixStranger) {
+                    showStatus('请至少选择一个来信来源', 'info');
+                    return;
+                }
+
+                await performRefreshWithSelection(checked, mixStranger);
+            };
+        }
+
+        async function performRefreshWithSelection(charIds, mixStranger) {
+            const refreshBtn = document.getElementById('smsRefreshBtn');
+            if (!refreshBtn || refreshRunning) return;
+
+            refreshRunning = true;
+            refreshBtn.style.transform = 'rotate(360deg)';
+            refreshBtn.style.transition = 'transform 0.6s ease';
+
+            try {
+                showStatus('正在收取新邮件与更新订阅...', 'info');
+                await ensureBuiltinCharSubscriptions();
+                await checkPeriodicalSubscriptions();
+
+                // 一次生成来信
+                await triggerIncomingProactiveEmailBySelection(charIds, mixStranger);
+
+                await loadMailList();
+                showStatus('收信完成', 'success');
+            } catch (e) {
+                showStatus('收信失败: ' + e.message, 'error');
+            } finally {
+                setTimeout(() => {
+                    refreshBtn.style.transform = 'none';
+                    refreshBtn.style.transition = 'none';
+                }, 600);
+                refreshRunning = false;
+            }
+        }
+
+        // ================== 按选择生成来信（支持多选 + 陌生人掺入） ==================
+        async function triggerIncomingProactiveEmailBySelection(selectedCharIds, mixStranger) {
+            const chars = await DB.getAll('characters');
+            if (chars.length === 0 || !activeAccount) return;
+
+            const selectedChars = chars.filter(c => selectedCharIds.includes(c.id));
+            if (!selectedChars.length && !mixStranger) return;
+
+            const trueMask = await getActiveMask();
+            const tasks = [];
+
+            // 每个选中联系人至少1封
+            selectedChars.forEach(c => {
+                const useDisguise = mixStranger ? (Math.random() > 0.5) : false;
+                tasks.push(generateOneIncomingMailFromChar(c, useDisguise, trueMask));
+            });
+
+            // 若只选陌生人，随机挑联系人伪装来信
+            if (!selectedChars.length && mixStranger) {
+                const chosen = chars[Math.floor(Math.random() * chars.length)];
+                tasks.push(generateOneIncomingMailFromChar(chosen, true, trueMask));
+            }
+
+            // 随机掺入一封额外陌生人来信
+            if (mixStranger && selectedChars.length > 0 && Math.random() > 0.45) {
+                const chosen = chars[Math.floor(Math.random() * chars.length)];
+                tasks.push(generateOneIncomingMailFromChar(chosen, true, trueMask));
+            }
+
+            for (const t of tasks) {
+                await t;
+            }
+        }
+
+        async function generateOneIncomingMailFromChar(chosenChar, isDisguised, trueMask) {
             const peerKey = isDisguised ? 'stranger_' + Math.random().toString(36).substring(2, 8) : chosenChar.id;
             const senderName = isDisguised ? '神秘人' : chosenChar.name;
             const senderAddr = isDisguised ? `${peerKey}@stranger.mail` : `${chosenChar.id}@haloes.mail`;
 
-            // 用 LLM 生成主动来信的主题和正文
             let systemPrompt = '';
             if (isDisguised) {
                 systemPrompt = `
-                    你是【${chosenChar.name}】。
-                    你现在伪装成一个化名为“【${senderName}】”的陌生人（邮箱为 <${senderAddr}>），写信给【${trueMask?.name}】（此时你发件的邮箱别名为【${activeAccount.name}】）。
-                    你可能出于一种善意的玩笑、试探、甚至是某个秘密事件在跟写信联系TA。
-                    
-                    请写一封带有悬疑或试探感、300字以内的信件。
-                    
-                    要求：
-                    1. 严格禁止 Emoji。
-                    2. 主题格式：---主题---主题内容
-                    3. 正文格式：---正文---正文内容
+你是【${chosenChar.name}】。
+你现在伪装成陌生人（邮箱 <${senderAddr}>），写信给【${trueMask?.name || '用户'}】（对方当前别名为【${activeAccount.name}】）。
+请写一封带有悬疑或试探感、300字以内信件。
+
+要求：
+1. 禁止 Emoji。
+2. 主题格式：---主题---主题内容
+3. 正文格式：---正文---正文内容
                 `;
             } else {
                 systemPrompt = `
-                    你是【${chosenChar.name}】。你正在主动给好朋友【${trueMask?.name}】（他的写信别名为【${activeAccount.name}】）写一封日常倾诉邮件。
-                    你的人设背景为：\n${chosenChar.detail || '熟人'}
-                    
-                    写信探讨一期最近的艺术电影、你的日常感悟、或者询问TA对某件事情的看法。
-                    
-                    要求：
-                    1. 严格禁止 Emoji。
-                    2. 主题格式：---主题---主题内容
-                    3. 正文格式：---正文---正文内容
+你是【${chosenChar.name}】。你正在主动给好朋友【${trueMask?.name || '用户'}】（其写信别名【${activeAccount.name}】）写一封日常邮件。
+你的人设背景：
+${chosenChar.detail || '熟人'}
+
+要求：
+1. 禁止 Emoji。
+2. 主题格式：---主题---主题内容
+3. 正文格式：---正文---正文内容
                 `;
             }
 
             try {
-                recordApiPending();
+                if (window.recordApiPending) window.recordApiPending();
                 const aiResult = await callLLM([
                     {role: 'system', content: systemPrompt},
-                    {role: 'user', content: '请生成一期精细的日常主动来信内容'}
+                    {role: 'user', content: '请生成一期精细的主动来信内容'}
                 ]);
 
                 const subjMatch = aiResult.match(/---主题---(.*)/);
                 const bodyMatch = aiResult.match(/---正文---([\s\S]*)/);
 
-                const subject = (subjMatch ? subjMatch[1].trim() : `新回复：关于最近的事`) || '一封突如其来的来信';
+                const subject = (subjMatch ? subjMatch[1].trim() : '一封突如其来的来信') || '一封突如其来的来信';
                 const body = bodyMatch ? bodyMatch[1].trim() : aiResult.trim();
 
-                const threadId = 'thread_' + Date.now();
+                const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
                 const newThread = {
                     id: threadId,
                     maskId: activeAccount.maskId,
@@ -1099,11 +1287,12 @@
                     disguised: isDisguised,
                     disguisedCharId: isDisguised ? chosenChar.id : '',
                     unread: true,
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    lastKnownSenderName: senderName
                 };
 
                 const newMsg = {
-                    id: 'msg_' + Date.now(),
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                     threadId: threadId,
                     senderName: senderName,
                     senderAddress: senderAddr,
@@ -1114,7 +1303,8 @@
 
                 await DB.put('smsThreads', newThread);
                 await DB.put('smsMessages', newMsg);
-                showStatus(`📬 收到了一封来自 [${senderName}] 的新邮件！`, 'success');
+
+                showStatus(`收到来自 [${senderName}] 的新邮件`, 'success');
 
             } catch (err) {
                 console.warn('主动邮件生成失败', err);
@@ -1123,11 +1313,11 @@
 
         // ================== 汉字拼音快速拼凑别名 ==================
         function pinyin(str) {
-            return str.split('').map(c => {
+            return (str || '').split('').map(c => {
                 const code = c.charCodeAt(0);
                 if (code >= 19968 && code <= 40869) return String.fromCharCode(97 + (code % 26));
                 return c.toLowerCase().replace(/[^a-z0-9]/g, '');
-            }).join('').substring(0, 10);
+            }).join('').substring(0, 10) || 'user';
         }
 
         function formatCompactTime(timestamp) {
@@ -1139,12 +1329,19 @@
             return d.toLocaleDateString('zh-CN', {month: 'numeric', day: 'numeric'});
         }
 
+        function getAvatarColor(name) {
+            const colors = ['#1a73e8', '#d93025', '#188038', '#9334e6', '#f9ab00', '#00897b', '#5f6368'];
+            const n = (name || '?').charCodeAt(0) || 65;
+            return colors[n % colors.length];
+        }
+
         // 全局模块输出
         window.smsModule = {
             init,
             openCompose,
             openAliasManager,
-            openSubscriptionManager
+            openSubscriptionManager,
+            openSMSPage: () => renderInbox()
         };
 
         init();
