@@ -12497,7 +12497,7 @@ if (pageId === 'guangguang') {
     }
 } else if (pageId === 'sms') {
     if (window.smsModule?.openSMSPage) {
-        await window.smsModule.openSMSPage();
+        window.smsModule.openSMSPage();
     }
 } else if (pageId === 'group-conversation') {
     console.log('切换到群聊页面');
