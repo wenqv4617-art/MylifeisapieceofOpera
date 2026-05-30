@@ -2,39 +2,61 @@
 (function() {
     "use strict";
 
-    // 原生高精度无 Emoji 矢量路径图标库
     const SVGS = {
         menu: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>`,
         compose: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
         back: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>`,
         inbox: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 0 1.34.39 1.66 1 .49.92 1.46 1.5 2.53 1.5s2.04-.58 2.53-1.5c.32-.61.97-1 1.66-1H19v3zm0-5h-4.18c-.49.92-1.46 1.5-2.53 1.5s-2.04-.58-2.53-1.5H5V5h14v9z"/></svg>`,
         sent: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`,
-        settings: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`,
         feed: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 20h16v-2H4v2zm0-5h16v-2H4v2zm0-5h16V8H4v2zm0-6v2h16V4H4z"/></svg>`,
         trash: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
         refresh: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
-        user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
+        magic: `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2l1.6 4.4L18 8l-4.4 1.6L12 14l-1.6-4.4L6 8l4.4-1.6L12 2zm7 10l.9 2.5L22 15l-2.1.5L19 18l-.9-2.5L16 15l2.1-.5L19 12zM5 14l1.1 3L9 18l-2.9 1-.1 3-1.1-3L2 18l2.9-1L5 14z"/></svg>`,
+        user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 30 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
         star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
         reply: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`
     };
 
     let activeAccount = null;
-    let currentFolder = 'primary'; // 'primary', 'sent', 'subs'
+    let currentFolder = 'primary';
     let searchQuery = '';
-
     let refreshRunning = false;
 
     window.initSMSModule = function({ DB, showStatus, escapeHtml, callLLM, switchPage, getActiveMask }) {
 
         async function init() {
-            console.log('SMS/Email 模块启动');
             await ensureDefaultAccount();
+            await migrateLegacyData();
             await ensureBuiltinCharSubscriptions();
             await checkPeriodicalSubscriptions();
             renderInbox();
         }
 
-        // 确保数据库中有该面具关联的默认账号
+        async function migrateLegacyData() {
+            const threads = await DB.getAll('smsThreads');
+            for (const t of threads) {
+                let changed = false;
+                if (!t.peerType) { t.peerType = t.isSubscription ? 'subscription' : 'conversation'; changed = true; }
+                if (!t.peerDisplayName && t.subject) { t.peerDisplayName = t.subject; changed = true; }
+                if (!t.peerAddress) {
+                    if (t.disguised) t.peerAddress = `${t.peerKey || 'stranger'}@stranger.mail`;
+                    else if (t.peerKey) t.peerAddress = `${t.peerKey}@haloes.mail`;
+                    changed = true;
+                }
+                if (!t.replyContext) { t.replyContext = {}; changed = true; }
+                if (!t.createdAt) { t.createdAt = Date.now(); changed = true; }
+                if (changed) await DB.put('smsThreads', t);
+            }
+
+            const accts = await DB.getAll('smsAccounts');
+            for (const a of accts) {
+                if (a.avatar === undefined) {
+                    a.avatar = '';
+                    await DB.put('smsAccounts', a);
+                }
+            }
+        }
+
         async function ensureDefaultAccount() {
             const mask = await getActiveMask();
             if (!mask) return;
@@ -43,15 +65,15 @@
             const hasDefault = accounts.some(a => a.maskId === mask.id && a.isDefault);
 
             if (!hasDefault) {
-                const defaultEmail = {
+                await DB.put('smsAccounts', {
                     id: 'acct_def_' + mask.id,
                     maskId: mask.id,
                     name: mask.name,
                     address: pinyin(mask.name) + '@haloes.mail',
+                    avatar: mask.avatar || '',
                     isDefault: true,
                     createdAt: Date.now()
-                };
-                await DB.put('smsAccounts', defaultEmail);
+                });
             }
 
             const savedActiveId = await DB.get('smsMeta', 'activeAccountId');
@@ -66,45 +88,49 @@
                     await DB.put('smsMeta', { key: 'activeAccountId', value: activeAccount.id });
                 }
             }
+
+            // 主号头像始终跟面具同步
+            if (activeAccount && activeAccount.isDefault && mask.avatar !== undefined) {
+                const defaultAcct = await DB.get('smsAccounts', activeAccount.id);
+                if (defaultAcct) {
+                    defaultAcct.name = mask.name || defaultAcct.name;
+                    defaultAcct.avatar = mask.avatar || '';
+                    await DB.put('smsAccounts', defaultAcct);
+                    activeAccount = defaultAcct;
+                }
+            }
         }
 
-        // ================== 核心视图路由器 ==================
-        function renderInbox() {
+        async function renderInbox() {
             const shell = document.getElementById('smsShell');
             if (!shell) return;
 
             shell.innerHTML = `
-                <div class="sms-search-bar" style="margin:8px 12px; padding:2px 6px; gap:2px;">
+                <div class="sms-search-bar" id="smsSearchBarRoot" style="margin:8px 10px; padding:0 6px; gap:4px;">
                     <button class="sms-menu-btn" id="smsInboxBackBtn">${SVGS.back}</button>
                     <button class="sms-menu-btn" id="smsMenuBtn">${SVGS.menu}</button>
-                    <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}">
-                    <button class="sms-menu-btn" id="smsRefreshBtn" title="同步与收取邮件">${SVGS.refresh}</button>
+
+                    <div style="flex:1; display:flex; align-items:center; background:#fff; border-radius:18px; min-width:0;">
+                        <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}" style="padding-left:8px; font-size:14px;">
+                        <button class="sms-menu-btn" id="smsRefreshBtn" title="收取邮件" style="padding:6px;">${SVGS.refresh}</button>
+                        <button class="sms-menu-btn" id="smsFetchReplyBtn" title="获取回复" style="padding:6px;">${SVGS.magic}</button>
+                    </div>
+
                     <div class="sms-profile-badge" id="smsProfileBadge" style="${activeAccount?.avatar ? `background-image:url('${activeAccount.avatar}')` : ''}">
                         ${activeAccount?.avatar ? '' : escapeHtml(activeAccount?.name?.charAt(0) || 'U')}
                     </div>
                 </div>
 
                 <div class="sms-folder-tabs">
-                    <div class="sms-folder-tab ${currentFolder === 'primary' ? 'active' : ''}" data-folder="primary">
-                        ${SVGS.inbox} <span>主要信箱</span>
-                    </div>
-                    <div class="sms-folder-tab ${currentFolder === 'sent' ? 'active' : ''}" data-folder="sent">
-                        ${SVGS.sent} <span>已发送</span>
-                    </div>
-                    <div class="sms-folder-tab ${currentFolder === 'subs' ? 'active' : ''}" data-folder="subs">
-                        ${SVGS.feed} <span>订阅号</span>
-                    </div>
+                    <div class="sms-folder-tab ${currentFolder === 'primary' ? 'active' : ''}" data-folder="primary">${SVGS.inbox} <span>主要信箱</span></div>
+                    <div class="sms-folder-tab ${currentFolder === 'sent' ? 'active' : ''}" data-folder="sent">${SVGS.sent} <span>已发送</span></div>
+                    <div class="sms-folder-tab ${currentFolder === 'subs' ? 'active' : ''}" data-folder="subs">${SVGS.feed} <span>订阅号</span></div>
                 </div>
 
-                <div class="sms-mail-list" id="smsMailList">
-                    <div style="text-align:center; padding:40px; color:#5f6368;">邮件加载中...</div>
-                </div>
+                <div class="sms-mail-list" id="smsMailList"><div style="text-align:center; padding:40px; color:#5f6368;">邮件加载中...</div></div>
 
-                <button class="sms-compose-fab" id="smsComposeFab">
-                    ${SVGS.compose} <span>撰写</span>
-                </button>
+                <button class="sms-compose-fab" id="smsComposeFab">${SVGS.compose} <span>撰写</span></button>
 
-                <!-- 滑动抽屉菜单 -->
                 <div class="sms-drawer-overlay" id="smsDrawerOverlay">
                     <div class="sms-drawer">
                         <div class="sms-drawer-header">
@@ -131,22 +157,18 @@
                     </div>
                 </div>
 
-                <!-- 刷新收信源选择弹层 -->
                 <div class="sms-drawer-overlay" id="smsRefreshSelectorOverlay">
                     <div class="sms-drawer" style="left:0; width:100%; max-width:420px; margin:0 auto; right:0; transform:none;">
                         <div class="sms-drawer-header">
-                            <div class="sms-drawer-title" style="font-size:18px; color:#202124;">选择来信人</div>
-                            <div style="font-size:12px; color:#5f6368; margin-top:4px;">
-                                可多选，一次生成。可勾选“掺入陌生人来信”。
-                            </div>
+                            <div class="sms-drawer-title" style="font-size:18px; color:#202124;">选择来信来源</div>
+                            <div style="font-size:12px; color:#5f6368; margin-top:4px;">可多选，一次生成。</div>
                         </div>
                         <div class="sms-drawer-menu" id="smsRefreshSelectorList" style="padding:8px 0 0 0;"></div>
                         <div style="padding:12px 16px; border-top:1px solid #dadce0; background:#fff;">
                             <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3c4043; margin-bottom:10px;">
-                                <input type="checkbox" id="smsRefreshMixStranger">
-                                <span>掺入陌生人来信（随机）</span>
-                            </label>
-                            <div style="display:flex; gap:8px; justify-content:flex-end;">
+    <input type="checkbox" id="smsRefreshMixStranger"> 混入陌生人来信
+</label>
+<div style="display:flex; gap:8px; justify-content:flex-end;">
                                 <button class="sms-btn-sm" id="smsRefreshSelectorCancelBtn">取消</button>
                                 <button class="sms-btn-sm primary" id="smsRefreshSelectorConfirmBtn">生成来信</button>
                             </div>
@@ -155,38 +177,53 @@
                 </div>
             `;
 
-            loadMailList();
+            await loadMailList();
 
-            // 主页面返回键（返回桌面）
-            document.getElementById('smsInboxBackBtn').addEventListener('click', () => {
-                switchPage('desktop');
-            });
-
-            // 侧栏展开与隐藏
+            document.getElementById('smsInboxBackBtn').addEventListener('click', () => switchPage('desktop'));
             document.getElementById('smsMenuBtn').addEventListener('click', toggleDrawer);
-            document.getElementById('smsDrawerOverlay').addEventListener('click', function(e) {
-                if (e.target === this) toggleDrawer();
+            document.getElementById('smsDrawerOverlay').addEventListener('click', function(e) { if (e.target === this) toggleDrawer(); });
+
+            document.getElementById('smsRefreshBtn').addEventListener('click', async () => {
+                if (!refreshRunning) await openRefreshSelector();
             });
 
-            // 主动收信（刷新）动作：改成先选来信人
-            document.getElementById('smsRefreshBtn').addEventListener('click', async function() {
+            // 获取回复按钮：对当前账号已有“我发出的线程”批量补一轮回复
+            document.getElementById('smsFetchReplyBtn').addEventListener('click', async () => {
                 if (refreshRunning) return;
-                openRefreshSelector();
+                refreshRunning = true;
+                try {
+                    showStatus('正在拉取回复...', 'info');
+                    const threads = await DB.queryByIndex('smsThreads', 'accountId', activeAccount.id);
+                    let count = 0;
+                    for (const t of threads) {
+                        if (t.isSubscription) continue;
+                        const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
+                        msgs.sort((a,b) => b.timestamp - a.timestamp);
+                        if (!msgs.length) continue;
+                        const last = msgs[0];
+                        if (!last.isReceived && last.senderAddress === activeAccount.address) {
+                            // 最后一条是我发出的，触发一次对方回复
+                            await triggerOneReplyWithoutUserInput(t);
+                            count++;
+                        }
+                    }
+                    await loadMailList();
+                    showStatus(count ? `已获取 ${count} 条回复` : '暂无可获取回复', 'success');
+                } catch (e) {
+                    showStatus('获取回复失败: ' + e.message, 'error');
+                } finally {
+                    refreshRunning = false;
+                }
             });
 
-            // 搜索、头像、写信
             document.getElementById('smsSearchInput').addEventListener('input', function(e) {
                 searchQuery = e.target.value.toLowerCase().trim();
                 loadMailList();
             });
 
-            document.getElementById('smsProfileBadge').addEventListener('click', () => {
-                openAliasManager();
-            });
+            document.getElementById('smsProfileBadge').addEventListener('click', openAliasManager);
+            document.getElementById('smsComposeFab').addEventListener('click', () => openCompose());
 
-            document.getElementById('smsComposeFab').addEventListener('click', openCompose);
-
-            // Tab栏切换
             document.querySelectorAll('.sms-folder-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     currentFolder = this.dataset.folder;
@@ -194,7 +231,6 @@
                 });
             });
 
-            // 抽屉菜单项事件
             document.querySelectorAll('.sms-drawer-item').forEach(item => {
                 item.addEventListener('click', async function() {
                     const action = this.dataset.action;
@@ -220,119 +256,86 @@
             if (overlay) overlay.classList.toggle('active');
         }
 
-        // ================== 获取邮件数据（严格当前账号隔离） ==================
         async function loadMailList() {
             const listEl = document.getElementById('smsMailList');
             if (!listEl) return;
-
             if (!activeAccount) {
                 listEl.innerHTML = `<div style="text-align:center; padding:40px; color:#5f6368;">暂无可用邮箱。</div>`;
                 return;
             }
 
-            // 只取当前账号
             const threads = await DB.queryByIndex('smsThreads', 'accountId', activeAccount.id);
             let displayThreads = [];
 
-            if (currentFolder === 'subs') {
-                displayThreads = threads.filter(t => t.isSubscription);
-            } else if (currentFolder === 'sent') {
-                displayThreads = threads.filter(t => !t.isSubscription);
-            } else {
-                displayThreads = threads.filter(t => !t.isSubscription);
-            }
+            if (currentFolder === 'subs') displayThreads = threads.filter(t => t.isSubscription);
+            else displayThreads = threads.filter(t => !t.isSubscription);
 
-            const enrichedThreads = [];
+            const enriched = [];
             for (const t of displayThreads) {
                 const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
                 msgs.sort((a,b) => b.timestamp - a.timestamp);
-                if (msgs.length === 0) continue;
-
-                const lastMsg = msgs[0];
+                if (!msgs.length) continue;
 
                 if (currentFolder === 'sent') {
-                    // 已发送：线程中至少有一封我发出的消息
-                    const hasMine = msgs.some(m => !m.isReceived && m.senderAddress === activeAccount.address);
-                    if (!hasMine) continue;
-
-                    // 排序按“最后一次我发送”的时间
-                    const lastMine = msgs.find(m => !m.isReceived && m.senderAddress === activeAccount.address);
-                    if (!lastMine) continue;
-
-                    enrichedThreads.push({
-                        thread: t,
-                        lastMsg: lastMine,
-                        previewMsg: lastMine,
-                        timestamp: lastMine.timestamp
-                    });
+                    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
+                    if (!mine.length) continue;
+                    const last mine({ thread: t, preview: lastMine, sortTs: lastMine.timestamp });
                 } else {
-                    enrichedThreads.push({
-                        thread: t,
-                        lastMsg: lastMsg,
-                        previewMsg: lastMsg,
-                        timestamp: lastMsg.timestamp
-                    });
+                    enriched.push({ thread: t, preview: msgs[0], sortTs: msgs[0].timestamp });
                 }
             }
 
-            enrichedThreads.sort((a, b) => b.timestamp - a.timestamp);
+            enriched.sort((a,b) => b.sortTs - a.sortTs);
 
-            let filtered = enrichedThreads;
+            let filtered = enriched;
             if (searchQuery) {
-                filtered = enrichedThreads.filter(et => {
-                    const subj = (et.thread.subject || '').toLowerCase();
-                    const body = (et.previewMsg.body || '').toLowerCase();
-                    const sender = (et.previewMsg.senderName || '').toLowerCase();
+                filtered = enriched.filter(x => {
+                    const subj = (x.thread.subject || '').toLowerCase();
+                    const body = (x.preview.body || '').toLowerCase();
+                    const sender = (x.preview.senderName || '').toLowerCase();
                     return subj.includes(searchQuery) || body.includes(searchQuery) || sender.includes(searchQuery);
                 });
             }
 
-            if (filtered.length === 0) {
+            if (!filtered.length) {
                 listEl.innerHTML = `<div style="text-align:center; padding:40px; color:#5f6368; font-size:14px;">没有邮件。</div>`;
                 return;
             }
 
             let html = '';
-            filtered.forEach(et => {
+            for (const et of filtered) {
                 const t = et.thread;
-                const m = et.previewMsg;
+                const m = et.preview;
                 const isUnread = t.unread && m.isReceived;
                 const dateStr = formatCompactTime(m.timestamp);
-                const initial = m.senderName ? m.senderName.charAt(0) : '?';
-                const disguiseLabel = t.disguised ? `<span class="sms-mail-badge-disguise">陌生人</span>` : '';
+                const initial = (m.senderName || '?').charAt(0);
+                const avatarStyle = t.peerAvatar ? `background-image:url('${t.peerAvatar}');` : `background-color:${getAvatarColor(m.senderName)};`;
+                const strangerBadge = (t.peerType === 'stranger' || t.peerType === 'npc') ? `<span class="sms-mail-badge-disguise">陌生人</span>` : '';
 
                 html += `
                     <div class="sms-mail-item ${isUnread ? 'unread' : ''}" data-thread-id="${t.id}">
-                        <div class="sms-sender-avatar" style="background-color: ${getAvatarColor(m.senderName)}">
-                            ${escapeHtml(initial)}
-                        </div>
+                        <div class="sms-sender-avatar" style="${avatarStyle}">${t.peerAvatar ? '' : escapeHtml(initial)}</div>
                         <div class="sms-mail-content">
                             <div class="sms-mail-meta">
-                                <span class="sms-mail-sender" style="${isUnread ? 'font-weight:700;' : ''}">${escapeHtml(m.senderName)} ${disguiseLabel}</span>
-                                <span class="sms-mail-time" style="${isUnread ? 'color:#c5221f; font-weight:700;' : ''}">${dateStr}</span>
+                                <span class="sms-mail-sender">${escapeHtml(m.senderName || t.peerDisplayName || '未知')} ${strangerBadge}</span>
+                                <span class="sms-mail-time">${dateStr}</span>
                             </div>
-                            <div class="sms-mail-subject" style="${isUnread ? 'font-weight:700;' : ''}">${escapeHtml(t.subject || '无主题')}</div>
+                            <div class="sms-mail-subject">${escapeHtml(t.subject || '无主题')}</div>
                             <div class="sms-mail-snippet">${escapeHtml((m.body || '').substring(0, 45))}</div>
                         </div>
                     </div>
                 `;
-            });
+            }
 
             listEl.innerHTML = html;
             listEl.querySelectorAll('.sms-mail-item').forEach(el => {
-                el.addEventListener('click', () => {
-                    openThreadDetail(el.dataset.threadId);
-                });
+                el.addEventListener('click', () => openThreadDetail(el.dataset.threadId));
             });
         }
 
-        // ================== 邮件详情页 ==================
         async function openThreadDetail(threadId) {
             const thread = await DB.get('smsThreads', threadId);
-            if (!thread) return;
-
-            // 只允许查看当前账号线程
-            if (!activeAccount || thread.accountId !== activeAccount.id) return;
+            if (!thread || !activeAccount || thread.accountId !== activeAccount.id) return;
 
             thread.unread = false;
             await DB.put('smsThreads', thread);
@@ -343,23 +346,20 @@
             const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
             msgs.sort((a,b) => a.timestamp - b.timestamp);
 
-            let msgCardsHtml = '';
+            let cards = '';
             msgs.forEach((m, idx) => {
                 const isLast = idx === msgs.length - 1;
-                const dateStr = new Date(m.timestamp).toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                const initial = m.senderName ? m.senderName.charAt(0) : '?';
-
-                msgCardsHtml += `
+                const dt = new Date(m.timestamp).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+                const initial = (m.senderName || '?').charAt(0);
+                cards += `
                     <div class="sms-message-card ${!isLast ? 'collapsed' : ''}" data-msg-idx="${idx}">
                         <div class="sms-message-card-header">
-                            <div class="sms-sender-avatar" style="background-color: ${getAvatarColor(m.senderName)}; width:32px; height:32px; font-size:14px; margin-right:12px;">
-                                ${escapeHtml(initial)}
-                            </div>
+                            <div class="sms-sender-avatar" style="background-color:${getAvatarColor(m.senderName)}; width:32px; height:32px; font-size:14px; margin-right:12px;">${escapeHtml(initial)}</div>
                             <div class="sms-message-card-sender-info">
                                 <span class="sms-message-card-sender-name">${escapeHtml(m.senderName || '')}</span>
                                 <span class="sms-message-card-sender-addr">&lt;${escapeHtml(m.senderAddress || '')}&gt;</span>
                             </div>
-                            <span class="sms-message-card-time">${dateStr}</span>
+                            <span class="sms-message-card-time">${dt}</span>
                         </div>
                         <div class="sms-message-card-body">${escapeHtml(m.body || '')}</div>
                     </div>
@@ -376,49 +376,244 @@
                     </div>
                     <div class="sms-detail-body">
                         <div class="sms-thread-subject">${escapeHtml(thread.subject || '无主题')}</div>
-                        ${msgCardsHtml}
+                        ${cards}
                     </div>
                 </div>
             `;
 
-            // 返回键
-            document.getElementById('smsDetailBackBtn').addEventListener('click', () => {
+            document.getElementById('smsDetailBackBtn').addEventListener('click', renderInbox);
+
+            const replyBtn = document.getElementById('smsDetailReplyBtn');
+            if (replyBtn) {
+                replyBtn.addEventListener('click', async () => openCompose({ mode:'reply', threadId:thread.id }));
+            }
+
+            document.getElementById('smsDetailDeleteBtn').addEventListener('click', async () => {
+                if (!confirm('确定永久删除此邮件往来对话吗？')) return;
+                const messages = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
+                for (const m of messages) await DB.delete('smsMessages', m.id);
+                await DB.delete('smsThreads', thread.id);
+                showStatus('邮件已删除', 'info');
                 renderInbox();
             });
 
-            // 回复键：直接去撰写自动填充
-            const replyBtn = document.getElementById('smsDetailReplyBtn');
-            if (replyBtn) {
-                replyBtn.addEventListener('click', async () => {
-                    await openCompose({
-                        mode: 'reply',
-                        threadId: thread.id
-                    });
-                });
-            }
-
-            // 删除线程
-            document.getElementById('smsDetailDeleteBtn').addEventListener('click', async () => {
-                if (confirm('确定永久删除此邮件往来对话吗？')) {
-                    const messages = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
-                    for (const m of messages) {
-                        await DB.delete('smsMessages', m.id);
-                    }
-                    await DB.delete('smsThreads', thread.id);
-                    showStatus('邮件已删除', 'info');
-                    renderInbox();
-                }
-            });
-
-            // 折叠交互
             shell.querySelectorAll('.sms-message-card').forEach(card => {
-                card.querySelector('.sms-message-card-header').addEventListener('click', () => {
-                    card.classList.toggle('collapsed');
-                });
+                card.querySelector('.sms-message-card-header').addEventListener('click', () => card.classList.toggle('collapsed'));
             });
         }
 
-        // ================== 回信处理与 LLM 生成 ==================
+        async function openCompose(opts = {}) {
+            const shell = document.getElementById('smsShell');
+            if (!shell) return;
+
+            const mode = opts.mode || 'new';
+            const replyThread = mode === 'reply' ? await DB.get('smsThreads', opts.threadId) : null;
+
+            const mask = await getActiveMask();
+            const accounts = await DB.getAll('smsAccounts');
+            const myAccounts = accounts.filter(a => a.maskId === (mask?.id || activeAccount?.maskId));
+            const fromAccounts = myAccounts.length ? myAccounts : accounts;
+
+            const convs = await DB.getAll('conversations');
+            const convDetails = await DB.getAll('convDetails');
+            const convMap = {};
+            convDetails.forEach(cd => convMap[cd.conversationId] = cd);
+
+            let toItems = [];
+            for (const c of convs) {
+                if (c.maskId !== (mask?.id || c.maskId)) continue;
+                const ch = await DB.get('characters', c.charId);
+                const cd = convMap[c.id] || {};
+                const displayName = cd.charName || ch?.name || `会话${c.id}`;
+                const avatar = cd.charAvatar || ch?.avatar || '';
+                const addr = `conv_${c.id}@haloes.mail`;
+                toItems.push({
+                    val: `conv:${c.id}`,
+                    label: `${displayName} <${addr}>`,
+                    avatar,
+                    displayName,
+                    convId: c.id,
+                    peerAddress: addr
+                });
+            }
+
+            toItems.sort((a,b) => (a.displayName||'').localeCompare(b.displayName||'zh-CN'));
+
+            let toOptions = toItems.map(i => `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${escapeHtml(i.label)}</option>`).join('');
+            toOptions += `<option value="random">随机漂流瓶 (未知陌生人邮件)</option>`;
+            toOptions += `<option value="custom">自定义地址</option>`;
+
+            const fromOptions = fromAccounts.map(a => `<option value="${a.id}" ${a.id === activeAccount?.id ? 'selected' : ''}>${escapeHtml(a.name)} <${escapeHtml(a.address)}></option>`).join('');
+
+            let presetSubject = '';
+            let presetToVal = '';
+            let presetToCustom = '';
+            let presetBody = '';
+            let presetFromId = activeAccount?.id || '';
+
+            if (replyThread) {
+                presetSubject = replyThread.subject?.toLowerCase().startsWith('re:') ? replyThread.subject : `Re: ${replyThread.subject || '无主题'}`;
+                presetFromId = activeAccount?.id || '';
+                if (replyThread.peerType === 'conversation' && replyThread.sourceConversationId) {
+                    presetToVal = `conv:${replyThread.sourceConversationId}`;
+                } else if (replyThread.peerType === 'stranger' || replyThread.peerType === 'npc') {
+                    presetToVal = 'custom';
+                    presetToCustom = replyThread.peerAddress || `${replyThread.peerKey || 'stranger'}@stranger.mail`;
+                } else {
+                    presetToVal = 'custom';
+                    presetToCustom = replyThread.peerAddress || '';
+                }
+            }
+
+            shell.innerHTML = `
+                <div class="sms-compose-view">
+                    <div class="sms-detail-header">
+                        <button class="sms-menu-btn" id="smsComposeBackBtn">${SVGS.back}</button>
+                        <h2>${replyThread ? '回复邮件' : '撰写新邮件'}</h2>
+                        <button class="sms-menu-btn" id="smsComposeSendBtn" style="color:#1a73e8;">${SVGS.sent}</button>
+                    </div>
+                    <div class="sms-compose-fields">
+                        <div class="sms-compose-row">
+                            <span class="sms-compose-label">从：</span>
+                            <select class="sms-compose-select" id="smsComposeFrom">${fromOptions}</select>
+                        </div>
+                        <div class="sms-compose-row">
+                            <span class="sms-compose-label">发送至：</span>
+                            <select class="sms-compose-select" id="smsComposeTo">${toOptions}</select>
+                        </div>
+                        <div class="sms-compose-row" id="smsComposeToCustomRow" style="display:none;">
+                            <span class="sms-compose-label">地址：</span>
+                            <input type="text" class="sms-compose-input" id="smsComposeToCustom" placeholder="name@example.com">
+                        </div>
+                        <div class="sms-compose-row">
+                            <span class="sms-compose-label">主题：</span>
+                            <input type="text" class="sms-compose-input" id="smsComposeSubject" maxlength="150" value="${escapeHtml(presetSubject)}">
+                        </div>
+                        <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="3000">${escapeHtml(presetBody)}</textarea>
+                    </div>
+                </div>
+            `;
+
+            const fromSel = document.getElementById('smsComposeFrom');
+            const toSel = document.getElementById('smsComposeTo');
+            const toCustomRow = document.getElementById('smsComposeToCustomRow');
+            const toCustomInput = document.getElementById('smsComposeToCustom');
+
+            if (presetFromId) fromSel.value = presetFromId;
+            if (presetToVal) toSel.value = presetToVal;
+            if (presetToVal === 'custom') {
+                toCustomRow.style.display = 'flex';
+                toCustomInput.value = presetToCustom;
+            }
+
+            toSel.addEventListener('change', () => {
+                toCustomRow.style.display = (toSel.value === 'custom') ? 'flex' : 'none';
+            });
+
+            document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
+                if (replyThread) openThreadDetail(replyThread.id);
+                else renderInbox();
+            });
+
+            document.getElementById('smsComposeSendBtn').addEventListener('click', async function() {
+                const fromId = fromSel.value;
+                const toVal = toSel.value;
+                const toCustom = toCustomInput.value.trim();
+                const subject = document.getElementById('smsComposeSubject').value.trim() || '无主题';
+                const body = document.getElementById('smsComposeBody').value.trim();
+
+                if (!body) { alert('邮件内容不能为空'); return; }
+
+                this.disabled = true;
+                this.innerHTML = '正在发送...';
+
+                activeAccount = await DB.get('smsAccounts', fromId);
+                await DB.put('smsMeta', { key:'activeAccountId', value:fromId });
+
+                // 默认账号头像自动同步面具
+                const curMask = await getActiveMask();
+                if (activeAccount?.isDefault && curMask) {
+                    activeAccount.avatar = curMask.avatar || '';
+                    activeAccount.name = curMask.name || activeAccount.name;
+                    await DB.put('smsAccounts', activeAccount);
+                }
+
+                if (replyThread) {
+                    await handleReplyMail(replyThread, body);
+                    await openThreadDetail(replyThread.id);
+                    return;
+                }
+
+                let peerType = 'conversation';
+                let peerKey = '';
+                let peerAddress = '';
+                let peerDisplayName = '';
+                let peerAvatar = '';
+                let sourceConversationId = null;
+                let disguised = false;
+                let disguisedCharId = '';
+
+                if (toVal === 'random') {
+                    peerType = 'stranger';
+                    disguised = true;
+                    peerKey = 'stranger_' + Math.random().toString(36).slice(2, 8);
+                    peerAddress = `${peerKey}@stranger.mail`;
+                    peerDisplayName = '神秘人';
+                    peerAvatar = '';
+                } else if (toVal === 'custom') {
+                    if (!toCustom || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toCustom)) {
+                        alert('请填写有效邮箱地址');
+                        this.disabled = false;
+                        this.innerHTML = SVGS.sent;
+                        return;
+                    }
+                    peerType = 'stranger';
+                    disguised = true;
+                    peerAddress = toCustom;
+                    peerKey = toCustom.split('@')[0];
+                    peerDisplayName = peerKey || '神秘人';
+                } else if (toVal.startsWith('conv:')) {
+                    const convId = parseInt(toVal.split(':')[1]);
+                    sourceConversationId = convId;
+                    const conv = await DB.get('conversations', convId);
+                    const ch = conv ? await DB.get('characters', conv.charId) : null;
+                    const cd = await DB.get('convDetails', convId);
+                    peerKey = ch?.id || `conv_${convId}`;
+                    peerAddress = `conv_${convId}@haloes.mail`;
+                    peerDisplayName = cd?.charName || ch?.name || `会话${convId}`;
+                    peerAvatar = cd?.charAvatar || ch?.avatar || '';
+                    disguised = false;
+                    disguisedCharId = ch?.id || '';
+                    peerType = 'conversation';
+                }
+
+                const thread = {
+                    id: 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    maskId: activeAccount.maskId,
+                    accountId: activeAccount.id,
+                    sourceConversationId,
+                    peerType,
+                    peerKey,
+                    peerAddress,
+                    peerDisplayName,
+                    peerAvatar,
+                    subject,
+                    isSubscription: false,
+                    disguised,
+                    disguisedCharId,
+                    unread: false,
+                    createdAt: Date.now(),
+                    accountAvatarSnapshot: activeAccount.avatar || '',
+                    accountNameSnapshot: activeAccount.name || '',
+                    replyContext: {}
+                };
+
+                await DB.put('smsThreads', thread);
+                await handleReplyMail(thread, body);
+                renderInbox();
+            });
+        }
+
         async function handleReplyMail(thread, text) {
             const userMsg = {
                 id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -435,82 +630,99 @@
             await DB.put('smsThreads', thread);
 
             try {
-                let systemPrompt = '';
                 const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
                 msgs.sort((a,b) => a.timestamp - b.timestamp);
 
-                const trueMask = await getActiveMask();
+                const mask = await getActiveMask();
 
-                if (thread.disguised) {
-                    const realChar = await DB.get('characters', thread.disguisedCharId);
+                let convContext = '';
+                let charName = thread.peerDisplayName || '联系人';
+                let charDetail = '';
+                let charIdForReply = '';
+
+                if (thread.peerType === 'conversation' && thread.sourceConversationId) {
+                    const conv = await DB.get('conversations', thread.sourceConversationId);
+                    const cd = await DB.get('convDetails', thread.sourceConversationId);
+                    const ch = conv ? await DB.get('characters', conv.charId) : null;
+                    charIdForReply = ch?.id || '';
+                    charName = cd?.charName || ch?.name || charName;
+                    charDetail = cd?.charDetail || ch?.detail || '';
+                    const chats = await DB.queryByIndex('chats', 'conversationId', thread.sourceConversationId);
+                    chats.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+                    const recent = chats.slice(0, 10).reverse().map(c => `${c.role === 'user' ? (cd?.userName || mask?.name || '用户') : charName}: ${c.content}`).join('\n');
+                    convContext = `\n【聊天上下文（最近）】\n${recent}\n`;
+                }
+
+                let systemPrompt = '';
+
+                if (thread.peerType === 'stranger' || thread.peerType === 'npc') {
+                    // 重点：装陌生人时，char知道对面是谁，且可带目的表达不满/痴迷等
+                    let realChar = null;
+                    if (thread.disguisedCharId) realChar = await DB.get('characters', thread.disguisedCharId);
+                    if (!realChar && thread.sourceConversationId) {
+                        const conv = await DB.get('conversations', thread.sourceConversationId);
+                        realChar = conv ? await DB.get('characters', conv.charId) : null;
+                    }
+                    const realName = realChar?.name || '某位熟人';
+                    const realDetail = realChar?.detail || '';
+
                     systemPrompt = `
-你当前是伪装状态。
-你的真实身份是：【${realChar?.name || '一个已知联系人'}】。
-目前你正在使用假名及地址给用户写信。
-你在邮件中呈现的陌生人性格：冷淡、神秘或带有试探。
-
-用户当前的全局真实名字是：【${trueMask?.name || '用户'}】。
-用户目前写信使用的账户名是：【${activeAccount.name}】（邮箱：${activeAccount.address}）。
-
-你需要在回信中：
-1. 模拟陌生人与对方交流。
-2. 穿透检测机制（极为重要）：
-   - 仔细对照用户写信的语气、写信时泄露的专属秘密、或其使用的小号发信名字【${activeAccount.name}】。
-   - 如果名字拼音、文字透露的信息或熟人秘密非常明显，你应当在此轮回复中有所怀疑，并表达揭穿。
-   - 穿透机制被触发后，你应在后续部分完全变回【${realChar?.name || '原身份'}】的说话人设和语气跟其交流。
-   - 如果用户伪装得极好，没有破绽，则继续扮演陌生人。
-
-严格规则：
-- 禁止使用 Emoji。
-- 保持标准邮件书面格式。
+你是【${realName}】。你正在以“陌生人邮箱”与用户通信，但你知道对面真实身份就是【${mask?.name || '用户'}】。
+你伪装来信可能带有目的：放下面具表达不满、试探、暧昧、痴迷、依恋、占有欲、抱怨、刺探等。
+你可以把这种目的自然渗透进邮件内容，但仍要保持“邮件”形式。
+你的真实人设：
+${realDetail}
+${convContext}
+规则：
+1. 禁止 Emoji。
+2. 用邮件书面风格，但不要过于死板。
+3. 如果用户识破你，可以逐步松动伪装，语气更贴近真实身份。
+4. 若用户未识破，可继续维持陌生人身份并推进你的目的表达。
                     `;
                 } else {
-                    const realChar = await DB.get('characters', thread.peerKey);
                     systemPrompt = `
-你是【${realChar?.name || '联系人'}】。
-你收到了一封来自【${activeAccount.name}】<${activeAccount.address}> 的电子邮件。
-用户的真实面具主名字是：【${trueMask?.name || '用户'}】。
-
-你与用户的角色关系：
-${realChar?.detail || '熟人。'}
-
-你需要在回信中：
-1. 保持你原本人设说话风格，按写信格式回复。
-2. 穿透推导（高优先级）：
-   - 用户写信名【${activeAccount.name}】可能是试探别名。
-   - 若其表现出只有你与【${trueMask?.name || '用户'}】才知道的秘密/约定，或名字很相似，请在信中果断看穿并取笑。
-   - 若伪装无破绽，则客气、疑惑且得体回复。
-
-严格规则：
-- 禁止使用 Emoji。
-- 保持规范书信格式。
+你是【${charName}】。
+你收到来自【${activeAccount.name}】<${activeAccount.address}> 的邮件。
+用户真实名字：【${mask?.name || '用户'}】。
+${charDetail ? `你的人设背景：\n${charDetail}` : ''}
+${convContext}
+规则：
+1. 禁止 Emoji。
+2. 使用邮件体裁。
+3. 允许根据用户小号名判断其是否在试探你；若有明显线索，可在回信中点破。
                     `;
                 }
 
-                const promptMessages = [{role: 'system', content: systemPrompt}];
+                const prompt = [{ role:'system', content:systemPrompt }];
                 msgs.forEach(m => {
-                    const role = m.isReceived ? 'assistant' : 'user';
-                    promptMessages.push({role, content: `发件人: ${m.senderName}\n内容: ${m.body}`});
+                    prompt.push({
+                        role: m.isReceived ? 'assistant' : 'user',
+                        content: `发件人: ${m.senderName}\n内容: ${m.body}`
+                    });
                 });
 
                 showStatus('对方正在构思邮件回信...', 'info');
-                if (window.recordApiPending) window.recordApiPending();
-                const replyText = await callLLM(promptMessages);
+                if (window.recordApiPending) window.recordPendingText = await callLLM(prompt);
 
-                const aiSenderName = thread.disguised ? (thread.lastKnownSenderName || thread.subject || '神秘人') : (await DB.get('characters', thread.peerKey))?.name || '未知';
-                const aiSenderAddr = thread.disguised ? `${thread.peerKey}@stranger.mail` : `${thread.peerKey}@haloes.mail`;
+                const replyText = await callLLM(prompt);  // 先获取返回值
 
-                const aiMsg = {
-                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                    threadId: thread.id,
-                    senderName: aiSenderName,
-                    senderAddress: aiSenderAddr,
-                    body: replyText,
-                    timestamp: Date.now(),
-                    isReceived: true
-                };
+const aiSenderName = thread.peerDisplayName || (thread.peerType === 'stranger' ? '神秘人' : '联系人');
+const aiSenderAddr = thread.peerAddress || `${thread.peerKey || 'peer'}@haloes.mail`;
 
-                await DB.put('smsMessages', aiMsg);
+await DB.put('smsMessages', {
+    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    threadId: thread.id,
+    senderName: aiSenderName,
+    senderAddress: aiSenderAddr,
+    body: replyText,  // 现在有定义了
+    timestamp: Date.now(),
+    isReceived: true
+});
+
+                // 如果这是陌生NPC线程，回复后保留成为可持续发信对象（已经通过线程保留）
+                if (thread.peerType === 'stranger' && !thread.peerAvatar) {
+                    thread.peerType = thread.disguisedCharId ? 'npc' : 'stranger';
+                }
 
                 thread.unread = true;
                 await DB.put('smsThreads', thread);
@@ -521,201 +733,80 @@ ${realChar?.detail || '熟人。'}
             }
         }
 
-        // ================== 撰写新邮件页 ==================
-        async function openCompose(opts = {}) {
-            const shell = document.getElementById('smsShell');
-            if (!shell) return;
+        async function triggerOneReplyWithoutUserInput(thread) {
+            // 模拟“收取回复”：仅当线程最后是我发出时触发AI回复，不新增我方消息
+            const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
+            msgs.sort((a,b) => a.timestamp - b.timestamp);
+            if (!msgs.length) return;
+            const last = msgs[msgs.length - 1];
+            if (last.isReceived) return;
 
-            const chars = await DB.getAll('characters');
-            const accounts = await DB.getAll('smsAccounts');
+            try {
+                const mask = await getActiveMask();
+                let systemPrompt = '';
 
-            const mask = await getActiveMask();
-            const myAccounts = accounts.filter(a => a.maskId === (mask?.id || activeAccount?.maskId));
-            const fromAccounts = myAccounts.length ? myAccounts : accounts;
-
-            let toOptions = chars.map(c => `<option value="${c.id}">${escapeHtml(c.name)} &lt;${c.id}@haloes.mail&gt;</option>`).join('');
-            toOptions += `<option value="random" class="sms-random-char-option">随机漂流瓶 (未知陌生人邮件)</option>`;
-
-            const fromOptions = fromAccounts.map(a => `<option value="${a.id}" ${a.id === activeAccount?.id ? 'selected' : ''}>${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;</option>`).join('');
-
-            let presetSubject = '';
-            let presetBody = '';
-            let presetToVal = '';
-            let presetFromId = activeAccount?.id || '';
-            let replyThread = null;
-            let replyMode = opts.mode === 'reply';
-
-            if (replyMode && opts.threadId) {
-                replyThread = await DB.get('smsThreads', opts.threadId);
-                if (replyThread) {
-                    presetSubject = replyThread.subject && replyThread.subject.toLowerCase().startsWith('re:') ? replyThread.subject : `Re: ${replyThread.subject || '无主题'}`;
-                    presetFromId = activeAccount?.id || '';
-
-                    // 推断回复目标邮箱
-                    if (replyThread.disguised) {
-                        presetToVal = '__custom__';
-                    } else {
-                        presetToVal = replyThread.peerKey;
-                    }
-                }
-            }
-
-            shell.innerHTML = `
-                <div class="sms-compose-view">
-                    <div class="sms-detail-header">
-                        <button class="sms-menu-btn" id="smsComposeBackBtn">${SVGS.back}</button>
-                        <h2>${replyMode ? '回复邮件' : '撰写新邮件'}</h2>
-                        <button class="sms-menu-btn" id="smsComposeSendBtn" style="color:#1a73e8;">${SVGS.sent}</button>
-                    </div>
-                    <div class="sms-compose-fields">
-                        <div class="sms-compose-row">
-                            <span class="sms-compose-label">从：</span>
-                            <select class="sms-compose-select" id="smsComposeFrom">
-                                ${fromOptions}
-                            </select>
-                        </div>
-                        <div class="sms-compose-row">
-                            <span class="sms-compose-label">发送至：</span>
-                            <select class="sms-compose-select" id="smsComposeTo">
-                                ${toOptions}
-                            </select>
-                        </div>
-                        <div class="sms-compose-row" id="smsComposeToCustomRow" style="display:none;">
-                            <span class="sms-compose-label">地址：</span>
-                            <input type="text" class="sms-compose-input" id="smsComposeToCustom" placeholder="name@example.com">
-                        </div>
-                        <div class="sms-compose-row">
-                            <span class="sms-compose-label">主题：</span>
-                            <input type="text" class="sms-compose-input" id="smsComposeSubject" placeholder="邮件主题" maxlength="150" value="${escapeHtml(presetSubject)}">
-                        </div>
-                        <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="3000">${escapeHtml(presetBody)}</textarea>
-                    </div>
-                </div>
-            `;
-
-            const fromSel = document.getElementById('smsComposeFrom');
-            const toSel = document.getElementById('smsComposeTo');
-            const toCustomRow = document.getElementById('smsComposeToCustomRow');
-            const toCustomInput = document.getElementById('smsComposeToCustom');
-
-            if (presetFromId) fromSel.value = presetFromId;
-
-            if (replyMode && replyThread) {
-                if (replyThread.disguised) {
-                    toSel.value = 'random'; // 先占位，随后改 custom
-                    toSel.insertAdjacentHTML('beforeend', `<option value="__custom__">自定义地址</option>`);
-                    toSel.value = '__custom__';
-                    toCustomRow.style.display = 'flex';
-                    toCustomInput.value = `${replyThread.peerKey}@stranger.mail`;
-                } else if (replyThread.peerKey) {
-                    const hasPeer = Array.from(toSel.options).some(o => o.value === replyThread.peerKey);
-                    if (!hasPeer) {
-                        toSel.insertAdjacentHTML('beforeend', `<option value="__custom__">自定义地址</option>`);
-                        toSel.value = '__custom__';
-                        toCustomRow.style.display = 'flex';
-                        toCustomInput.value = `${replyThread.peerKey}@haloes.mail`;
-                    } else {
-                        toSel.value = replyThread.peerKey;
-                    }
-                }
-            }
-
-            toSel.addEventListener('change', () => {
-                if (toSel.value === '__custom__') {
-                    toCustomRow.style.display = 'flex';
+                if (thread.peerType === 'stranger' || thread.peerType === 'npc') {
+                    let realChar = null;
+                    if (thread.disguisedCharId) realChar = await DB.get('characters', thread.disguisedCharId);
+                    const realName = realChar?.name || '某位熟人';
+                    systemPrompt = `
+你是【${realName}】，正在用陌生人身份给【${mask?.name || '用户'}】回信。
+你知道对面是谁，可以有目的地表达不满、依恋、痴迷、试探等。
+禁止 Emoji，保持邮件体。
+                    `;
                 } else {
-                    toCustomRow.style.display = 'none';
-                }
-            });
-
-            // 返回 Inbox
-            document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
-                if (replyMode && replyThread) openThreadDetail(replyThread.id);
-                else renderInbox();
-            });
-
-            // 发送
-            document.getElementById('smsComposeSendBtn').addEventListener('click', async function() {
-                const fromId = fromSel.value;
-                const toVal = toSel.value;
-                const toCustom = toCustomInput.value.trim();
-                const subject = document.getElementById('smsComposeSubject').value.trim() || '无主题';
-                const body = document.getElementById('smsComposeBody').value.trim();
-
-                if (!body) {
-                    alert('邮件内容不能为空');
-                    return;
-                }
-
-                this.disabled = true;
-                this.innerHTML = '正在发送...';
-
-                // 切换活动账号
-                activeAccount = await DB.get('smsAccounts', fromId);
-                await DB.put('smsMeta', { key: 'activeAccountId', value: fromId });
-
-                // 回复模式：沿用原线程
-                if (replyMode && replyThread) {
-                    await handleReplyMail(replyThread, body);
-                    await openThreadDetail(replyThread.id);
-                    return;
-                }
-
-                let threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-                let peerKey = toVal;
-                let disguised = false;
-                let disguisedCharId = '';
-
-                if (toVal === 'random') {
-                    const randomChar = chars[Math.floor(Math.random() * chars.length)];
-                    disguised = true;
-                    disguisedCharId = randomChar ? randomChar.id : '';
-                    peerKey = 'stranger_' + Math.random().toString(36).substring(2, 8);
-                } else if (toVal === '__custom__') {
-                    if (!toCustom || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toCustom)) {
-                        alert('请填写有效邮箱地址');
-                        this.disabled = false;
-                        this.innerHTML = SVGS.sent;
-                        return;
+                    let charName = thread.peerDisplayName || '联系人';
+                    let charDetail = '';
+                    if (thread.sourceConversationId) {
+                        const conv = await DB.get('conversations', thread.sourceConversationId);
+                        const cd = await DB.get('convDetails', thread.sourceConversationId);
+                        const ch = conv ? await DB.get('characters', conv.charId) : null;
+                        charName = cd?.charName || ch?.name || charName;
+                        charDetail = cd?.charDetail || ch?.detail || '';
                     }
-                    // 自定义地址：映射为陌生线程
-                    disguised = true;
-                    peerKey = toCustom.split('@')[0] || ('stranger_' + Math.random().toString(36).substring(2, 8));
-                    disguisedCharId = '';
+                    systemPrompt = `
+你是【${charName}】。你收到邮件后准备回复。
+${charDetail ? `人设：${charDetail}` : ''}
+禁止 Emoji，保持邮件风格。
+                    `;
                 }
 
-                const newThread = {
-                    id: threadId,
-                    maskId: activeAccount.maskId,
-                    accountId: activeAccount.id,
-                    peerKey: peerKey,
-                    subject: subject,
-                    isSubscription: false,
-                    disguised: disguised,
-                    disguisedCharId: disguisedCharId,
-                    unread: false,
-                    createdAt: Date.now()
-                };
+                const prompt = [{ role:'system', content:systemPrompt }];
+                msgs.forEach(m => {
+                    prompt.push({ role: m.isReceived ? 'assistant' : 'user', content: `发件人:${m.senderName}\n内容:${m.body}` });
+                });
 
-                await DB.put('smsThreads', newThread);
-                await handleReplyMail(newThread, body);
-                renderInbox();
-            });
+                if (window.recordApiPending) window.recordApiPending();
+                const replyText = await callLLM(prompt);
+
+                await DB.put('smsMessages', {
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                    threadId: thread.id,
+                    senderName: thread.peerDisplayName || '联系人',
+                    senderAddress: thread.peerAddress || `${thread.peerKey || 'peer'}@haloes.mail`,
+                    body: replyText,
+                    timestamp: Date.now(),
+                    isReceived: true
+                });
+
+                thread.unread = true;
+                await DB.put('smsThreads', thread);
+            } catch (e) {
+                console.warn('自动获取回复失败', e);
+            }
         }
 
-        // ================== 小号切换与创建 ==================
         async function openAliasManager() {
             const shell = document.getElementById('smsShell');
             if (!shell) return;
-
             const mask = await getActiveMask();
             const accounts = await DB.queryByIndex('smsAccounts', 'maskId', mask.id);
 
-            let aliasHtml = '';
-            accounts.forEach(a => {
+            let rows = '';
+            for (const a of accounts) {
                 const isDef = a.isDefault;
                 const isActive = (a.id === activeAccount.id);
-                aliasHtml += `
+                rows += `
                     <div class="sms-alias-item">
                         <div class="sms-alias-info">
                             <div class="sms-alias-name">
@@ -725,15 +816,14 @@ ${realChar?.detail || '熟人。'}
                             </div>
                             <div class="sms-alias-addr">${escapeHtml(a.address)}</div>
                         </div>
-                        <div style="display:flex; gap:8px;">
-                            ${!isActive ? `
-                                <button class="sms-btn-sm primary use-alias-btn" data-id="${a.id}">切换至此账号</button>
-                                ${!isDef ? `<button class="sms-btn-sm danger del-alias-btn" data-id="${a.id}">删除</button>` : ''}
-                            ` : `<button class="sms-btn-sm" disabled style="opacity:0.6;">正在使用</button>`}
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <div class="sms-sender-avatar" style="${a.avatar ? `background-image:url('${a.avatar}');` : ''} width:30px; height:30px; font-size:11px; margin-right:4px;">${a.avatar ? '' : escapeHtml((a.name||'U').charAt(0))}</div>
+                            ${!isActive ? `<button class="sms-btn-sm primary use-alias-btn" data-id="${a.id}">切换</button>` : `<button class="sms-btn-sm" disabled style="opacity:.6;">使用中</button>`}
+                            ${!isDef && !isActive ? `<button class="sms-btn-sm danger del-alias-btn" data-id="${a.id}">删除</button>` : ''}
                         </div>
                     </div>
                 `;
-            });
+            }
 
             shell.innerHTML = `
                 <div class="sms-compose-view">
@@ -742,81 +832,74 @@ ${realChar?.detail || '熟人。'}
                         <h2>邮箱小号账户管理</h2>
                     </div>
                     <div style="flex:1; overflow-y:auto; padding:16px;">
-                        <div style="font-size:13px; color:#5f6368; margin-bottom:16px;">
-                            当前正在使用的主面具为【${escapeHtml(mask.name)}】。可新建多个独立邮箱小号进行试探写信。
-                        </div>
+                        <div style="font-size:13px; color:#5f6368; margin-bottom:16px;">主号头像同步当前聊天室面具头像；小号头像可上传/URL。</div>
+
                         <div class="sms-sub-card" style="margin-bottom:20px;">
                             <div class="sms-sub-title" style="margin-bottom:12px;">新增邮箱小号</div>
+                            <div class="sms-compose-row" style="padding:4px 0;"><span class="sms-compose-label">姓名：</span><input type="text" class="sms-compose-input" id="newAliasName" placeholder="例如：小白"></div>
+                            <div class="sms-compose-row" style="padding:4px 0;"><span class="sms-compose-label">别名：</span><input type="text" class="sms-compose-input" id="newAliasAddr" placeholder="例如：xiaobai"><span style="color:#5f6368; font-size:14px; margin-left:4px;">@haloes.mail</span></div>
                             <div class="sms-compose-row" style="padding:4px 0;">
-                                <span class="sms-compose-label">姓名：</span>
-                                <input type="text" class="sms-compose-input" id="newAliasName" placeholder="例如：小白">
+                                <span class="sms-compose-label">头像：</span>
+                                <input type="text" class="sms-compose-input" id="newAliasAvatarUrl" placeholder="可贴URL，或留空后上传">
+                                <input type="file" id="newAliasAvatarFile" accept="image/*" style="display:none;">
+                                <button class="sms-btn-sm" id="newAliasAvatarUploadBtn" style="margin-left:8px;">上传</button>
                             </div>
-                            <div class="sms-compose-row" style="padding:4px 0;">
-                                <span class="sms-compose-label">别名：</span>
-                                <input type="text" class="sms-compose-input" id="newAliasAddr" placeholder="例如：xiaobai">
-                                <span style="color:#5f6368; font-size:14px; margin-left:4px;">@haloes.mail</span>
-                            </div>
-                            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-                                <button class="sms-btn-sm primary" id="smsCreateAliasBtn">创建并切换</button>
-                            </div>
+                            <div style="display:flex; justify-content:flex-end; margin-top:12px;"><button class="sms-btn-sm primary" id="smsCreateAliasBtn">创建并切换</button></div>
                         </div>
 
                         <div class="sms-sub-title" style="margin-bottom:12px;">账号列表</div>
-                        ${aliasHtml}
+                        ${rows}
                     </div>
                 </div>
             `;
 
-            document.getElementById('smsAliasBackBtn').addEventListener('click', () => {
-                renderInbox();
+            document.getElementById('smsAliasBackBtn').addEventListener('click', renderInbox);
+
+            let aliasAvatarData = '';
+            const fileInput = document.getElementById('newAliasAvatarFile');
+            document.getElementById('newAliasAvatarUploadBtn').addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => {
+                const f = fileInput.files[0];
+                if (!f) return;
+                const rd = new FileReader();
+                rd.onload = () => { aliasAvatarData = rd.result; showStatus('已加载头像', 'info'); };
+                rd.readAsDataURL(f);
             });
 
             document.getElementById('smsCreateAliasBtn').addEventListener('click', async () => {
                 const name = document.getElementById('newAliasName').value.trim();
                 const prefix = document.getElementById('newAliasAddr').value.trim().toLowerCase();
+                const avatarUrl = document.getElementById('newAliasAvatarUrl').value.trim();
 
-                if (!name || !prefix) {
-                    alert('请完整输入别名账户信息');
-                    return;
-                }
+                if (!name || !prefix) { alert('请完整输入信息'); return; }
+                if (!/^[a-z0-9_]{2,15}$/.test(prefix)) { alert('前缀仅支持2-15位小写字母/数字/下划线'); return; }
 
-                if (!/^[a-z0-9_]{2,15}$/.test(prefix)) {
-                    alert('前缀仅支持2-15位小写英文字母、数字和下划线');
-                    return;
-                }
-
-                const allAccts = await DB.getAll('smsAccounts');
                 const fullAddr = prefix + '@haloes.mail';
-                if (allAccts.some(a => a.address === fullAddr)) {
-                    alert('该别名账户已存在，请换一个名称');
-                    return;
-                }
+                const all = await DB.getAll('smsAccounts');
+                if (all.some(a => a.address === fullAddr)) { alert('该别名已存在'); return; }
 
                 const newAcct = {
                     id: 'acct_' + Date.now(),
                     maskId: mask.id,
-                    name: name,
+                    name,
                     address: fullAddr,
+                    avatar: aliasAvatarData || avatarUrl || '',
                     isDefault: false,
                     createdAt: Date.now()
                 };
-
                 await DB.put('smsAccounts', newAcct);
                 activeAccount = newAcct;
-                await DB.put('smsMeta', { key: 'activeAccountId', value: newAcct.id });
-
-                showStatus('成功创建并切换至小号账户', 'success');
+                await DB.put('smsMeta', { key:'activeAccountId', value:newAcct.id });
+                showStatus('已创建并切换小号', 'success');
                 renderInbox();
             });
 
             shell.querySelectorAll('.use-alias-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    const acctId = btn.dataset.id;
-                    activeAccount = await DB.get('smsAccounts', acctId);
-                    await DB.put('smsMeta', { key: 'activeAccountId', value: acctId });
-
-                    // 切换后仅看该账号收发（已经通过 accountId 隔离）
-                    showStatus(`已切换为活动账户: ${activeAccount.name}`, 'success');
+                    const id = btn.dataset.id;
+                    activeAccount = await DB.get('smsAccounts', id);
+                    await DB.put('smsMeta', { key:'activeAccountId', value:id });
+                    showStatus(`已切换为: ${activeAccount.name}`, 'success');
                     renderInbox();
                 });
             });
@@ -824,38 +907,40 @@ ${realChar?.detail || '熟人。'}
             shell.querySelectorAll('.del-alias-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const acctId = btn.dataset.id;
-                    if (confirm('确定删除该邮箱账户吗？关联历史信件也将清除。')) {
-                        const threads = await DB.queryByIndex('smsThreads', 'accountId', acctId);
-                        for (const t of threads) {
-                            const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
-                            for (const m of msgs) await DB.delete('smsMessages', m.id);
-                            await DB.delete('smsThreads', t.id);
-                        }
-                        await DB.delete('smsAccounts', acctId);
-
-                        const maskAccts = await DB.queryByIndex('smsAccounts', 'maskId', mask.id);
-                        activeAccount = maskAccts.find(a => a.isDefault) || maskAccts[0];
-                        if (activeAccount) {
-                            await DB.put('smsMeta', { key: 'activeAccountId', value: activeAccount.id });
-                        }
-
-                        showStatus('别名账号已成功删除', 'info');
-                        renderInbox();
+                    if (!confirm('确定删除该账号及其关联邮件吗？')) return;
+                    const threads = await DB.queryByIndex('smsThreads', 'accountId', acctId);
+                    for (const t of threads) {
+                        const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
+                        for (const m of msgs) await DB.delete('smsMessages', m.id);
+                        await DB.delete('smsThreads', t.id);
                     }
+                    await DB.delete('smsAccounts', acctId);
+                    const left = await DB.queryByIndex('smsAccounts', 'maskId', mask.id);
+                    activeAccount = left.find(a => a.isDefault) || left[0];
+                    if (activeAccount) await DB.put('smsMeta', { key:'activeAccountId', value:activeAccount.id });
+                    showStatus('账号已删除', 'info');
+                    renderInbox();
                 });
             });
         }
 
-        // ================== 订阅号管理器 ==================
         async function openSubscriptionManager() {
             const shell = document.getElementById('smsShell');
             if (!shell) return;
 
             const mask = await getActiveMask();
             const subs = await DB.getAll('smsSubs');
-
             const userSubs = subs.filter(s => s.maskId === mask.id && !s.isCharSub && s.accountId === activeAccount.id);
             const charSubs = subs.filter(s => s.isCharSub);
+
+            const wbs = await DB.getAll('worldbooks');
+            const wbGroups = {};
+            wbs.forEach(w => {
+                const g = w.group || '默认';
+                if (!wbGroups[g]) wbGroups[g] = [];
+                wbGroups[g].push(w);
+            });
+            const groupNames = Object.keys(wbGroups).sort();
 
             let userSubsHtml = '';
             userSubs.forEach(s => {
@@ -865,7 +950,7 @@ ${realChar?.detail || '熟人。'}
                             <span class="sms-sub-title">${escapeHtml(s.name)}</span>
                             <span class="sms-sub-freq">频次: ${s.frequency === '0' ? '手动' : s.frequency + '小时'}</span>
                         </div>
-                        <div class="sms-sub-desc">${escapeHtml(s.description)}</div>
+                        <div class="sms-sub-desc">${escapeHtml(s.description || '')}</div>
                         <div class="sms-sub-actions">
                             <button class="sms-btn-sm trigger-sub-btn" data-id="${s.id}">立刻推送一条</button>
                             <button class="sms-btn-sm danger del-sub-btn" data-id="${s.id}">退订</button>
@@ -880,18 +965,13 @@ ${realChar?.detail || '熟人。'}
                     <div class="sms-sub-card">
                         <div class="sms-sub-header">
                             <span class="sms-sub-title">${escapeHtml(s.name)}</span>
-                            <span class="sms-sub-freq">系统内置频道</span>
+                            <span class="sms-sub-freq">系统频道</span>
                         </div>
-                        <div class="sms-sub-desc">${escapeHtml(s.description)}</div>
-                        <div class="sms-sub-actions">
-                            <button class="sms-btn-sm primary trigger-sub-btn" data-id="${s.id}">立刻推送</button>
-                        </div>
+                        <div class="sms-sub-desc">${escapeHtml(s.description || '')}</div>
+                        <div class="sms-sub-actions"><button class="sms-btn-sm primary trigger-sub-btn" data-id="${s.id}">立刻推送</button></div>
                     </div>
                 `;
             });
-
-            const wbs = await DB.getAll('worldbooks');
-            const wbOptions = wbs.map(w => `<option value="${w.id}">${escapeHtml(w.title)}</option>`).join('');
 
             shell.innerHTML = `
                 <div class="sms-compose-view">
@@ -900,24 +980,30 @@ ${realChar?.detail || '熟人。'}
                         <h2>订阅号推送设定</h2>
                     </div>
                     <div style="flex:1; overflow-y:auto; padding:16px;">
-
                         <div class="sms-sub-card" style="margin-bottom:20px; background:#f8f9fa;">
                             <div class="sms-sub-title" style="margin-bottom:12px;">创建自定义订阅号</div>
-                            <div class="sms-compose-row" style="padding:4px 0;">
-                                <span class="sms-compose-label">名称：</span>
-                                <input type="text" class="sms-compose-input" id="newSubName" placeholder="例如：废土周刊">
+                            <div class="sms-compose-row" style="padding:4px 0;"><span class="sms-compose-label">名称：</span><input type="text" class="sms-compose-input" id="newSubName" placeholder="例如：废土周刊"></div>
+
+                            <div class="sms-compose-row" style="padding:4px 0; align-items:flex-start;">
+                                <span class="sms-compose-label" style="padding-top:8px;">主题：</span>
+                                <textarea id="newSubDesc" class="sms-compose-input" style="border:1px solid #dadce0; border-radius:8px; min-height:88px; padding:8px; resize:vertical;" placeholder="可自由输入本订阅号内容设定、栏目方向、写作口吻、禁忌等"></textarea>
                             </div>
+
                             <div class="sms-compose-row" style="padding:4px 0;">
-                                <span class="sms-compose-label">主题：</span>
-                                <input type="text" class="sms-compose-input" id="newSubDesc" placeholder="例如：科幻朋克日常，八卦">
-                            </div>
-                            <div class="sms-compose-row" style="padding:4px 0;">
-                                <span class="sms-compose-label">背景：</span>
-                                <select class="sms-compose-select" id="newSubWb">
-                                    <option value="">(不关联任何世界书)</option>
-                                    ${wbOptions}
+                                <span class="sms-compose-label">世界组：</span>
+                                <select class="sms-compose-select" id="newSubWbGroup">
+                                    <option value="">(不关联世界书)</option>
+                                    ${groupNames.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('')}
                                 </select>
                             </div>
+
+                            <div class="sms-compose-row" style="padding:4px 0;">
+                                <span class="sms-compose-label">世界书：</span>
+                                <select class="sms-compose-select" id="newSubWb">
+                                    <option value="">(请先选择分组)</option>
+                                </select>
+                            </div>
+
                             <div class="sms-compose-row" style="padding:4px 0;">
                                 <span class="sms-compose-label">频次：</span>
                                 <select class="sms-compose-select" id="newSubFreq">
@@ -927,9 +1013,7 @@ ${realChar?.detail || '熟人。'}
                                     <option value="24">每日检测自动推送</option>
                                 </select>
                             </div>
-                            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-                                <button class="sms-btn-sm primary" id="smsCreateSubBtn">创建新订阅号</button>
-                            </div>
+                            <div style="display:flex; justify-content:flex-end; margin-top:12px;"><button class="sms-btn-sm primary" id="smsCreateSubBtn">创建新订阅号</button></div>
                         </div>
 
                         <div class="sms-sub-title" style="margin-bottom:12px;">我订阅的频道</div>
@@ -941,85 +1025,79 @@ ${realChar?.detail || '熟人。'}
                 </div>
             `;
 
-            document.getElementById('smsSubBackBtn').addEventListener('click', () => {
-                renderInbox();
+            document.getElementById('smsSubBackBtn').addEventListener('click', renderInbox);
+
+            const wbGroupSel = document.getElementById('newSubWbGroup');
+            const wbSel = document.getElementById('newSubWb            wbGroupSel.addEventListener('change', () => {
+                const g = wbGroupSel.value;
+                const list = g ? (wbGroups[g] || []) : [];
+                wbSel.innerHTML = `<option value="">(不关联任何世界书)</option>` + list.map(w => `<option value="${w.id}">${escapeHtml(w.title)}</option>`).join('');
             });
 
             document.getElementById('smsCreateSubBtn').addEventListener('click', async () => {
                 const name = document.getElementById('newSubName').value.trim();
                 const desc = document.getElementById('newSubDesc').value.trim();
-                const wbId = document.getElementById('newSubWb').value;
+                const wbId = wbSel.value;
                 const freq = document.getElementById('newSubFreq').value;
 
-                if (!name || !desc) {
-                    alert('请完整填写新订阅号的名称和描述主题');
-                    return;
-                }
+                if (!name || !desc) { alert('请完整填写名称与主题'); return; }
 
-                const newSub = {
+                await DB.put('smsSubs', {
                     id: 'sub_' + Date.now(),
                     maskId: mask.id,
                     accountId: activeAccount.id,
-                    name: name,
+                    name,
                     description: desc,
                     frequency: freq,
                     worldbookId: wbId,
                     isCharSub: false,
                     lastPushed: Date.now()
-                };
+                });
 
-                await DB.put('smsSubs', newSub);
-                showStatus('订阅号创建成功: ' + name, 'success');
+                showStatus('订阅号创建成功', 'success');
                 openSubscriptionManager();
             });
 
             shell.querySelectorAll('.trigger-sub-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    const subId = btn.dataset.id;
                     btn.disabled = true;
-                    btn.innerHTML = '正在拉取内容...';
-                    await triggerSubscriptionPush(subId);
+                    btn.innerHTML = '正在拉取...';
+                    await triggerSubscriptionPush(btn.dataset.id);
                     openSubscriptionManager();
                 });
             });
 
             shell.querySelectorAll('.del-sub-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    const subId = btn.dataset.id;
-                    if (confirm('确定退订并永久移除此频道吗？')) {
-                        await DB.delete('smsSubs', subId);
-                        showStatus('已成功退订', 'info');
-                        openSubscriptionManager();
-                    }
+                    if (!confirm('确定退订该频道吗？')) return;
+                    await DB.delete('smsSubs', btn.dataset.id);
+                    showStatus('已退订', 'info');
+                    openSubscriptionManager();
                 });
             });
-
-            await ensureBuiltinCharSubscriptions();
         }
 
         async function ensureBuiltinCharSubscriptions() {
             const chars = await DB.getAll('characters');
-            if (chars.length === 0) return;
+            if (!chars.length) return;
 
             const subs = await DB.getAll('smsSubs');
             for (const c of chars) {
-                const subId = 'sub_char_' + c.id;
-                if (!subs.some(s => s.id === subId)) {
-                    const charSub = {
-                        id: subId,
+                const id = 'sub_char_' + c.id;
+                if (!subs.some(s => s.id === id)) {
+                    await DB.put('smsSubs', {
+                        id,
                         name: `${c.name}的每日随笔`,
                         description: `由联系人【${c.name}】撰写，推送其观察与日常思考。`,
                         frequency: '0',
                         isCharSub: true,
                         charId: c.id,
                         lastPushed: 0
-                    };
-                    await DB.put('smsSubs', charSub);
+                    });
                 }
             }
         }
 
-        // ================== 订阅号邮件推送生成 ==================
         async function triggerSubscriptionPush(subId) {
             const sub = await DB.get('smsSubs', subId);
             if (!sub) return;
@@ -1030,288 +1108,396 @@ ${realChar?.detail || '熟人。'}
             if (sub.isCharSub) {
                 const c = await DB.get('characters', sub.charId);
                 systemPrompt = `
-你是【${c?.name}】。你正在为自己的订阅随笔栏目撰写一期文章。
-人设背景：
-${c?.detail || '普通朋友'}
-
-请撰写一篇约300字的高质量日常随笔，可涉及读书、生活观察、小插曲。
-严格规则：
-- 禁止 Emoji。
-- 保持一封整洁信件结构。
+你是【${c?.name}】。为订阅专栏撰写一期约300字随笔。
+禁止 Emoji。保持邮件体裁。
+人设：${c?.detail || '普通朋友'}
                 `;
-                userPrompt = `请为专栏《${sub.name}》撰写正文。`;
+                userPrompt = `请为《${sub.name}》写最新一期内容。`;
             } else {
                 let wbContext = '';
                 if (sub.worldbookId) {
                     const wb = await DB.get('worldbooks', sub.worldbookId);
-                    if (wb) wbContext = `背景世界书参考：\n${wb.content}`;
+                    if (wb) wbContext = `背景世界书：\n${wb.content}`;
                 }
-
                 systemPrompt = `
 你是订阅专栏生成器。
-本期专栏名：【${sub.name}】。
-主题设定：【${sub.description}】。
+专栏名：【${sub.name}】
+主题设定：【${sub.description}】
 ${wbContext}
-
-请生成约350字的深度阅读邮件专栏内容。
-严格规则：
-- 禁止 Emoji。
-- 不输出 Markdown 代码块。
+请输出约350字内容，禁止 Emoji，禁止代码块。
                 `;
-                userPrompt = `请生成最新一期《${sub.name}》内容。`;
+                userPrompt = `请生成《${sub.name}》本期内容。`;
             }
 
             try {
-                showStatus(`正在生成并推送 ${sub.name}...`, 'info');
+                showStatus(`正在推送 ${sub.name}...`, 'info');
                 if (window.recordApiPending) window.recordApiPending();
 
-                const contentText = await callLLM([
-                    {role: 'system', content: systemPrompt},
-                    {role: 'user', content: userPrompt}
-                ]);
+                const contentText = await callLLM([{role:'system', content:systemPrompt}, {role:'user', content:userPrompt}]);
 
                 const threadId = 'sub_th_' + sub.id + '_' + Date.now();
-                const newThread = {
+                await DB.put('smsThreads', {
                     id: threadId,
                     maskId: sub.maskId || (await getActiveMask())?.id,
                     accountId: sub.accountId || activeAccount?.id,
+                    peerType: 'subscription',
                     peerKey: sub.id,
+                    peerAddress: `${sub.id}@subscription.haloes`,
+                    peerDisplayName: sub.name,
+                    peerAvatar: '',
+                    sourceConversationId: null,
                     subject: `[期刊] ${sub.name} 新推`,
                     isSubscription: true,
                     unread: true,
-                    createdAt: Date.now()
-                };
+                    createdAt: Date.now(),
+                    replyContext: {}
+                });
 
-                const newMsg = {
-                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                    threadId: threadId,
+                await DB.put('smsMessages', {
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                    threadId,
                     senderName: sub.name,
                     senderAddress: `${sub.id}@subscription.haloes`,
                     body: contentText,
                     timestamp: Date.now(),
                     isReceived: true
-                };
-
-                await DB.put('smsThreads', newThread);
-                await DB.put('smsMessages', newMsg);
+                });
 
                 sub.lastPushed = Date.now();
                 await DB.put('smsSubs', sub);
-
                 showStatus(`订阅专栏 ${sub.name} 投递成功`, 'success');
 
             } catch (e) {
-                showStatus('获取订阅内容失败，请稍后刷新: ' + e.message, 'error');
+                showStatus('订阅推送失败: ' + e.message, 'error');
             }
         }
 
-        // ================== 定时推送检查 ==================
         async function checkPeriodicalSubscriptions() {
             const subs = await DB.getAll('smsSubs');
             const now = Date.now();
-
             for (const s of subs) {
-                if (s.frequency && s.frequency !== '0') {
-                    const intervalMs = parseInt(s.frequency) * 60 * 60 * 1000;
-                    const elapsed = now - (s.lastPushed || 0);
-                    if (elapsed >= intervalMs) {
-                        triggerSubscriptionPush(s.id).catch(err => {
-                            console.warn('定时订阅投递失败', err);
-                        });
-                    }
+                if (!s.frequency || s.frequency === '0') continue;
+                const interval = parseInt(s.frequency) * 3600000;
+                const elapsed = now - (s.lastPushed || 0);
+                if (elapsed >= interval) {
+                    triggerSubscriptionPush(s.id).catch(err => console.warn('定时订阅失败', err));
                 }
             }
         }
 
-        // ================== 刷新选择来信人弹层 ==================
         async function openRefreshSelector() {
             const overlay = document.getElementById('smsRefreshSelectorOverlay');
             const listEl = document.getElementById('smsRefreshSelectorList');
             if (!overlay || !listEl) return;
 
-            const chars = await DB.getAll('characters');
-            if (!chars.length) {
-                showStatus('暂无联系人可选', 'info');
+            const mask = await getActiveMask();
+            const convs = await DB.getAll('conversations');
+            const convDetails = await DB.getAll('convDetails');
+            const convMap = {};
+            convDetails.forEach(cd => convMap[cd.conversationId] = cd);
+
+            const candidates = [];
+            for (const c of convs) {
+                if (c.maskId !== (mask?.id || c.maskId)) continue;
+                const ch = await DB.get('characters', c.charId);
+                const cd = convMap[c.id] || {};
+                const name = cd.charName || ch?.name || `会话${c.id}`;
+                const avatar = cd.charAvatar || ch?.avatar || '';
+                candidates.push({ convId:c.id, charId:c.charId, name, avatar, detail: cd.charDetail || ch?.detail || '' });
+            }
+
+            if (!candidates.length) {
+                showStatus('暂无可选会话来信人', 'info');
                 return;
             }
 
-            listEl.innerHTML = chars.map(c => `
+            listEl.innerHTML = candidates.map(c => `
                 <label class="sms-drawer-item" style="padding:10px 18px; gap:10px;">
-                    <input type="checkbox" class="sms-refresh-char-check" value="${c.id}">
-                    <span style="display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:50%; background:${getAvatarColor(c.name)}; color:#fff; font-size:12px;">${escapeHtml((c.name||'?').charAt(0))}</span>
-                    <span>${escapeHtml(c.name)}</span>
+                    <input type="checkbox" class="sms-refresh-conv-check" value="${c.convId}">
+                    <span class="sms-sender-avatar" style="${c.avatar ? `background-image:url('${c.avatar}');` : `background-color:${getAvatarColor(c.name)};`} width:22px; height:22px; font-size:11px; margin-right:0;">${c.avatar ? '' : escapeHtml(c.name.charAt(0))}</span>
+                    <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.name)} · 会话#${c.convId}</span>
                 </label>
             `).join('');
 
             overlay.classList.add('active');
+            overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.classList.remove('active'); }, { once:true });
 
-            overlay.addEventListener('click', function(e) {
-                if (e.target === overlay) overlay.classList.remove('active');
-            }, { once: true });
+            document.getElementById('smsRefreshSelectorCancelBtn').onclick = () => overlay.classList.remove('active');
 
-            const cancelBtn = document.getElementById('smsRefreshSelectorCancelBtn');
-            const confirmBtn = document.getElementById('smsRefreshSelectorConfirmBtn');
-
-            cancelBtn.onclick = () => overlay.classList.remove('active');
-
-            confirmBtn.onclick = async () => {
+            document.getElementById('smsRefreshSelectorConfirmBtn').onclick = async () => {
                 if (refreshRunning) return;
-                const checked = Array.from(document.querySelectorAll('.sms-refresh-char-check:checked')).map(i => i.value);
+                const convIds = Array.from(document.querySelectorAll('.sms-refresh-conv-check:checked')).map(i => parseInt(i.value));
                 const mixStranger = !!document.getElementById('smsRefreshMixStranger')?.checked;
-
                 overlay.classList.remove('active');
 
-                if (!checked.length && !mixStranger) {
-                    showStatus('请至少选择一个来信来源', 'info');
+                if (!convIds.length && !mixStranger) {
+                    showStatus('请至少选择一个来源', 'info');
                     return;
                 }
 
-                await performRefreshWithSelection(checked, mixStranger);
+                await performRefreshWithSelection(convIds, mixStranger);
             };
         }
 
-        async function performRefreshWithSelection(charIds, mixStranger) {
-            const refreshBtn = document.getElementById('smsRefreshBtn');
-            if (!refreshBtn || refreshRunning) return;
-
+        async function performRefreshWithSelection(selectedConvIds, mixStranger) {
+            if (refreshRunning) return;
             refreshRunning = true;
-            refreshBtn.style.transform = 'rotate(360deg)';
-            refreshBtn.style.transition = 'transform 0.6s ease';
+
+            const refreshBtn = document.getElementById('smsRefreshBtn');
+            if (refreshBtn) {
+                refreshBtn.style.transform = 'rotate(360deg)';
+                refreshBtn.style.transition = 'transform 0.6s ease';
+            }
 
             try {
-                showStatus('正在收取新邮件与更新订阅...', 'info');
                 await ensureBuiltinCharSubscriptions();
                 await checkPeriodicalSubscriptions();
+                showStatus('正在收取邮件...', 'info');
 
-                // 一次生成来信
-                await triggerIncomingProactiveEmailBySelection(charIds, mixStranger);
-
+                await triggerIncomingBySelection(selectedConvIds, mixStranger);
                 await loadMailList();
                 showStatus('收信完成', 'success');
+
             } catch (e) {
                 showStatus('收信失败: ' + e.message, 'error');
             } finally {
-                setTimeout(() => {
-                    refreshBtn.style.transform = 'none';
-                    refreshBtn.style.transition = 'none';
-                }, 600);
+                if (refreshBtn) {
+                    setTimeout(() => {
+                        refreshBtn.style.transform = 'none';
+                        refreshBtn.style.transition = 'none';
+                    }, 600);
+                }
                 refreshRunning = false;
             }
         }
 
-        // ================== 按选择生成来信（支持多选 + 陌生人掺入） ==================
-        async function triggerIncomingProactiveEmailBySelection(selectedCharIds, mixStranger) {
-            const chars = await DB.getAll('characters');
-            if (chars.length === 0 || !activeAccount) return;
+        async function triggerIncomingBySelection(selectedConvIds, mixStranger) {
+            if (!activeAccount) return;
 
-            const selectedChars = chars.filter(c => selectedCharIds.includes(c.id));
-            if (!selectedChars.length && !mixStranger) return;
+            const mask = await getActiveMask();
+            const convDetails = await DB.getAll('convDetails');
+            const convMap = {};
+            convDetails.forEach(cd => convMap[cd.conversationId] = cd);
 
-            const trueMask = await getActiveMask();
+            const selectedConvs = [];
+            for (const id of selectedConvIds) {
+                const c = await DB.get('conversations', id);
+                if (!c) continue;
+                const ch = await DB.get('characters', c.charId);
+                const cd = convMap[c.id] || {};
+                selectedConvs.push({
+                    conv: c,
+                    char: ch,
+                    cd,
+                    displayName: cd.charName || ch?.name || `会话${c.id}`,
+                    avatar: cd.charAvatar || ch?.avatar || '',
+                    detail: cd.charDetail || ch?.detail || ''
+                });
+            }
+
+            const isAlias = !activeAccount.isDefault;
             const tasks = [];
 
-            // 每个选中联系人至少1封
-            selectedChars.forEach(c => {
-                const useDisguise = mixStranger ? (Math.random() > 0.5) : false;
-                tasks.push(generateOneIncomingMailFromChar(c, useDisguise, trueMask));
-            });
-
-            // 若只选陌生人，随机挑联系人伪装来信
-            if (!selectedChars.length && mixStranger) {
-                const chosen = chars[Math.floor(Math.random() * chars.length)];
-                tasks.push(generateOneIncomingMailFromChar(chosen, true, trueMask));
+            // 默认主号：选中会话来信
+            // 小号：降低熟人主动来信概率；更偏陌生 / 垃圾 / NPC
+            if (!isAlias) {
+                for (const sc of selectedConvs) {
+                    tasks.push(generateOneMailFromConversation(sc, false, mask));
+                }
+            } else {
+                for (const sc of selectedConvs) {
+                    if (Math.random() < 0.35) {
+                        tasks.push(generateOneMailFromConversation(sc, true, mask)); // 小号上，熟人更可能伪装
+                    }
+                }
             }
 
-            // 随机掺入一封额外陌生人来信
-            if (mixStranger && selectedChars.length > 0 && Math.random() > 0.45) {
-                const chosen = chars[Math.floor(Math.random() * chars.length)];
-                tasks.push(generateOneIncomingMailFromChar(chosen, true, trueMask));
+            if (mixStranger) {
+                // 陌生/NPC池
+                const extraCount = isAlias ? (2 + Math.floor(Math.random() * 2)) : 1;
+                for (let i = 0; i < extraCount; i++) {
+                    const candidate = selectedConvs.length ? selectedConvs[Math.floor(Math.random() * selectedConvs.length)] : null;
+                    if (candidate) {
+                        tasks.push(generateOneMailFromConversation(candidate, true, mask));
+                    } else {
+                        tasks.push(generateOnePureStrangerSpam(mask));
+                    }
+                }
             }
 
-            for (const t of tasks) {
-                await t;
+            // 小号强制加入垃圾短信概率
+            if (isAlias && Math.random() < 0.8) {
+                tasks.push(generateOnePureStrangerSpam(mask));
             }
+
+            for (const t of tasks) await t;
         }
 
-        async function generateOneIncomingMailFromChar(chosenChar, isDisguised, trueMask) {
-            const peerKey = isDisguised ? 'stranger_' + Math.random().toString(36).substring(2, 8) : chosenChar.id;
-            const senderName = isDisguised ? '神秘人' : chosenChar.name;
-            const senderAddr = isDisguised ? `${peerKey}@stranger.mail` : `${chosenChar.id}@haloes.mail`;
+        async function generateOneMailFromConversation(sc, forceDisguise, mask) {
+            const { conv, char, cd, displayName, avatar, detail } = sc;
+            const isDisguised = forceDisguise || (Math.random() > 0.55);
+
+            const peerType = isDisguised ? 'stranger' : 'conversation';
+            const peerKey = isDisguised ? ('stranger_' + Math.random().toString(36).slice(2,8)) : (char?.id || `conv_${conv.id}`);
+            const peerAddress = isDisguised ? `${peerKey}@stranger.mail` : `conv_${conv.id}@haloes.mail`;
+            const senderName = isDisguised ? randomStrangerName() : displayName;
+
+            let contextText = '';
+            const chats = await DB.queryByIndex('chats', 'conversationId', conv.id);
+            chats.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+            const recent = chats.slice(0, 8).reverse();
+            if (recent.length) {
+                contextText = recent.map(c => `${c.role === 'user' ? (cd?.userName || mask?.name || '用户') : displayName}: ${c.content}`).join('\n');
+            }
 
             let systemPrompt = '';
             if (isDisguised) {
+                // 重点按你的要求：char装陌生人是“知道对面是谁”且带目的
                 systemPrompt = `
-你是【${chosenChar.name}】。
-你现在伪装成陌生人（邮箱 <${senderAddr}>），写信给【${trueMask?.name || '用户'}】（对方当前别名为【${activeAccount.name}】）。
-请写一封带有悬疑或试探感、300字以内信件。
-
-要求：
-1. 禁止 Emoji。
-2. 主题格式：---主题---主题内容
-3. 正文格式：---正文---正文内容
+你是【${displayName}】（真实身份），你知道收件人真实是【${mask?.name || '用户'}】。
+你现在使用陌生人身份发信，可能带有目的：
+- 表达不满、刺探、试探
+- 暧昧、依恋、痴迷、占有
+- 讽刺、埋怨、撒气、挑逗
+要求：保持陌生人外壳，但内容里可以有隐约熟悉感与目的性。
+禁止 Emoji。
+输出格式：
+---主题---主题内容
+---正文---正文内容
+人设：${detail || ''}
+最近上下文：
+${contextText || '无'}
                 `;
             } else {
                 systemPrompt = `
-你是【${chosenChar.name}】。你正在主动给好朋友【${trueMask?.name || '用户'}】（其写信别名【${activeAccount.name}】）写一封日常邮件。
-你的人设背景：
-${chosenChar.detail || '熟人'}
-
-要求：
-1. 禁止 Emoji。
-2. 主题格式：---主题---主题内容
-3. 正文格式：---正文---正文内容
+你是【${displayName}】。你主动给【${mask?.name || '用户'}】写邮件。
+人设：${detail || ''}
+最近上下文：
+${contextText || '无'}
+禁止 Emoji。
+输出格式：
+---主题---主题内容
+---正文---正文内容
                 `;
             }
 
             try {
                 if (window.recordApiPending) window.recordApiPending();
                 const aiResult = await callLLM([
-                    {role: 'system', content: systemPrompt},
-                    {role: 'user', content: '请生成一期精细的主动来信内容'}
+                    { role:'system', content:systemPrompt },
+                    { role:'user', content:'请生成一封主动来信。' }
                 ]);
 
                 const subjMatch = aiResult.match(/---主题---(.*)/);
                 const bodyMatch = aiResult.match(/---正文---([\s\S]*)/);
-
-                const subject = (subjMatch ? subjMatch[1].trim() : '一封突如其来的来信') || '一封突如其来的来信';
+                const subject = (subjMatch ? subjMatch[1].trim() : '一封来信') || '一封来信';
                 const body = bodyMatch ? bodyMatch[1].trim() : aiResult.trim();
 
-                const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-                const newThread = {
+                const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+                const thread = {
                     id: threadId,
                     maskId: activeAccount.maskId,
                     accountId: activeAccount.id,
-                    peerKey: peerKey,
-                    subject: subject,
+                    sourceConversationId: conv.id,
+                    peerType,
+                    peerKey,
+                    peerAddress,
+                    peerDisplayName: senderName,
+                    peerAvatar: isDisguised ? '' : (avatar || ''),
+                    subject,
                     isSubscription: false,
                     disguised: isDisguised,
-                    disguisedCharId: isDisguised ? chosenChar.id : '',
+                    disguisedCharId: char?.id || '',
                     unread: true,
                     createdAt: Date.now(),
-                    lastKnownSenderName: senderName
+                    accountAvatarSnapshot: activeAccount.avatar || '',
+                    accountNameSnapshot: activeAccount.name || '',
+                    replyContext: {
+                        charId: char?.id || '',
+                        conversationId: conv.id,
+                        charName: displayName,
+                        charDetail: detail || '',
+                        userName: cd?.userName || mask?.name || '用户'
+                    }
                 };
 
-                const newMsg = {
-                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                    threadId: threadId,
-                    senderName: senderName,
-                    senderAddress: senderAddr,
-                    body: body,
+                await DB.put('smsThreads', thread);
+                await DB.put('smsMessages', {
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                    threadId,
+                    senderName,
+                    senderAddress: peerAddress,
+                    body,
                     timestamp: Date.now(),
                     isReceived: true
-                };
-
-                await DB.put('smsThreads', newThread);
-                await DB.put('smsMessages', newMsg);
+                });
 
                 showStatus(`收到来自 [${senderName}] 的新邮件`, 'success');
 
-            } catch (err) {
-                console.warn('主动邮件生成失败', err);
+            } catch (e) {
+                console.warn('生成主动来信失败', e);
             }
         }
 
-        // ================== 汉字拼音快速拼凑别名 ==================
+        async function generateOnePureStrangerSpam(mask) {
+            const spamTemplates = [
+                { subject:'系统风控提醒', body:'检测到您的邮箱存在异常登录尝试，请在24小时内完成身份验证，否则将限制部分功能。' },
+                { subject:'快递派送失败通知', body:'您有一件包裹因地址信息不完整导致派送失败，请尽快补充收件信息。' },
+                { subject:'优惠券即将失效', body:'您账户中有一张权益券将在今天23:59失效，回复本邮件可获取延长使用期限。' },
+                { subject:'合作邀约', body:'您好，我们正在寻找内容合作伙伴。若有兴趣，请回信提供您的联系方式。' }
+            ];
+            const pick = spamTemplates[Math.floor(Math.random() * spamTemplates.length)];
+            const key = 'spam_' + Math.random().toString(36).slice(2,8);
+            const addr = `${key}@unknown.mail`;
+            const sender = randomStrangerName();
+
+            const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+
+            await DB.put('smsThreads', {
+                id: threadId,
+                maskId: activeAccount.maskId,
+                accountId: activeAccount.id,
+                sourceConversationId: null,
+                peerType: 'stranger',
+                peerKey: key,
+                peerAddress: addr,
+                peerDisplayName: sender,
+                peerAvatar: '',
+                subject: pick.subject,
+                isSubscription: false,
+                disguised: true,
+                disguisedCharId: '',
+                unread: true,
+                createdAt: Date.now(),
+                accountAvatarSnapshot: activeAccount.avatar || '',
+                accountNameSnapshot: activeAccount.name || '',
+                replyContext: {
+                    charId: '',
+                    conversationId: null,
+                    charName: sender,
+                    charDetail: '陌生来信',
+                    userName: mask?.name || '用户'
+                }
+            });
+
+            await DB.put('smsMessages', {
+                id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                threadId,
+                senderName: sender,
+                senderAddress: addr,
+                body: pick.body,
+                timestamp: Date.now(),
+                isReceived: true
+            });
+
+            showStatus('收到一封陌生来信', 'info');
+        }
+
+        function randomStrangerName() {
+            const arr = ['匿名用户', '路人甲', '未署名发件人', '夜间访客', '第三方渠道', '未知联系人'];
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
         function pinyin(str) {
             return (str || '').split('').map(c => {
                 const code = c.charCodeAt(0);
@@ -1324,9 +1510,9 @@ ${chosenChar.detail || '熟人'}
             const d = new Date(timestamp);
             const now = new Date();
             if (d.toDateString() === now.toDateString()) {
-                return d.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', hour12: false});
+                return d.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', hour12:false });
             }
-            return d.toLocaleDateString('zh-CN', {month: 'numeric', day: 'numeric'});
+            return d.toLocaleDateString('zh-CN', { month:'numeric', day:'numeric' });
         }
 
         function getAvatarColor(name) {
@@ -1335,7 +1521,6 @@ ${chosenChar.detail || '熟人'}
             return colors[n % colors.length];
         }
 
-        // 全局模块输出
         window.smsModule = {
             init,
             openCompose,
