@@ -13,7 +13,7 @@
         refresh: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
         magic: `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2l1.6 4.4L18 8l-4.4 1.6L12 14l-1.6-4.4L6 8l4.4-1.6L12 2zm7 10l.9 2.5L22 15l-2.1.5L19 18l-.9-2.5L16 15l2.1-.5L19 12zM5 14l1.1 3L9 18l-2.9 1-.1 3-1.1-3L2 18l2.9-1L5 14z"/></svg>`,
         user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
-        star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+        star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 46 4.73L5.82 21z"/></svg>`,
         reply: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`,
         search: `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`
     };
@@ -90,7 +90,6 @@
                 }
             }
 
-            // 主号头像始终跟面具同步
             if (activeAccount && activeAccount.isDefault && mask.avatar !== undefined) {
                 const defaultAcct = await DB.get('smsAccounts', activeAccount.id);
                 if (defaultAcct) {
@@ -107,18 +106,19 @@
             if (!shell) return;
 
             shell.innerHTML = `
-                <div class="sms-search-bar" id="smsSearchBarRoot" style="margin:8px 10px; padding:0 6px; gap:4px;">
-                    <button class="sms-menu-btn" id="smsInboxBackBtn">${SVGS.back}</button>
-                    <button class="sms-menu-btn" id="smsMenuBtn">${SVGS.menu}</button>
+                <div class="sms-search-bar" id="smsSearchBarRoot" style="margin:8px 10px; padding:0 6px; display:flex; align-items:center; gap:6px;">
+                    <button class="sms-menu-btn" id="smsInboxBackBtn" style="flex-shrink:0;">${SVGS.back}</button>
+                    <button class="sms-menu-btn" id="smsMenuBtn" style="flex-shrink:0;">${SVGS.menu}</button>
 
-                    <div style="flex:1; display:flex; align-items:center; background:#f1f3f4; border-radius:22px; min-width:0; padding:2px 8px; gap:2px;">
+                    <div style="flex:1; display:flex; align-items:center; background:#f1f3f4; border-radius:22px; min-width:0; padding:2px 10px; gap:4px;">
                         ${SVGS.search}
-                        <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}" style="padding-left:4px; font-size:14px; border:none; background:transparent; outline:none; flex:1;">
-                        <button class="sms-menu-btn" id="smsRefreshBtn" title="收取邮件" style="padding:4px 6px; border-radius:50%; width:32px; height:32px;">${SVGS.refresh}</button>
-                        <button class="sms-menu-btn" id="smsFetchReplyBtn" title="获取回复" style="padding:4px 6px; border-radius:50%; width:32px; height:32px;">${SVGS.magic}</button>
+                        <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}" style="padding-left:4px; font-size:14px; border:none; background:transparent; outline:none; flex:1; min-width:0;">
                     </div>
 
-                    <div class="sms-profile-badge" id="smsProfileBadge" style="${activeAccount?.avatar ? `background-image:url('${activeAccount.avatar}');background-size:cover;background-position:center;` : ''}">
+                    <button class="sms-menu-btn" id="smsRefreshBtn" title="收取邮件" style="flex-shrink:0; padding:4px; width:36px; height:36px; display:flex; align-items:center; justify-content:center;">${SVGS.refresh}</button>
+                    <button class="sms-menu-btn" id="smsFetchReplyBtn" title="获取回复" style="flex-shrink:0; padding:4px; width:36px; height:36px; display:flex; align-items:center; justify-content:center;">${SVGS.magic}</button>
+
+                    <div class="sms-profile-badge" id="smsProfileBadge" style="flex-shrink:0; ${activeAccount?.avatar ? `background-image:url('${activeAccount.avatar}');background-size:cover;background-position:center;` : ''}">
                         ${activeAccount?.avatar ? '' : escapeHtml(activeAccount?.name?.charAt(0) || 'U')}
                     </div>
                 </div>
@@ -152,15 +152,16 @@
                             <div class="sms-drawer-item ${currentFolder==='sent'?'active':''}" data-action="folder" data-val="sent">${SVGS.sent} 已发送</div>
                             <div class="sms-drawer-item ${currentFolder==='subs'?'active':''}" data-action="folder" data-val="subs">${SVGS.feed} 订阅号</div>
                             <hr style="border:none; border-top:1px solid #dadce0; margin:8px 0;">
-                            <div class="sms-drawer-item" data-action="alias-mgr">${SVGS.user} 邮箱小号管理</div>
-                            <div class="sms-drawer-item" data-action="sub-mgr">${SVGS.star} 订阅号设置</div>
+                            <div class="sms-drawer-item" data-action="alias-mgr">${SVGS.user} 小号管理</div>
+                            <div class="sms-drawer-item" data-action="sub-mgr">${SVGS.feed} 订阅管理</div>
+                            <hr style="border:none; border-top:1px solid #dadce0; margin:8px 0;">
                             <div class="sms-drawer-item" data-action="exit">${SVGS.back} 返回桌面</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="sms-drawer-overlay" id="smsRefreshSelectorOverlay">
-                    <div class="sms-drawer" style="left:0; width:100%; max-width:420px; margin:0 auto; right:0; transform:none;">
+                    <div class="sms-drawer" style="left:0; width:100%;">
                         <div class="sms-drawer-header">
                             <div class="sms-drawer-title" style="font-size:18px; color:#202124;">选择来信来源</div>
                             <div style="font-size:12px; color:#5f6368; margin-top:4px;">可多选，一次生成。</div>
@@ -168,9 +169,9 @@
                         <div class="sms-drawer-menu" id="smsRefreshSelectorList" style="padding:8px 0 0 0; max-height:50vh; overflow-y:auto;"></div>
                         <div style="padding:12px 16px; border-top:1px solid #dadce0; background:#fff;">
                             <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3c4043; margin-bottom:10px;">
-    <input type="checkbox" id="smsRefreshMixStranger"> 混入陌生人来信
-</label>
-<div style="display:flex; gap:8px; justify-content:flex-end;">
+                                <input type="checkbox" id="smsRefreshMixStranger"> 混入陌生人来信
+                            </label>
+                            <div style="display:flex; gap:8px; justify-content:flex-end;">
                                 <button class="sms-btn-sm" id="smsRefreshSelectorCancelBtn">取消</button>
                                 <button class="sms-btn-sm primary" id="smsRefreshSelectorConfirmBtn">生成来信</button>
                             </div>
@@ -183,13 +184,14 @@
 
             document.getElementById('smsInboxBackBtn').addEventListener('click', () => switchPage('desktop'));
             document.getElementById('smsMenuBtn').addEventListener('click', toggleDrawer);
-            document.getElementById('smsDrawerOverlay').addEventListener('click', function(e) { if (e.target === this) toggleDrawer(); });
+            document.getElementById('smsDrawerOverlay').addEventListener('click', function(e) {
+                if (e.target === this) toggleDrawer();
+            });
 
             document.getElementById('smsRefreshBtn').addEventListener('click', async () => {
                 if (!refreshRunning) await openRefreshSelector();
             });
 
-            // 获取回复按钮：对当前账号已有"我发出的线程"批量补一轮回复
             document.getElementById('smsFetchReplyBtn').addEventListener('click', async () => {
                 if (refreshRunning) return;
                 refreshRunning = true;
@@ -278,11 +280,10 @@
                 if (!msgs.length) continue;
 
                 if (currentFolder === 'sent') {
-    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
-    if (!mine.length) continue;
-    const lastMine = { thread: t, preview: msgs[0], sortTs: msgs[0].timestamp };
-    enriched.push(lastMine);
-} else {
+                    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
+                    if (!mine.length) continue;
+                    enriched.push({ thread: t, preview: msgs[0], sortTs: msgs[0].timestamp });
+                } else {
                     enriched.push({ thread: t, preview: msgs[0], sortTs: msgs[0].timestamp });
                 }
             }
@@ -313,9 +314,13 @@
                 const dateStr = formatCompactTime(m.timestamp);
                 const initial = (m.senderName || '?').charAt(0);
                 const peerAvatar = t.peerAvatar || '';
-                const avatarStyle = peerAvatar ? `background-image:url('${peerAvatar}');background-size:cover;background-position:center;` : `background-color:${getAvatarColor(m.senderName)};`;
-                const strangerBadge = (t.peerType === 'stranger' || t.peerType === 'npc') ? `<span class="sms-mail-badge-disguise">陌生人</span>` : '';
-                const convBadge = t.sourceConversationId ? `<span class="sms-mail-badge-disguise" style="color:#1a73e8;background:#e8f0fe;">会话#${t.sourceConversationId}</span>` : '';
+                const avatarStyle = peerAvatar
+                    ? `background-image:url('${peerAvatar}');background-size:cover;background-position:center;`
+                    : `background-color:${getAvatarColor(m.senderName)};`;
+                const strangerBadge = (t.peerType === 'stranger' || t.peerType === 'npc')
+                    ? `<span class="sms-mail-badge-disguise">陌生人</span>` : '';
+                const convBadge = t.sourceConversationId
+                    ? `<span class="sms-mail-badge-disguise" style="color:#1a73e8;background:#e8f0fe;">会话#${t.sourceConversationId}</span>` : '';
 
                 html += `
                     <div class="sms-mail-item ${isUnread ? 'unread' : ''}" data-thread-id="${t.id}">
@@ -357,7 +362,9 @@
                 const dt = new Date(m.timestamp).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
                 const initial = (m.senderName || '?').charAt(0);
                 const msgAvatar = m.isReceived ? (thread.peerAvatar || '') : (activeAccount?.avatar || '');
-                const avatarStyle = msgAvatar ? `background-image:url('${msgAvatar}');background-size:cover;background-position:center;` : `background-color:${getAvatarColor(m.senderName)};`;
+                const avatarStyle = msgAvatar
+                    ? `background-image:url('${msgAvatar}');background-size:cover;background-position:center;`
+                    : `background-color:${getAvatarColor(m.senderName)};`;
                 cards += `
                     <div class="sms-message-card ${!isLast ? 'collapsed' : ''}" data-msg-idx="${idx}">
                         <div class="sms-message-card-header">
@@ -377,7 +384,7 @@
                 <div class="sms-detail-view">
                     <div class="sms-detail-header">
                         <button class="sms-menu-btn" id="smsDetailBackBtn">${SVGS.back}</button>
-                        <h2>${escapeHtml(thread.subject || '无主题')}</h2>
+                        <h2 style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; margin: 0 8px;">${escapeHtml(thread.subject || '无主题')}</h2>
                         ${!thread.isSubscription ? `<button class="sms-menu-btn" id="smsDetailReplyBtn" title="回复">${SVGS.reply}</button>` : ``}
                         <button class="sms-menu-btn" id="smsDetailDeleteBtn">${SVGS.trash}</button>
                     </div>
@@ -418,10 +425,14 @@
 
             const mask = await getActiveMask();
             const accounts = await DB.getAll('smsAccounts');
-            const myAccounts = accounts.filter(a => a.maskId === (mask?.id || activeAccount?.maskId));
-            const fromAccounts = myAccounts.length ? myAccounts : accounts;
+            const fromAccounts = accounts.filter(a => a.maskId === (mask?.id || activeAccount?.maskId));
 
-            // ===== 从对话页取值：每个对话独立出现，用头像区分 =====
+            if (activeAccount && activeAccount.isDefault && mask) {
+                activeAccount.avatar = mask.avatar || '';
+                activeAccount.name = mask.name || activeAccount.name;
+                await DB.put('smsAccounts', activeAccount);
+            }
+
             const convs = await DB.getAll('conversations');
             const convDetails = await DB.getAll('convDetails');
             const convMap = {};
@@ -436,42 +447,43 @@
                 const displayName = cd.charName || ch?.name || `会话${c.id}`;
                 const avatar = cd.charAvatar || ch?.avatar || '';
                 const addr = `conv_${c.id}@haloes.mail`;
-                const isOffline = c.mode === 'offline' ? ' 📍' : '';
-                // 同一char的不同对话通过头像+会话ID区分
-                const labelSuffix = avatar ? ` [会话#${c.id}]` : ` [会话#${c.id}]`;
                 toItems.push({
                     val: `conv:${c.id}`,
-                    label: `${displayName}${isOffline} <${addr}>`,
                     avatar,
                     displayName,
                     convId: c.id,
                     charId: ch.id,
-                    peerAddress: addr,
-                    charDetail: cd.charDetail || ch?.detail || '',
-                    userName: cd.userName || mask?.name || '用户',
-                    userDetail: cd.userDetail || mask?.bio || '',
-                    relationship: cd.relationship || '',
-                    charAvatar: avatar
+                    peerAddress: addr
                 });
             }
 
-            toItems.sort((a,b) => (a.displayName||'').localeCompare(b.displayName||'zh-CN'));
+            const existingThreads = await DB.queryByIndex('smsThreads', 'accountId', activeAccount.id);
+            const contactedStrangers = [];
+            const seenAddrs = new Set();
+            for (const t of existingThreads) {
+                if (t.peerType === 'stranger' || t.peerType === 'npc') {
+                    if (!t.peerAddress || seenAddrs.has(t.peerAddress)) continue;
+                    seenAddrs.add(t.peerAddress);
+                    contactedStrangers.push(t);
+                }
+            }
 
             let toOptions = toItems.map(i => {
-                const avatarHtml = i.avatar 
-                    ? `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background-image:url('${i.avatar}');background-size:cover;vertical-align:middle;margin-right:4px;"></span>` 
-                    : `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background-color:${getAvatarColor(i.displayName)};vertical-align:middle;margin-right:4px;text-align:center;line-height:18px;font-size:10px;color:#fff;">${escapeHtml(i.displayName.charAt(0))}</span>`;
-                return `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${avatarHtml}${escapeHtml(i.displayName)} · 会话#${i.convId}</option>`;
+                const avatarHtml = i.avatar ? `🖼️` : `👤`;
+                return `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${avatarHtml} ${escapeHtml(i.displayName)} · 会话#${i.convId}</option>`;
             }).join('');
+
+            contactedStrangers.forEach(s => {
+                toOptions += `<option value="stranger:${escapeHtml(s.peerAddress)}" data-avatar="${escapeHtml(s.peerAvatar||'')}" data-name="${escapeHtml(s.peerDisplayName)}" data-peeraddr="${escapeHtml(s.peerAddress)}">👤 [陌生人] ${escapeHtml(s.peerDisplayName)} &lt;${escapeHtml(s.peerAddress)}&gt;</option>`;
+            });
+
             toOptions += `<option value="random">🎲 随机漂流瓶 (未知陌生人邮件)</option>`;
             toOptions += `<option value="custom">✏️ 自定义地址</option>`;
 
             const fromOptions = fromAccounts.map(a => {
-                const aAvatar = a.avatar 
-                    ? `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background-image:url('${a.avatar}');background-size:cover;vertical-align:middle;margin-right:4px;"></span>` 
-                    : `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background-color:${getAvatarColor(a.name)};vertical-align:middle;margin-right:4px;text-align:center;line-height:18px;font-size:10px;color:#fff;">${escapeHtml(a.name.charAt(0))}</span>`;
+                const aAvatar = a.avatar ? `🖼️` : `👤`;
                 const isActive = a.id === activeAccount?.id;
-                return `<option value="${a.id}" ${isActive ? 'selected' : ''}>${aAvatar}${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;${a.isDefault ? ' [主号]' : ''}</option>`;
+                return `<option value="${a.id}" ${isActive ? 'selected' : ''}>${aAvatar} ${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;${a.isDefault ? ' [主号]' : ''}</option>`;
             }).join('');
 
             let presetSubject = '';
@@ -481,9 +493,8 @@
             let presetFromId = activeAccount?.id || '';
 
             if (replyThread) {
-                presetSubject = replyThread.subject?.toLowerCase().startsWith('re:') ? replyThread.subject : `Re: ${replyThread.subject || '无主题'}`;
-                presetFromId = activeAccount?.id || '';
-                if (replyThread.peerType === 'conversation' && replyThread.sourceConversationId) {
+                presetSubject = replyThread.subject ? (replyThread.subject.startsWith('Re:') ? replyThread.subject : 'Re: ' + replyThread.subject) : 'Re: 无主题';
+                if (replyThread.sourceConversationId) {
                     presetToVal = `conv:${replyThread.sourceConversationId}`;
                 } else if (replyThread.peerType === 'stranger' || replyThread.peerType === 'npc') {
                     presetToVal = 'custom';
@@ -507,12 +518,12 @@
                             <select class="sms-compose-select" id="smsComposeFrom">${fromOptions}</select>
                         </div>
                         <div class="sms-compose-row">
-                            <span class="sms-compose-label">发送至：</span>
+                            <span class="sms-compose-label">到：</span>
                             <select class="sms-compose-select" id="smsComposeTo">${toOptions}</select>
                         </div>
                         <div class="sms-compose-row" id="smsComposeToCustomRow" style="display:none;">
                             <span class="sms-compose-label">地址：</span>
-                            <input type="text" class="sms-compose-input" id="smsComposeToCustom" placeholder="name@example.com">
+                            <input type="text" class="sms-compose-input" id="smsComposeToCustom" placeholder="name@example.com" value="${escapeHtml(presetToCustom)}">
                         </div>
                         <div class="sms-compose-row">
                             <span class="sms-compose-label">主题：</span>
@@ -532,11 +543,14 @@
             if (presetToVal) toSel.value = presetToVal;
             if (presetToVal === 'custom') {
                 toCustomRow.style.display = 'flex';
-                toCustomInput.value = presetToCustom;
             }
 
-            toSel.addEventListener('change', () => {
-                toCustomRow.style.display = (toSel.value === 'custom') ? 'flex' : 'none';
+            toSel.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    toCustomRow.style.display = 'flex';
+                } else {
+                    toCustomRow.style.display = 'none';
+                }
             });
 
             document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
@@ -559,7 +573,6 @@
                 activeAccount = await DB.get('smsAccounts', fromId);
                 await DB.put('smsMeta', { key:'activeAccountId', value:fromId });
 
-                // 默认账号头像自动同步面具
                 const curMask = await getActiveMask();
                 if (activeAccount?.isDefault && curMask) {
                     activeAccount.avatar = curMask.avatar || '';
@@ -573,7 +586,6 @@
                     return;
                 }
 
-                // === 新建邮件：构建 thread ===
                 let peerType = 'conversation';
                 let peerKey = '';
                 let peerAddress = '';
@@ -585,7 +597,6 @@
                 let replyContextData = {};
 
                 if (toVal === 'random') {
-                    // 随机漂流瓶：完全陌生
                     peerType = 'stranger';
                     disguised = true;
                     peerKey = 'stranger_' + Math.random().toString(36).slice(2, 8);
@@ -607,10 +618,27 @@
                         return;
                     }
                     peerType = 'stranger';
-                    disguised = true;
+                    disguised = false;
                     peerAddress = toCustom;
                     peerKey = toCustom.split('@')[0];
                     peerDisplayName = peerKey || '神秘人';
+                } else if (toVal.startsWith('stranger:')) {
+                    const targetAddr = toVal.split(':')[1];
+                    const matchedThread = contactedStrangers.find(s => s.peerAddress === targetAddr);
+                    peerType = 'stranger';
+                    peerAddress = targetAddr;
+                    peerKey = targetAddr.split('@')[0];
+                    peerDisplayName = matchedThread ? matchedThread.peerDisplayName : (peerKey || '神秘人');
+                    peerAvatar = matchedThread ? (matchedThread.peerAvatar || '') : '';
+                    disguised = matchedThread ? !!matchedThread.disguised : false;
+                    disguisedCharId = matchedThread ? (matchedThread.disguisedCharId || '') : '';
+                    sourceConversationId = matchedThread ? matchedThread.sourceConversationId : null;
+                    replyContextData = matchedThread ? (matchedThread.replyContext || {}) : {
+                        charId: disguisedCharId,
+                        charName: peerDisplayName,
+                        charDetail: '过往联系的陌生人',
+                        userName: curMask?.name || '用户'
+                    };
                 } else if (toVal.startsWith('conv:')) {
                     const convId = parseInt(toVal.split(':')[1]);
                     sourceConversationId = convId;
@@ -675,9 +703,6 @@
             };
             await DB.put('smsMessages', userMsg);
 
-            thread.unread = false;
-            await DB.put('smsThreads', thread);
-
             try {
                 const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
                 msgs.sort((a,b) => a.timestamp - b.timestamp);
@@ -690,7 +715,6 @@
                 let charDetail = rc.charDetail || '';
                 let charIdForReply = rc.charId || thread.disguisedCharId || '';
 
-                // 优先从 replyContext 获取对话上下文
                 if (rc.conversationId) {
                     const conv = await DB.get('conversations', rc.conversationId);
                     const cd = await DB.get('convDetails', rc.conversationId);
@@ -706,7 +730,6 @@
                     }).join('\n');
                     convContext = `\n【聊天上下文（最近对话）】\n${recent}\n`;
                 } else if (thread.sourceConversationId) {
-                    // 降级：从 thread 获取
                     const conv = await DB.get('conversations', thread.sourceConversationId);
                     const cd = await DB.get('convDetails', thread.sourceConversationId);
                     const ch = conv ? await DB.get('characters', conv.charId) : null;
@@ -725,51 +748,51 @@
                 let systemPrompt = '';
 
                 if (thread.peerType === 'stranger' || thread.peerType === 'npc') {
-                    // ===== 装陌生人模式：知道对面是谁，可带目的 =====
-                    let realChar = null;
-                    let realName = charName;
-                    let realDetail = charDetail;
+                    if (thread.disguisedCharId) {
+                        let realChar = await DB.get('characters', thread.disguisedCharId);
+                        let realName = realChar ? realChar.name : charName;
+                        let realDetail = realChar ? realChar.detail : charDetail;
 
-                    if (charIdForReply) realChar = await DB.get('characters', charIdForReply);
-                    if (realChar) {
-                        realName = realChar.name || realName;
-                        realDetail = realChar.detail || realDetail;
-                    }
+                        const purposes = [
+                            '表达压抑已久的不满和委屈，借陌生人之口说出平时不敢说的话',
+                            '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆、近乎疯狂的语言表达情感——例如使用“宝宝今天好可爱我好喜欢你”这样的语气，倾诉深深的占有欲',
+                            '试探对方对某些话题的真实态度，暗中观察反应',
+                            '用若即若离的方式撩拨对方，享受这种隐秘的暧昧游戏',
+                            '表达某种抱怨或失落，但用第三人称掩饰自己的真实身份',
+                            '以崇拜者/暗恋者的口吻表达好感，内容中暗示你们之间的熟悉细节（共同的回忆、对方的口头禅、最近的经历等）',
+                            '假装不小心发错邮件，但内容刻意与你们最近的对话相关，引起对方注意',
+                            '用一种疏离又亲近的语气，表达一些平时身份不允许说出的真心话'
+                        ];
+                        const selectedPurpose = purposes[Math.floor(Math.random() * purposes.length)];
 
-                    // 多样的伪装目的
-                    const purposes = [
-                        '表达压抑已久的不满和委屈，借陌生人之口说出平时不敢说的话',
-                        '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆的语言表达情感',
-                        '试探对方对某些话题的真实态度，暗中观察反应',
-                        '用若即若离的方式撩拨对方，享受这种隐秘的暧昧游戏',
-                        '表达某种抱怨或失落，但用第三人称掩饰自己的真实身份',
-                        '以崇拜者/暗恋者的口吻表达好感，内容中暗示你们之间的熟悉细节',
-                        '假装不小心发错邮件，但内容刻意与你们最近的对话相关，引起对方注意',
-                        '用一种疏离又亲近的语气，表达一些平时身份不允许说的话'
-                    ];
-                    const selectedPurpose = purposes[Math.floor(Math.random() * purposes.length)];
-
-                    systemPrompt = `
-你是【${realName}】。你正在以"陌生人邮箱"与用户通信，但你清楚地知道对方真实身份就是【${mask?.name || '用户'}】。
+                        systemPrompt = `
+你是【${realName}】（你的真实身份）。你非常清楚收件人真实就是【${mask?.name || '用户'}】。
+你现在决定放下面具，正在以化名/假邮箱“${thread.peerDisplayName}”与用户通信，你带着明确的目的和秘密。
+你的目的：${selectedPurpose}
 ${realDetail ? `你的真实人设背景：\n${realDetail}` : ''}
 ${convContext}
 
-【伪装目的 · 你要带着这个目的来写这封邮件】
-你的目的是：${selectedPurpose}
-
 【规则】
 1. 禁止使用 Emoji。
-2. 用邮件体裁写作，保持陌生人外壳，但内容中可以有隐约的熟悉感——你了解对方的一些习惯、最近的经历、你们之间发生过的事。但你不会直接承认自己是谁。
-3. 把目的自然地融入邮件内容中。
-4. 如果对方怀疑你是谁，可以暧昧回应、转移话题、或者继续伪装。
-5. 不要使用代码块。
-6. 直接写邮件正文，不要加"主题："、"正文："等标签。
-                    `;
+2. 保持陌生人外壳，但在字里行间透露隐约的熟悉感（你其实很了解TA最近的生活习惯、共同回忆、只有你们才知道的秘密等）。
+3. 如果被识破，可以逐步松动伪装。
+4. 不要使用代码块。
+5. 直接写邮件正文，不要加"主题："、"正文："等标签。
+                        `;
+                    } else {
+                        systemPrompt = `
+你是一个普通的陌生人，名叫【${thread.peerDisplayName || '陌生人'}】（邮箱：${thread.peerAddress}）。
+你收到来自【${activeAccount.name}】<${activeAccount.address}> 的邮件。
+请你以普通网民的身份，自然、礼貌地回复这封邮件。
+【规则】
+1. 禁止 Emoji，保持普通的邮件往来格式。
+2. 不要使用任何代码块，直接回复正文。
+                        `;
+                    }
                 } else if (thread.peerType === 'conversation') {
-                    // ===== 熟人模式 =====
                     systemPrompt = `
 你是【${charName}】。
-你收到来自【${activeAccount.name}】&lt;${activeAccount.address}&gt; 的邮件。
+你收到来自【${activeAccount.name}】<${activeAccount.address}> 的邮件。
 ${activeAccount.isDefault ? `你知道这是【${mask?.name || '用户'}】的常用邮箱。` : `你看到发件人是"${activeAccount.name}"，你可能觉得这像${mask?.name || '用户'}的小号，也可能不认得。`}
 ${charDetail ? `你的人设背景：\n${charDetail}` : ''}
 ${convContext}
@@ -781,7 +804,6 @@ ${convContext}
 5. 直接写邮件正文，不要加标签。
                     `;
                 } else {
-                    // 纯陌生人（无关联char）
                     systemPrompt = `
 你是一个普通网民，收到了来自陌生人的邮件。
 你以普通人身份回信。
@@ -803,7 +825,6 @@ ${convContext}
 
                 const replyText = await callLLM(prompt);
 
-                // ===== 确保发件人身份正确：使用 thread 中存储的 peer 信息 =====
                 const aiSenderName = thread.peerDisplayName || charName || '联系人';
                 const aiSenderAddr = thread.peerAddress || `${thread.peerKey || 'peer'}@haloes.mail`;
 
@@ -817,7 +838,6 @@ ${convContext}
                     isReceived: true
                 });
 
-                // 如果是陌生NPC线程，回复后升级为 npc 类型使其可持久发信
                 if (thread.peerType === 'stranger' && thread.disguisedCharId) {
                     thread.peerType = 'npc';
                 }
@@ -832,7 +852,6 @@ ${convContext}
         }
 
         async function triggerOneReplyWithoutUserInput(thread) {
-            // 模拟"收取回复"：仅当线程最后是我发出时触发AI回复
             const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
             msgs.sort((a,b) => a.timestamp - b.timestamp);
             if (!msgs.length) return;
@@ -842,12 +861,10 @@ ${convContext}
             try {
                 const mask = await getActiveMask();
                 const rc = thread.replyContext || {};
-                let systemPrompt = '';
                 let charName = thread.peerDisplayName || rc.charName || '联系人';
                 let charDetail = rc.charDetail || '';
                 let convContext = '';
 
-                // 构建对话上下文
                 if (rc.conversationId) {
                     const chats = await DB.queryByIndex('chats', 'conversationId', rc.conversationId);
                     chats.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
@@ -856,16 +873,9 @@ ${convContext}
                         return `${rl}: ${(c.content||'').substring(0, 200)}`;
                     }).join('\n');
                     convContext = `\n【聊天上下文（最近对话）】\n${recent}\n`;
-                } else if (thread.sourceConversationId) {
-                    const cd = await DB.get('convDetails', thread.sourceConversationId);
-                    const chats = await DB.queryByIndex('chats', 'conversationId', thread.sourceConversationId);
-                    chats.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-                    const recent = chats.slice(0, 10).reverse().map(c => {
-                        const rl = c.role === 'user' ? (cd?.userName || mask?.name || '用户') : charName;
-                        return `${rl}: ${(c.content||'').substring(0, 200)}`;
-                    }).join('\n');
-                    convContext = `\n【聊天上下文（最近对话）】\n${recent}\n`;
                 }
+
+                let systemPrompt = '';
 
                 if (thread.peerType === 'stranger' || thread.peerType === 'npc') {
                     let realChar = null;
@@ -877,8 +887,8 @@ ${convContext}
                     }
 
                     const purposes = [
-                        '表达压抑已久的不满和委屈',
-                        '以匿名身份表达痴迷、依恋或占有欲',
+                        '表达压抑已久的不满和委屈，借陌生人之口说出平时不敢说的话',
+                        '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆的语言表达情感——例如“宝宝今天好可爱我好喜欢你”',
                         '试探对方对某些话题的真实态度',
                         '用若即若离的方式撩拨对方',
                         '表达某种抱怨或失落',
@@ -889,8 +899,8 @@ ${convContext}
                     const purpose = purposes[Math.floor(Math.random() * purposes.length)];
 
                     systemPrompt = `
-你是【${realName}】，正在以陌生人身份给【${mask?.name || '用户'}】回信。
-你知道对面是谁。
+你是【${realName}】，正在以陌生人身份（假邮箱：${thread.peerAddress}，显示名称：${thread.peerDisplayName}）给【${mask?.name || '用户'}】回信。
+你清楚地知道对面是谁。
 ${charDetail ? `人设：${charDetail}` : ''}
 ${convContext}
 目的：${purpose}
@@ -918,7 +928,6 @@ ${convContext}
                 if (window.recordApiPending) window.recordApiPending();
                 const replyText = await callLLM(prompt);
 
-                // 使用 thread 存储的发件人信息，确保身份不乱
                 const aiSenderName = thread.peerDisplayName || charName || '联系人';
                 const aiSenderAddr = thread.peerAddress || `${thread.peerKey || 'peer'}@haloes.mail`;
 
@@ -966,7 +975,7 @@ ${convContext}
                             <div class="sms-alias-addr">${escapeHtml(a.address)}</div>
                         </div>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <div class="sms-sender-avatar" style="${aAvatar} width:30px; height:30px; font-size:11px; margin-right:4px;">${a.avatar ? '' : escapeHtml((a.name||'U').charAt(0))}</div>
+                            <div class="sms-sender-avatar" style="${aAvatar} width:30px; height:30px; font-size:11px; margin-right:4px;">${a.avatar ? '' : escapeHtml(a.name.charAt(0))}</div>
                             ${!isActive ? `<button class="sms-btn-sm primary use-alias-btn" data-id="${a.id}">切换</button>` : `<button class="sms-btn-sm" disabled style="opacity:.6;">使用中</button>`}
                             ${!isDef && !isActive ? `<button class="sms-btn-sm danger del-alias-btn" data-id="${a.id}">删除</button>` : ''}
                         </div>
@@ -1023,7 +1032,6 @@ ${convContext}
                 rd.readAsDataURL(f);
             });
 
-            // URL 输入时实时预览
             document.getElementById('newAliasAvatarUrl').addEventListener('input', function() {
                 const url = this.value.trim();
                 if (url && previewDiv) { previewDiv.style.backgroundImage = `url('${url}')`; previewDiv.style.backgroundSize = 'cover'; }
@@ -1151,7 +1159,7 @@ ${convContext}
                             <div class="sms-compose-row" style="padding:4px 0;"><span class="sms-compose-label">名称：</span><input type="text" class="sms-compose-input" id="newSubName" placeholder="例如：废土周刊"></div>
 
                             <div class="sms-compose-row" style="padding:4px 0; align-items:flex-start;">
-                                <span class="sms-compose-label" style="padding-top:8px;">主题：</span>
+                                <span class="sms-compose-label" style="padding-top:8px;">主题设定：</span>
                                 <textarea id="newSubDesc" class="sms-compose-input" style="border:1px solid #dadce0; border-radius:8px; min-height:100px; padding:8px; resize:vertical;" placeholder="可自由输入本订阅号内容设定、栏目方向、写作口吻、禁忌等。例如：&#10;&#10;本刊聚焦废土世界的生存故事。每期讲述一个幸存者的小传。&#10;风格：粗粝、写实、不留情面。&#10;禁止过度煽情。"></textarea>
                             </div>
 
@@ -1285,14 +1293,21 @@ ${convContext}
                 let wbContext = '';
                 if (sub.worldbookId) {
                     const wb = await DB.get('worldbooks', sub.worldbookId);
-                    if (wb) wbContext = `背景世界书：\n${wb.content}\n`;
+                    if (wb) {
+                        wbContext = `\n【关联背景设定 (${wb.title})】\n${wb.content}\n`;
+                    }
                 }
                 systemPrompt = `
-你是订阅专栏生成器。
-专栏名：【${sub.name}】
-主题设定：【${sub.description}】
-${wbContext}
-请输出约350字内容，禁止 Emoji，禁止代码块，直接写正文。
+  你是专栏作家。你正在为订阅号专栏《${sub.name}》撰写最新一期内容。
+  
+  【订阅号设定】
+  ${sub.description}
+  ${wbContext}
+  
+  要求：
+  1. 撰写一期约350字内容。
+  2. 禁止使用 Emoji，禁止使用代码块。
+  3. 直接写期刊正文，不要加上"主题："、"正文："等标签。
                 `;
                 userPrompt = `请生成《${sub.name}》本期内容。`;
             }
@@ -1364,7 +1379,6 @@ ${wbContext}
             const convMap = {};
             convDetails.forEach(cd => convMap[cd.conversationId] = cd);
 
-            // ===== 每个对话独立显示，用头像区分 =====
             const candidates = [];
             for (const c of convs) {
                 if (c.maskId !== (mask?.id || c.maskId)) continue;
@@ -1401,7 +1415,8 @@ ${wbContext}
                     ${avatarHtml}
                     <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.name)}${offlineBadge} · 会话#${c.convId}</span>
                 </label>
-            `}).join('');
+            `;
+            }).join('');
 
             overlay.classList.add('active');
             overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.classList.remove('active'); }, { once:true });
@@ -1486,33 +1501,24 @@ ${wbContext}
             const tasks = [];
 
             if (!isAlias) {
-                // ===== 主号：选中会话较高概率熟人来信 =====
                 for (const sc of selectedConvs) {
-                    // 85% 概率直发，15% 伪装
                     const forceDisguise = Math.random() < 0.15;
                     tasks.push(generateOneMailFromConversation(sc, forceDisguise, mask));
                 }
             } else {
-                // ===== 小号：char不知道这个账号，所以只有小概率熟人来信 =====
                 for (const sc of selectedConvs) {
-                    // 仅 10% 概率熟人直发（char极少主动给不认识的地址写信）
                     if (Math.random() < 0.10) {
                         tasks.push(generateOneMailFromConversation(sc, false, mask));
-                    }
-                    // 25% 概率 char 伪装陌生人试探（char怀疑这是对方的小号）
-                    else if (Math.random() < 0.25) {
+                    } else if (Math.random() < 0.25) {
                         tasks.push(generateOneMailFromConversation(sc, true, mask));
                     }
-                    // 其余不从此会话生成
                 }
 
-                // 小号强制增加陌生/垃圾邮件
                 const extraSpam = 2 + Math.floor(Math.random() * 3);
                 for (let i = 0; i < extraSpam; i++) {
                     if (Math.random() < 0.6) {
                         tasks.push(generateOnePureStrangerSpam(mask));
                     } else {
-                        // 40% 概率：从选中会话中随机挑一个char装陌生人
                         if (selectedConvs.length > 0) {
                             const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
                             tasks.push(generateOneMailFromConversation(sc, true, mask));
@@ -1547,7 +1553,6 @@ ${wbContext}
             const peerAddress = isDisguised ? `${peerKey}@stranger.mail` : `conv_${conv.id}@haloes.mail`;
             const senderName = isDisguised ? randomStrangerName() : displayName;
 
-            // 构建最近对话上下文
             let contextText = '';
             const chats = await DB.queryByIndex('chats', 'conversationId', conv.id);
             chats.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
@@ -1561,48 +1566,47 @@ ${wbContext}
 
             let systemPrompt = '';
             if (isDisguised) {
-                // ===== 装陌生人：带着目的 =====
                 const purposes = [
                     '表达压抑已久的不满和委屈，借陌生人之口说出平时不敢说的话',
-                    '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆的语言表达情感——例如"宝宝今天好可爱我好喜欢"这样的语气',
+                    '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆、近乎疯狂的语言表达情感——例如使用“宝宝今天好可爱我好喜欢你”这样的语气，倾诉深深的占有欲',
                     '试探对方对某些话题的真实态度，暗中观察反应',
                     '用若即若离的方式撩拨对方，享受这种隐秘的暧昧游戏',
                     '表达某种抱怨或失落，但用第三人称掩饰自己的真实身份',
                     '以崇拜者/暗恋者的口吻表达好感，内容中暗示你们之间的熟悉细节（共同的回忆、对方的口头禅、最近的经历等）',
                     '假装不小心发错邮件，但内容刻意与你们最近的对话相关，引起对方注意',
-                    '用一种疏离又亲近的语气，表达一些平时身份不允许说的话'
+                    '用一种疏离又亲近的语气，表达一些平时身份不允许说出的真心话'
                 ];
                 const selectedPurpose = purposes[Math.floor(Math.random() * purposes.length)];
 
                 systemPrompt = `
-你是【${displayName}】（真实身份），你知道收件人真实是【${mask?.name || '用户'}】。
-你现在使用陌生人身份发信，带着明确目的。
-你的目的是：${selectedPurpose}
+你是【${displayName}】（你的真实身份）。你非常清楚收件人真实就是【${mask?.name || '用户'}】。
+你现在决定放下面具，以陌生人假邮箱（显示名称：“${senderName}”，邮箱：“${peerAddress}”）给TA写一封带有某种目的的邮件。
+【你的伪装目的】
+你要带着这个秘密目的来写信：${selectedPurpose}
 
 要求：
 - 保持陌生人外壳（用化名或不署名），但内容里可以有隐约熟悉感——你了解对方的一些习惯和你们之间发生过的事
 - 如果被识破，可以逐步松动伪装
 - 禁止 Emoji
 - 输出格式：
----主题---主题内容
----正文---正文内容
-
-人设：${detail || ''}
-关系：${relationship || '你们是熟人'}
-最近上下文：
+---主题---邮件的主题
+---正文---邮件的正文
+人设背景：${detail || ''}
+关系描述：${relationship || ''}
+最近聊天上下文：
 ${contextText || '无'}
                 `;
             } else {
                 systemPrompt = `
-你是【${displayName}】。你主动给【${mask?.name || '用户'}】写邮件。
+你是【${displayName}】。你主动给你的朋友【${mask?.name || '用户'}】（邮箱：“${activeAccount.address}”）写一封主动来信。
 人设：${detail || ''}
 关系：${relationship || ''}
-最近上下文：
+最近聊天上下文：
 ${contextText || '无'}
 禁止 Emoji。
 输出格式：
----主题---主题内容
----正文---正文内容
+---主题---邮件的主题
+---正文---邮件的正文
                 `;
             }
 
@@ -1696,7 +1700,7 @@ ${contextText || '无'}
                 peerAvatar: '',
                 subject: pick.subject,
                 isSubscription: false,
-                disguised: true,
+                disguised: false,
                 disguisedCharId: '',
                 unread: true,
                 createdAt: Date.now(),
