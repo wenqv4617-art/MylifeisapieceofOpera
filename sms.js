@@ -749,7 +749,7 @@ ${convContext}
                     } else {
                         systemPrompt = `
   你是一个普通的陌生人，名叫【${thread.peerDisplayName || '陌生人'}】（邮箱：${thread.peerAddress}）。
-  You received an email from 【${activeAccount.name}】<${activeAccount.address}>.
+  你收到了一封来自【${activeAccount.name}】<${activeAccount.address}>的邮件。
   请你以普通网民的身份，自然、礼貌地回复这封邮件。
   【规则】
   1. 禁止 Emoji，保持普通的邮件往来格式。
@@ -772,10 +772,10 @@ ${convContext}
                     `;
                 } else {
                     systemPrompt = `
-你是一个普通网民，收到了来自陌生人的邮件。
-你以普通人身份回信。
-规则：禁止 Emoji，保持邮件风格。
-直接写邮件正文。
+                你是一个普通网民，收到了来自陌生人的邮件。
+                你以普通人身份回信。
+                规则：禁止 Emoji，保持邮件风格。
+                直接写邮件正文。
                     `;
                 }
 
@@ -878,12 +878,12 @@ ${convContext}
 你是【${charName}】。你收到邮件后准备回复。
 ${charDetail ? `人设：${charDetail}` : ''}
 ${convContext}
-禁止 Emoji，保持邮件风格. 直接写正文。
+禁止 Emoji，保持邮件风格。直接写正文。
                     `;
                 } else {
                     systemPrompt = `
 你是一个普通网民，收到陌生人邮件后回信。
-禁止 Emoji，保持邮件风格. 直接写正文。
+禁止 Emoji，保持邮件风格。直接写正文。
                     `;
                 }
 
@@ -1472,38 +1472,25 @@ ${convContext}
             const isAlias = !activeAccount.isDefault;
             const tasks = [];
 
-            if (!isAlias) {
-                for (const sc of selectedConvs) {
+            // 1. Every checked character sends exactly ONE mail
+            for (const sc of selectedConvs) {
+                if (!isAlias) {
+                    // Default account: 85% normal conversation mail, 15% disguised stranger mail (alt account)
                     const forceDisguise = Math.random() < 0.15;
                     tasks.push(generateOneMailFromConversation(sc, forceDisguise, mask));
-                }
-            } else {
-                for (const sc of selectedConvs) {
-                    if (Math.random() < 0.10) {
-                        tasks.push(generateOneMailFromConversation(sc, false, mask));
-                    } else if (Math.random() < 0.25) {
-                        tasks.push(generateOneMailFromConversation(sc, true, mask));
-                    }
-                }
-
-                const extraSpam = 2 + Math.floor(Math.random() * 3);
-                for (let i = 0; i < extraSpam; i++) {
-                    if (Math.random() < 0.6) {
-                        tasks.push(generateOnePureStrangerSpam(mask));
-                    } else {
-                        if (selectedConvs.length > 0) {
-                            const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
-                            tasks.push(generateOneMailFromConversation(sc, true, mask));
-                        } else {
-                            tasks.push(generateOnePureStrangerSpam(mask));
-                        }
-                    }
+                } else {
+                    // Alias account: 90% disguised stranger mail (alt account), 10% normal conversation mail (found the email address by accident)
+                    const forceDisguise = Math.random() < 0.90;
+                    tasks.push(generateOneMailFromConversation(sc, forceDisguise, mask));
                 }
             }
 
+            // 2. If mixStranger is checked, generate exactly 1 to 2 extra stranger mails
             if (mixStranger) {
-                const extraCount = isAlias ? 2 : 1;
+                // Generate 1 or 2 extra stranger mails
+                const extraCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
                 for (let i = 0; i < extraCount; i++) {
+                    // It can either be a checked char disguised as a stranger (alt account) OR a pure stranger
                     if (selectedConvs.length > 0 && Math.random() < 0.5) {
                         const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
                         tasks.push(generateOneMailFromConversation(sc, true, mask));
@@ -1513,7 +1500,10 @@ ${convContext}
                 }
             }
 
-            for (const t of tasks) await t;
+            // Run all tasks concurrently and wait for them to finish
+            for (const t of tasks) {
+                await t;
+            }
         }
 
         async function generateOneMailFromConversation(sc, forceDisguise, mask) {
@@ -1552,7 +1542,7 @@ ${convContext}
 
                 systemPrompt = `
 你是【${displayName}】（你的真实身份）。你非常清楚收件人真实就是【${mask?.name || '用户'}】。
-你现在决定放下面具，正在以化名/假邮箱“${thread.peerDisplayName}”与用户通信，你带着明确的目的和秘密。
+你现在决定放下面具，正在以化名/假邮箱“${senderName}”与用户通信，你带着明确的目的和秘密。
 你的目的：${selectedPurpose}
 ${detail ? `你的真实人设背景：\n${detail}` : ''}
 ${contextText ? `最近聊天上下文：\n${contextText}` : ''}
