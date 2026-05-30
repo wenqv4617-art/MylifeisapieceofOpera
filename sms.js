@@ -11,7 +11,6 @@
         feed: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 20h16v-2H4v2zm0-5h16v-2H4v2zm0-5h16V8H4v2zm0-6v2h16V4H4z"/></svg>`,
         trash: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
         refresh: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
-        magic: `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2l1.6 4.4L18 8l-4.4 1.6L12 14l-1.6-4.4L6 8l4.4-1.6L12 2zm7 10l.9 2.5L22 15l-2.1.5L19 18l-.9-2.5L16 15l2.1-.5L19 12zM5 14l1.1 3L9 18l-2.9 1-.1 3-1.1-3L2 18l2.9-1L5 14z"/></svg>`,
         user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
         star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 46 4.73L5.82 21z"/></svg>`,
         reply: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`,
@@ -106,19 +105,17 @@
             if (!shell) return;
 
             shell.innerHTML = `
-                <div class="sms-search-bar" id="smsSearchBarRoot" style="margin:8px 10px; padding:0 6px; display:flex; align-items:center; gap:6px;">
-                    <button class="sms-menu-btn" id="smsInboxBackBtn" style="flex-shrink:0;">${SVGS.back}</button>
-                    <button class="sms-menu-btn" id="smsMenuBtn" style="flex-shrink:0;">${SVGS.menu}</button>
+                <div class="sms-search-bar" id="smsSearchBarRoot" style="margin:8px 10px; padding:0 6px; display:flex; align-items:center; gap:8px;">
+                    <button class="sms-menu-btn" id="smsMenuBtn" style="flex-shrink:0; padding:6px; display:flex; align-items:center; justify-content:center; background:none; border:none; color:#5f6368; cursor:pointer;">${SVGS.menu}</button>
 
-                    <div style="flex:1; display:flex; align-items:center; background:#f1f3f4; border-radius:22px; min-width:0; padding:2px 10px; gap:4px;">
+                    <div style="flex:1; display:flex; align-items:center; background:#f1f3f4; border-radius:22px; min-width:0; padding:2px 10px; gap:6px;">
                         ${SVGS.search}
-                        <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}" style="padding-left:4px; font-size:14px; border:none; background:transparent; outline:none; flex:1; min-width:0;">
+                        <input type="text" class="sms-search-input" id="smsSearchInput" placeholder="在邮件中搜索" value="${escapeHtml(searchQuery)}" style="padding-left:4px; font-size:14px; border:none; background:transparent; outline:none; flex:1; min-width:0; height:32px; color:#202124;">
                     </div>
 
-                    <button class="sms-menu-btn" id="smsRefreshBtn" title="收取邮件" style="flex-shrink:0; padding:4px; width:36px; height:36px; display:flex; align-items:center; justify-content:center;">${SVGS.refresh}</button>
-                    <button class="sms-menu-btn" id="smsFetchReplyBtn" title="获取回复" style="flex-shrink:0; padding:4px; width:36px; height:36px; display:flex; align-items:center; justify-content:center;">${SVGS.magic}</button>
+                    <button class="sms-menu-btn" id="smsRefreshBtn" title="收取邮件" style="flex-shrink:0; padding:4px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:none; border:none; color:#5f6368; cursor:pointer; border-radius:50%;">${SVGS.refresh}</button>
 
-                    <div class="sms-profile-badge" id="smsProfileBadge" style="flex-shrink:0; ${activeAccount?.avatar ? `background-image:url('${activeAccount.avatar}');background-size:cover;background-position:center;` : ''}">
+                    <div class="sms-profile-badge" id="smsProfileBadge" style="flex-shrink:0; cursor:pointer; ${activeAccount?.avatar ? `background-image:url('${activeAccount.avatar}');background-size:cover;background-position:center;` : ''}">
                         ${activeAccount?.avatar ? '' : escapeHtml(activeAccount?.name?.charAt(0) || 'U')}
                     </div>
                 </div>
@@ -160,20 +157,20 @@
                     </div>
                 </div>
 
-                <div class="sms-drawer-overlay" id="smsRefreshSelectorOverlay">
-                    <div class="sms-drawer" style="left:0; width:100%;">
-                        <div class="sms-drawer-header">
-                            <div class="sms-drawer-title" style="font-size:18px; color:#202124;">选择来信来源</div>
+                <div class="sms-modal-overlay" id="smsRefreshSelectorOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+                    <div class="sms-modal-content" style="background:#fff; border-radius:16px; padding:20px; width:90%; max-width:380px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+                        <div style="margin-bottom:12px;">
+                            <h3 style="font-size:18px; color:#202124; margin:0;">选择来信来源</h3>
                             <div style="font-size:12px; color:#5f6368; margin-top:4px;">可多选，一次生成。</div>
                         </div>
-                        <div class="sms-drawer-menu" id="smsRefreshSelectorList" style="padding:8px 0 0 0; max-height:50vh; overflow-y:auto;"></div>
-                        <div style="padding:12px 16px; border-top:1px solid #dadce0; background:#fff;">
-                            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3c4043; margin-bottom:10px;">
-                                <input type="checkbox" id="smsRefreshMixStranger"> 混入陌生人来信
+                        <div id="smsRefreshSelectorList" style="flex:1; overflow-y:auto; margin-bottom:12px; padding-right:4px;"></div>
+                        <div style="padding-top:12px; border-top:1px solid #dadce0;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3c4043; margin-bottom:12px; cursor:pointer; user-select:none;">
+                                <input type="checkbox" id="smsRefreshMixStranger" style="width:16px; height:16px; accent-color:#1a73e8;"> 混入陌生人来信
                             </label>
                             <div style="display:flex; gap:8px; justify-content:flex-end;">
-                                <button class="sms-btn-sm" id="smsRefreshSelectorCancelBtn">取消</button>
-                                <button class="sms-btn-sm primary" id="smsRefreshSelectorConfirmBtn">生成来信</button>
+                                <button class="sms-btn-sm" id="smsRefreshSelectorCancelBtn" style="padding:6px 12px; border:1px solid #dadce0; background:#fff; border-radius:18px; cursor:pointer; font-size:13px;">取消</button>
+                                <button class="sms-btn-sm primary" id="smsRefreshSelectorConfirmBtn" style="padding:6px 12px; background:#1a73e8; color:#fff; border:none; border-radius:18px; cursor:pointer; font-size:13px; font-weight:500;">生成来信</button>
                             </div>
                         </div>
                     </div>
@@ -182,7 +179,6 @@
 
             await loadMailList();
 
-            document.getElementById('smsInboxBackBtn').addEventListener('click', () => switchPage('desktop'));
             document.getElementById('smsMenuBtn').addEventListener('click', toggleDrawer);
             document.getElementById('smsDrawerOverlay').addEventListener('click', function(e) {
                 if (e.target === this) toggleDrawer();
@@ -190,33 +186,6 @@
 
             document.getElementById('smsRefreshBtn').addEventListener('click', async () => {
                 if (!refreshRunning) await openRefreshSelector();
-            });
-
-            document.getElementById('smsFetchReplyBtn').addEventListener('click', async () => {
-                if (refreshRunning) return;
-                refreshRunning = true;
-                try {
-                    showStatus('正在拉取回复...', 'info');
-                    const threads = await DB.queryByIndex('smsThreads', 'accountId', activeAccount.id);
-                    let count = 0;
-                    for (const t of threads) {
-                        if (t.isSubscription) continue;
-                        const msgs = await DB.queryByIndex('smsMessages', 'threadId', t.id);
-                        msgs.sort((a,b) => b.timestamp - a.timestamp);
-                        if (!msgs.length) continue;
-                        const last = msgs[0];
-                        if (!last.isReceived && last.senderAddress === activeAccount.address) {
-                            await triggerOneReplyWithoutUserInput(t);
-                            count++;
-                        }
-                    }
-                    await loadMailList();
-                    showStatus(count ? `已获取 ${count} 条回复` : '暂无可获取回复', 'success');
-                } catch (e) {
-                    showStatus('获取回复失败: ' + e.message, 'error');
-                } finally {
-                    refreshRunning = false;
-                }
             });
 
             document.getElementById('smsSearchInput').addEventListener('input', function(e) {
@@ -469,21 +438,19 @@
             }
 
             let toOptions = toItems.map(i => {
-                const avatarHtml = i.avatar ? `🖼️` : `👤`;
-                return `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${avatarHtml} ${escapeHtml(i.displayName)} · 会话#${i.convId}</option>`;
+                return `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${escapeHtml(i.displayName)} · 会话#${i.convId}</option>`;
             }).join('');
 
             contactedStrangers.forEach(s => {
-                toOptions += `<option value="stranger:${escapeHtml(s.peerAddress)}" data-avatar="${escapeHtml(s.peerAvatar||'')}" data-name="${escapeHtml(s.peerDisplayName)}" data-peeraddr="${escapeHtml(s.peerAddress)}">👤 [陌生人] ${escapeHtml(s.peerDisplayName)} &lt;${escapeHtml(s.peerAddress)}&gt;</option>`;
+                toOptions += `<option value="stranger:${escapeHtml(s.peerAddress)}" data-avatar="${escapeHtml(s.peerAvatar||'')}" data-name="${escapeHtml(s.peerDisplayName)}" data-peeraddr="${escapeHtml(s.peerAddress)}">[陌生人] ${escapeHtml(s.peerDisplayName)} &lt;${escapeHtml(s.peerAddress)}&gt;</option>`;
             });
 
-            toOptions += `<option value="random">🎲 随机漂流瓶 (未知陌生人邮件)</option>`;
-            toOptions += `<option value="custom">✏️ 自定义地址</option>`;
+            toOptions += `<option value="random">随机漂流瓶 (未知陌生人邮件)</option>`;
+            toOptions += `<option value="custom">自定义地址</option>`;
 
             const fromOptions = fromAccounts.map(a => {
-                const aAvatar = a.avatar ? `🖼️` : `👤`;
                 const isActive = a.id === activeAccount?.id;
-                return `<option value="${a.id}" ${isActive ? 'selected' : ''}>${aAvatar} ${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;${a.isDefault ? ' [主号]' : ''}</option>`;
+                return `<option value="${a.id}" ${isActive ? 'selected' : ''}>${escapeHtml(a.name)} &lt;${escapeHtml(a.address)}&gt;${a.isDefault ? ' [主号]' : ''}</option>`;
             }).join('');
 
             let presetSubject = '';
@@ -781,12 +748,12 @@ ${convContext}
                         `;
                     } else {
                         systemPrompt = `
-你是一个普通的陌生人，名叫【${thread.peerDisplayName || '陌生人'}】（邮箱：${thread.peerAddress}）。
-你收到来自【${activeAccount.name}】<${activeAccount.address}> 的邮件。
-请你以普通网民的身份，自然、礼貌地回复这封邮件。
-【规则】
-1. 禁止 Emoji，保持普通的邮件往来格式。
-2. 不要使用任何代码块，直接回复正文。
+  你是一个普通的陌生人，名叫【${thread.peerDisplayName || '陌生人'}】（邮箱：${thread.peerAddress}）。
+  You received an email from 【${activeAccount.name}】<${activeAccount.address}>.
+  请你以普通网民的身份，自然、礼貌地回复这封邮件。
+  【规则】
+  1. 禁止 Emoji，保持普通的邮件往来格式。
+  2. 不要使用任何代码块，直接回复正文。
                         `;
                     }
                 } else if (thread.peerType === 'conversation') {
@@ -911,12 +878,12 @@ ${convContext}
 你是【${charName}】。你收到邮件后准备回复。
 ${charDetail ? `人设：${charDetail}` : ''}
 ${convContext}
-禁止 Emoji，保持邮件风格。直接写正文。
+禁止 Emoji，保持邮件风格. 直接写正文。
                     `;
                 } else {
                     systemPrompt = `
 你是一个普通网民，收到陌生人邮件后回信。
-禁止 Emoji，保持邮件风格。直接写正文。
+禁止 Emoji，保持邮件风格. 直接写正文。
                     `;
                 }
 
@@ -1405,29 +1372,34 @@ ${convContext}
             }
 
             listEl.innerHTML = candidates.map(c => {
-                const avatarHtml = c.avatar 
-                    ? `<span class="sms-sender-avatar" style="background-image:url('${c.avatar}');background-size:cover;background-position:center; width:22px; height:22px; font-size:11px; margin-right:0;"></span>` 
-                    : `<span class="sms-sender-avatar" style="background-color:${getAvatarColor(c.name)}; width:22px; height:22px; font-size:11px; margin-right:0;">${escapeHtml(c.name.charAt(0))}</span>`;
+                const avatarStyle = c.avatar 
+                    ? `background-image:url('${c.avatar}');background-size:cover;background-position:center;` 
+                    : `background-color:${getAvatarColor(c.name)};`;
+                const initial = c.name.charAt(0);
                 const offlineBadge = c.mode === 'offline' ? ' 📍' : '';
                 return `
-                <label class="sms-drawer-item" style="padding:10px 18px; gap:10px; cursor:pointer;">
-                    <input type="checkbox" class="sms-refresh-conv-check" value="${c.convId}">
-                    ${avatarHtml}
-                    <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.name)}${offlineBadge} · 会话#${c.convId}</span>
+                <label style="display:flex; align-items:center; gap:12px; padding:10px 6px; cursor:pointer; border-bottom:1px solid #f1f3f4; user-select:none;">
+                    <input type="checkbox" class="sms-refresh-conv-check" value="${c.convId}" style="width:18px; height:18px; accent-color:#1a73e8; flex-shrink:0;">
+                    <div class="sms-sender-avatar" style="${avatarStyle} width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:600; flex-shrink:0;">
+                        ${c.avatar ? '' : escapeHtml(initial)}
+                    </div>
+                    <span style="flex:1; min-width:0; font-size:14px; color:#202124; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        ${escapeHtml(c.name)}${offlineBadge} · 会话#${c.convId}
+                    </span>
                 </label>
             `;
             }).join('');
 
-            overlay.classList.add('active');
-            overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.classList.remove('active'); }, { once:true });
+            overlay.style.display = 'flex';
+            overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.style.display = 'none'; }, { once:true });
 
-            document.getElementById('smsRefreshSelectorCancelBtn').onclick = () => overlay.classList.remove('active');
+            document.getElementById('smsRefreshSelectorCancelBtn').onclick = () => overlay.style.display = 'none';
 
             document.getElementById('smsRefreshSelectorConfirmBtn').onclick = async () => {
                 if (refreshRunning) return;
                 const convIds = Array.from(document.querySelectorAll('.sms-refresh-conv-check:checked')).map(i => parseInt(i.value));
                 const mixStranger = !!document.getElementById('smsRefreshMixStranger')?.checked;
-                overlay.classList.remove('active');
+                overlay.style.display = 'none';
 
                 if (!convIds.length && !mixStranger) {
                     showStatus('请至少选择一个来源', 'info');
@@ -1580,21 +1552,17 @@ ${convContext}
 
                 systemPrompt = `
 你是【${displayName}】（你的真实身份）。你非常清楚收件人真实就是【${mask?.name || '用户'}】。
-你现在决定放下面具，以陌生人假邮箱（显示名称：“${senderName}”，邮箱：“${peerAddress}”）给TA写一封带有某种目的的邮件。
-【你的伪装目的】
-你要带着这个秘密目的来写信：${selectedPurpose}
+你现在决定放下面具，正在以化名/假邮箱“${thread.peerDisplayName}”与用户通信，你带着明确的目的和秘密。
+你的目的：${selectedPurpose}
+${detail ? `你的真实人设背景：\n${detail}` : ''}
+${contextText ? `最近聊天上下文：\n${contextText}` : ''}
 
-要求：
-- 保持陌生人外壳（用化名或不署名），但内容里可以有隐约熟悉感——你了解对方的一些习惯和你们之间发生过的事
-- 如果被识破，可以逐步松动伪装
-- 禁止 Emoji
-- 输出格式：
----主题---邮件的主题
----正文---邮件的正文
-人设背景：${detail || ''}
-关系描述：${relationship || ''}
-最近聊天上下文：
-${contextText || '无'}
+【规则】
+1. 禁止使用 Emoji。
+2. 保持陌生人外壳，但在字里行间透露隐约的熟悉感（你其实很了解TA最近的生活习惯、共同回忆、只有你们才知道的秘密等）。
+3. 如果被识破，可以逐步松动伪装。
+4. 不要使用代码块。
+5. 直接写邮件正文，不要加"主题："、"正文："等标签。
                 `;
             } else {
                 systemPrompt = `
