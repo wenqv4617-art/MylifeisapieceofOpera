@@ -277,10 +277,11 @@
                 if (!msgs.length) continue;
 
                 if (currentFolder === 'sent') {
-                    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
-                    if (!mine.length) continue;
-                    const last mine({ thread: t, preview: lastMine, sortTs: lastMine.timestamp });
-                } else {
+    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
+    if (!mine.length) continue;
+    const lastMine = { thread: t, preview: msgs[0], sortTs: msgs[0].timestamp };
+    enriched.push(lastMine);
+} else {
                     enriched.push({ thread: t, preview: msgs[0], sortTs: msgs[0].timestamp });
                 }
             }
