@@ -6244,7 +6244,7 @@
             }
 
             const DB_NAME = "CompanionDB_V18";
-            const DB_VERSION = 28;
+            const DB_VERSION = 29;
             let db = null;
             window.groupCollapsed = window.groupCollapsed || {};
 
@@ -6352,6 +6352,12 @@ if (!d.objectStoreNames.contains('smsSubs')) {
 }
 if (!d.objectStoreNames.contains('smsMeta')) {
     d.createObjectStore('smsMeta', { keyPath: 'key' });
+}
+if (!d.objectStoreNames.contains('smsStrangerAccounts')) {
+    const s = d.createObjectStore('smsStrangerAccounts', { keyPath: 'id' });
+    if (!s.indexNames.contains('maskId')) s.createIndex('maskId', 'maskId');
+    if (!s.indexNames.contains('accountId')) s.createIndex('accountId', 'accountId');
+    if (!s.indexNames.contains('address')) s.createIndex('address', 'address');
 }
         };
 

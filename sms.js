@@ -161,7 +161,7 @@
                     <div class="sms-modal-content" style="background:#fff; border-radius:16px; padding:20px; width:90%; max-width:380px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,0.15);">
                         <div style="margin-bottom:12px;">
                             <h3 style="font-size:18px; color:#202124; margin:0;">选择来信来源</h3>
-                            <div style="font-size:12px; color:#5f6368; margin-top:4px;">可多选，一次生成。</div>
+                            <div style="font-size:12px; color:#5f6368; margin-top:4px;">勾选角色=各1封；勾选陌生人=额外1~2封。</div>
                         </div>
                         <div id="smsRefreshSelectorList" style="flex:1; overflow-y:auto; margin-bottom:12px; padding-right:4px;"></div>
                         <div style="padding-top:12px; border-top:1px solid #dadce0;">
@@ -288,17 +288,14 @@
                     : `background-color:${getAvatarColor(m.senderName)};`;
                 const strangerBadge = (t.peerType === 'stranger' || t.peerType === 'npc')
                     ? `<span class="sms-mail-badge-disguise">陌生人</span>` : '';
-                const convBadge = t.sourceConversationId
-                    ? `<span class="sms-mail-badge-disguise" style="color:#1a73e8;background:#e8f0fe;">会话#${t.sourceConversationId}</span>` : '';
-
                 html += `
-                    <div class="sms-mail-item ${isUnread ? 'unread' : ''}" data-thread-id="${t.id}">
-                        <div class="sms-sender-avatar" style="${avatarStyle}">${peerAvatar ? '' : escapeHtml(initial)}</div>
-                        <div class="sms-mail-content">
-                            <div class="sms-mail-meta">
-                                <span class="sms-mail-sender">${escapeHtml(m.senderName || t.peerDisplayName || '未知')} ${strangerBadge} ${convBadge}</span>
-                                <span class="sms-mail-time">${dateStr}</span>
-                            </div>
+    <div class="sms-mail-item ${isUnread ? 'unread' : ''}" data-thread-id="${t.id}">
+        <div class="sms-sender-avatar" style="${avatarStyle}">${peerAvatar ? '' : escapeHtml(initial)}</div>
+        <div class="sms-mail-content">
+            <div class="sms-mail-meta">
+                <span class="sms-mail-sender">${escapeHtml(m.senderName || t.peerDisplayName || '未知')} ${strangerBadge}</span>
+                <span class="sms-mail-time">${dateStr}</span>
+            </div>
                             <div class="sms-mail-subject">${escapeHtml(t.subject || '无主题')}</div>
                             <div class="sms-mail-snippet">${escapeHtml((m.body || '').substring(0, 45))}</div>
                         </div>
@@ -1443,72 +1440,62 @@ ${convContext}
         }
 
         async function triggerIncomingBySelection(selectedConvIds, mixStranger) {
-            if (!activeAccount) return;
+    if (!activeAccount) return;
 
-            const mask = await getActiveMask();
-            const convDetails = await DB.getAll('convDetails');
-            const convMap = {};
-            convDetails.forEach(cd => convMap[cd.conversationId] = cd);
+    const mask = await getActiveMask();
+    const convDetails = await DB.getAll('convDetails');
+    const convMap = {};
+    convDetails.forEach(cd => convMap[cd.conversationId] = cd);
 
-            const selectedConvs = [];
-            for (const id of selectedConvIds) {
-                const c = await DB.get('conversations', id);
-                if (!c) continue;
-                const ch = await DB.get('characters', c.charId);
-                if (!ch) continue;
-                const cd = convMap[c.id] || {};
-                selectedConvs.push({
-                    conv: c,
-                    char: ch,
-                    cd,
-                    displayName: cd.charName || ch?.name || `会话${c.id}`,
-                    avatar: cd.charAvatar || ch?.avatar || '',
-                    detail: cd.charDetail || ch?.detail || '',
-                    userName: cd.userName || mask?.name || '用户',
-                    relationship: cd.relationship || ''
-                });
-            }
+    const selectedConvs = [];
+    for (const id of selectedConvIds) {
+        const c = await DB.get('conversations', id);
+        if (!c) continue;
+        const ch = await DB.get('characters', c.charId);
+        if (!ch) continue;
+        const cd = convMap[c.id] || {};
+        selectedConvs.push({
+            conv: c,
+            char: ch,
+            cd,
+            displayName: cd.charName || ch?.name || `会话${c.id}`,
+            avatar: cd.charAvatar || ch?.avatar || '',
+            detail: cd.charDetail || ch?.detail || '',
+            userName: cd.userName || mask?.name || '用户',
+            relationship: cd.relationship || ''
+        });
+    }
 
-            const isAlias = !activeAccount.isDefault;
-            const tasks = [];
+    const tasks = [];
 
-            // 1. Every checked character sends exactly ONE mail
-            for (const sc of selectedConvs) {
-                if (!isAlias) {
-                    // Default account: 85% normal conversation mail, 15% disguised stranger mail (alt account)
-                    const forceDisguise = Math.random() < 0.15;
-                    tasks.push(generateOneMailFromConversation(sc, forceDisguise, mask));
-                } else {
-                    // Alias account: 90% disguised stranger mail (alt account), 10% normal conversation mail (found the email address by accident)
-                    const forceDisguise = Math.random() < 0.90;
-                    tasks.push(generateOneMailFromConversation(sc, forceDisguise, mask));
-                }
-            }
+    (const sc of selectedConvs) {
+        tasks.push(generateOneMailFromConversation(sc, false, mask));
+    }
 
-            // 2. If mixStranger is checked, generate exactly 1 to 2 extra stranger mails
-            if (mixStranger) {
-                // Generate 1 or 2 extra stranger mails
-                const extraCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
-                for (let i = 0; i < extraCount; i++) {
-                    // It can either be a checked char disguised as a stranger (alt account) OR a pure stranger
-                    if (selectedConvs.length > 0 && Math.random() < 0.5) {
-                        const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
-                        tasks.push(generateOneMailFromConversation(sc, true, mask));
-                    } else {
-                        tasks.push(generateOnePureStrangerSpam(mask));
-                    }
-                }
-            }
+    // 2) 勾选陌生人：增量 1~2 封陌生人独立来信
+    if (mixStranger) {
+    const extraCount = Math.floor(Math.random() * 2) + 1; // 1~2
+    for (let i = 0; i < extraCount; i++) {
+        // 大概率 char 伪装（90%），小概率纯陌生人（10%）
+        const useCharDisguise = selectedConvs.length > 0 && Math.random() < 0.9;
 
-            // Run all tasks concurrently and wait for them to finish
-            for (const t of tasks) {
-                await t;
-            }
+        if (useCharDisguise) {
+            const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
+            tasks.push(generateOneMailFromConversation(sc, true, mask)); // true=伪装
+        } else {
+            tasks.push(generateOnePureStrangerSpam(mask));
         }
+    }
+}
+
+    for (const t of tasks) {
+        await t;
+    }
+}
 
         async function generateOneMailFromConversation(sc, forceDisguise, mask) {
             const { conv, char, cd, displayName, avatar, detail, userName, relationship } = sc;
-            const isDisguised = forceDisguise || (Math.random() > 0.55);
+            const isDisguised = !!forceDisguise;
 
             const peerType = isDisguised ? 'stranger' : 'conversation';
             const peerKey = isDisguised ? ('stranger_' + Math.random().toString(36).slice(2,8)) : (char?.id || `conv_${conv.id}`);
@@ -1630,66 +1617,100 @@ ${contextText || '无'}
         }
 
         async function generateOnePureStrangerSpam(mask) {
-            const spamTemplates = [
-                { subject:'系统风控提醒', body:'检测到您的邮箱存在异常登录尝试，请在24小时内完成身份验证，否则将限制部分功能。回复本邮件可进行人工验证。' },
-                { subject:'快递派送失败通知', body:'您有一件包裹因地址信息不完整导致派送失败，请尽快补充收件信息。回复本邮件并提供您的收件地址。' },
-                { subject:'优惠券即将失效', body:'您账户中有一张专属权益券将在今天23:59失效，回复本邮件可获取延长使用期限。' },
-                { subject:'合作邀约', body:'您好，我们正在寻找内容合作伙伴。若有兴趣交流，请回信提供您的联系方式。' },
-                { subject:'匿名提问', body:'你好，我是一个偶然看到你邮箱地址的路人。有一件小事想请教，不知道你方不方便聊聊？' },
-                { subject:'深夜树洞', body:'有时候陌生人反而是最好的倾诉对象。今晚想找人说说话，不知道你愿不愿意当我的树洞？' },
-                { subject:'一封道歉信', body:'我知道这封邮件很突然。我想为之前某件事道歉，但又不方便透露身份。如果你愿意听，我会慢慢说。' }
-            ];
-            const pick = spamTemplates[Math.floor(Math.random() * spamTemplates.length)];
-            const key = 'spam_' + Math.random().toString(36).slice(2,8);
-            const addr = `${key}@unknown.mail`;
-            const sender = randomStrangerName();
+    const spamTemplates = [
+        { subject:'系统风控提醒', body:'检测到您的邮箱存在异常登录尝试，请在24小时内完成身份验证，否则将限制部分功能。回复本邮件可进行人工验证。' },
+        { subject:'快递派送失败通知', body:'您有一件包裹因地址信息不完整导致派送失败，请尽快补充收件信息。回复本邮件并提供您的收件地址。' },
+        { subject:'优惠券即将失效', body:'您账户中有一张专属权益券将在今天23:59失效，回复本邮件可获取延长使用期限。' },
+        { subject:'合作邀约', body:'您好，我们正在寻找内容合作伙伴。若有兴趣交流，请回信提供您的联系方式。' },
+        { subject:'匿名提问', body:'你好，我是一个偶然看到你邮箱地址的路人。有一件小事想请教，不知道你方不方便聊聊？' },
+        { subject:'深夜树洞', body:'有时候陌生人反而是最好的倾诉对象。今晚想找人说说话，不知道你愿不愿意当我的树洞？' },
+        { subject:'一封道歉信', body:'我知道这封邮件很突然。我想为之前某件事道歉，但又不方便透露身份。如果你愿意听，我会慢慢说。' }
+    ];
+    const pick = spamTemplates[Math.floor(Math.random() * spamTemplates.length)];
 
-            const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    const stranger = await getOrCreateStrangerAccount(activeAccount.maskId, activeAccount.id);
+    const key = stranger.key;
+    const addr = stranger.address;
+    const sender = stranger.displayName;
 
-            await DB.put('smsThreads', {
-                id: threadId,
-                maskId: activeAccount.maskId,
-                accountId: activeAccount.id,
-                sourceConversationId: null,
-                peerType: 'stranger',
-                peerKey: key,
-                peerAddress: addr,
-                peerDisplayName: sender,
-                peerAvatar: '',
-                subject: pick.subject,
-                isSubscription: false,
-                disguised: false,
-                disguisedCharId: '',
-                unread: true,
-                createdAt: Date.now(),
-                accountAvatarSnapshot: activeAccount.avatar || '',
-                accountNameSnapshot: activeAccount.name || '',
-                replyContext: {
-                    charId: '',
-                    conversationId: null,
-                    charName: sender,
-                    charDetail: '陌生来信者',
-                    userName: mask?.name || '用户'
-                }
-            });
+    const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
 
-            await DB.put('smsMessages', {
-                id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-                threadId,
-                senderName: sender,
-                senderAddress: addr,
-                body: pick.body,
-                timestamp: Date.now(),
-                isReceived: true
-            });
-
-            showStatus('收到一封陌生来信', 'info');
+    await DB.put('smsThreads', {
+        id: threadId,
+        maskId: activeAccount.maskId,
+        accountId: activeAccount.id,
+        sourceConversationId: null,
+        peerType: 'stranger',
+        peerKey: key,
+        peerAddress: addr,
+        peerDisplayName: sender,
+        peerAvatar: stranger.avatar || '',
+        subject: pick.subject,
+        isSubscription: false,
+        disguised: false,
+        disguisedCharId: '',
+        unread: true,
+        createdAt: Date.now(),
+        accountAvatarSnapshot: activeAccount.avatar || '',
+        accountNameSnapshot: activeAccount.name || '',
+        replyContext: {
+            charId: '',
+            conversationId: null,
+            charName: sender,
+            charDetail: '陌生来信者',
+            userName: mask?.name || '用户'
         }
+    });
+
+    await DB.put('smsMessages', {
+        id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+        threadId,
+        senderName: sender,
+        senderAddress: addr,
+        body: pick.body,
+        timestamp: Date.now(),
+        isReceived: true
+    });
+
+    stranger.updatedAt = Date.now();
+    await DB.put('smsStrangerAccounts', stranger);
+
+    showStatus('收到一封陌生来信', 'info');
+}
 
         function randomStrangerName() {
             const arr = ['匿名用户', '路人甲', '未署名发件人', '夜间访客', '第三方渠道', '未知联系人', '漂流瓶', '树洞邮差', '过路人', '无名人'];
             return arr[Math.floor(Math.random() * arr.length)];
         }
+        
+        async function getOrCreateStrangerAccount(maskId, accountId) {
+    const all = await DB.getAll('smsStrangerAccounts');
+    const pool = all.filter(a => a.maskId === maskId && a.accountId === accountId);
+
+    // 30% 复用旧陌生人，70% 新建，保证“有自己账号池”且会重复出现
+    if (pool.length > 0 && Math.random() < 0.3) {
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    const id = 'sacct_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const key = 'stranger_' + Math.random().toString(36).slice(2, 8);
+    const address = `${key}@unknown.mail`;
+    const displayName = randomStrangerName();
+
+    const stranger = {
+        id,
+        maskId,
+        accountId,
+        key,
+        address,
+        displayName,
+        avatar: '',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+    await DB.put('smsStrangerAccounts', stranger);
+    return stranger;
+}
 
         function pinyin(str) {
             return (str || '').split('').map(c => {
