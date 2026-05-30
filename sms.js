@@ -417,12 +417,13 @@ msgs.forEach((m, idx) => {
             const convMap = {};
             convDetails.forEach(cd => convMap[cd.conversationId] = cd);
 
-            let toItems =s) {
+            let toItems = [];
                 if (c.maskId !== (mask?.id || c.maskId)) continue;
                 const ch = await DB.get('characters', c.charId);
                 const cd = convMap[c.id] || {};
                 const displayName = cd.charName || ch?.name || `会话${c.id}`;
-                const avatar = cd.charAvatar || ch?. `c.id}@haloes.mail`;
+                const addr = `conv_${c.id}@haloes.mail`;
+const avatar = cd.charAvatar || ch?.avatar || '';
                 toItems.push({
                     val: `conv:${c.id}`,
                     label: `${displayName} <${addr}>`,
