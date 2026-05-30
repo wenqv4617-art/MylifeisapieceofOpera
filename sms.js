@@ -1468,7 +1468,7 @@ ${convContext}
 
     const tasks = [];
 
-    (const sc of selectedConvs) {
+    for (const sc of selectedConvs) {
         tasks.push(generateOneMailFromConversation(sc, false, mask));
     }
 
