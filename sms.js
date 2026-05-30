@@ -12,7 +12,7 @@
         trash: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
         refresh: `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
         magic: `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2l1.6 4.4L18 8l-4.4 1.6L12 14l-1.6-4.4L6 8l4.4-1.6L12 2zm7 10l.9 2.5L22 15l-2.1.5L19 18l-.9-2.5L16 15l2.1-.5L19 12zM5 14l1.1 3L9 18l-2.9 1-.1 3-1.1-3L2 18l2.9-1L5 14z"/></svg>`,
-        user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 30 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
+        user: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`,
         star: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
         reply: `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`
     };
@@ -89,7 +89,7 @@
                 }
             }
 
-            // 主号头像始终跟面具同步
+            // 主号头像同步当前面具
             if (activeAccount && activeAccount.isDefault && mask.avatar !== undefined) {
                 const defaultAcct = await DB.get('smsAccounts', activeAccount.id);
                 if (defaultAcct) {
@@ -106,7 +106,7 @@
             if (!shell) return;
 
             shell.innerHTML = `
-                <div class="sms-search-bar" id="smsSearchBarRoot" style="margin:8px 10px; padding:0 6px; gap:4px;">
+                <div class="sms-search-bar" style="margin:8px 10px; padding:0 6px; gap:4px;">
                     <button class="sms-menu-btn" id="smsInboxBackBtn">${SVGS.back}</button>
                     <button class="sms-menu-btn" id="smsMenuBtn">${SVGS.menu}</button>
 
@@ -166,9 +166,9 @@
                         <div class="sms-drawer-menu" id="smsRefreshSelectorList" style="padding:8px 0 0 0;"></div>
                         <div style="padding:12px 16px; border-top:1px solid #dadce0; background:#fff;">
                             <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3c4043; margin-bottom:10px;">
-    <input type="checkbox" id="smsRefreshMixStranger"> 混入陌生人来信
-</label>
-<div style="display:flex; gap:8px; justify-content:flex-end;">
+                                <input type="checkbox" id="smsRefreshMixStranger"> 混入陌生人来信
+                            </label>
+                            <div style="display:flex; gap:8px; justify-content:flex-end;">
                                 <button class="sms-btn-sm" id="smsRefreshSelectorCancelBtn">取消</button>
                                 <button class="sms-btn-sm primary" id="smsRefreshSelectorConfirmBtn">生成来信</button>
                             </div>
@@ -187,7 +187,6 @@
                 if (!refreshRunning) await openRefreshSelector();
             });
 
-            // 获取回复按钮：对当前账号已有“我发出的线程”批量补一轮回复
             document.getElementById('smsFetchReplyBtn').addEventListener('click', async () => {
                 if (refreshRunning) return;
                 refreshRunning = true;
@@ -202,7 +201,6 @@
                         if (!msgs.length) continue;
                         const last = msgs[0];
                         if (!last.isReceived && last.senderAddress === activeAccount.address) {
-                            // 最后一条是我发出的，触发一次对方回复
                             await triggerOneReplyWithoutUserInput(t);
                             count++;
                         }
@@ -277,11 +275,10 @@
                 if (!msgs.length) continue;
 
                 if (currentFolder === 'sent') {
-    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
-    if (!mine.length) continue;
-    const lastMine = { thread: t, preview: msgs[0], sortTs: msgs[0].timestamp };
-    enriched.push(lastMine);
-} else {
+                    const mine = msgs.filter(m => !m.isReceived && m.senderAddress === activeAccount.address);
+                    if (!mine.length) continue;
+                    enriched.push({ thread: t, preview: msgs[0], sortTs: msgs[0].timestamp });
+                } else {
                     enriched.push({ thread: t, preview: msgs[0], sortTs: msgs[0].timestamp });
                 }
             }
@@ -347,25 +344,25 @@
             const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
             msgs.sort((a,b) => a.timestamp - b.timestamp);
 
-            let cards = '';
-            msgs.forEach((m, idx) => {
-                const isLast = idx === msgs.length - 1;
-                const dt = new Date(m.timestamp).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-                const initial = (m.senderName || '?').charAt(0);
-                cards += `
-                    <div class="sms-message-card ${!isLast ? 'collapsed' : ''}" data-msg-idx="${idx}">
-                        <div class="sms-message-card-header">
-                            <div class="sms-sender-avatar" style="background-color:${getAvatarColor(m.senderName)}; width:32px; height:32px; font-size:14px; margin-right:12px;">${escapeHtml(initial)}</div>
-                            <div class="sms-message-card-sender-info">
-                                <span class="sms-message-card-sender-name">${escapeHtml(m.senderName || '')}</span>
-                                <span class="sms-message-card-sender-addr">&lt;${escapeHtml(m.senderAddress || '')}&gt;</span>
-                            </div>
-                            <span class="sms-message-card-time">${dt}</span>
-                        </div>
-                        <div class="sms-message-card-body">${escapeHtml(m.body || '')}</div>
-                    </div>
-                `;
-            });
+let cards = '';
+msgs.forEach((m, idx) => {
+    const isLast = idx === msgs.length - 1;
+    const dt = new Date(m.timestamp).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const initial = (m.senderName || '?').charAt(0);
+    cards += `
+        <div class="sms-message-card ${!isLast ? 'collapsed' : ''}" data-msg-idx="${idx}">
+            <div class="sms-message-card-header">
+                <div class="sms-sender-avatar" style="background-color:${getAvatarColor(m.senderName)}; width:32px; height:32px; font-size:14px; margin-right:12px;">${escapeHtml(initial)}</div>
+                <div class="sms-message-card-sender-info">
+                    <span class="sms-message-card-sender-name">${escapeHtml(m.senderName || '')}</span>
+                    <span class="sms-message-card-sender-addr">&lt;${escapeHtml(m.senderAddress || '')}&gt;</span>
+                </div>
+                <span class="sms-message-card-time">${dt}</span>
+            </div>
+            <div class="sms-message-card-body">${escapeHtml(m.body || '')}</div>
+        </div>
+    `;
+});
 
             shell.innerHTML = `
                 <div class="sms-detail-view">
@@ -420,14 +417,12 @@
             const convMap = {};
             convDetails.forEach(cd => convMap[cd.conversationId] = cd);
 
-            let toItems = [];
-            for (const c of convs) {
+            let toItems =s) {
                 if (c.maskId !== (mask?.id || c.maskId)) continue;
                 const ch = await DB.get('characters', c.charId);
                 const cd = convMap[c.id] || {};
                 const displayName = cd.charName || ch?.name || `会话${c.id}`;
-                const avatar = cd.charAvatar || ch?.avatar || '';
-                const addr = `conv_${c.id}@haloes.mail`;
+                const avatar = cd.charAvatar || ch?. `c.id}@haloes.mail`;
                 toItems.push({
                     val: `conv:${c.id}`,
                     label: `${displayName} <${addr}>`,
@@ -440,11 +435,11 @@
 
             toItems.sort((a,b) => (a.displayName||'').localeCompare(b.displayName||'zh-CN'));
 
-            let toOptions = toItems.map(i => `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${escapeHtml(i.label)}</option>`).join('');
+            let toOptions = toItems.map(i => `<option value="${i.val}">${escapeHtml(i.label)}</option>`).join('');
             toOptions += `<option value="random">随机漂流瓶 (未知陌生人邮件)</option>`;
             toOptions += `<option value="custom">自定义地址</option>`;
 
-            const fromOptions = fromAccounts.map(a => `<option value="${a.id}" ${a.id === activeAccount?.id ? 'selected' : ''}>${escapeHtml(a.name)} <${escapeHtml(a.address)}></option>`).join('');
+ const fromOptions = fromAccounts.map(a => `<option value="${a.id}" ${a.id === activeAccount?.id ? 'selected' : ''}>${escapeHtml(a.name)} <${escapeHtml(a.address)}></option>`).join('');
 
             let presetSubject = '';
             let presetToVal = '';
@@ -531,7 +526,6 @@
                 activeAccount = await DB.get('smsAccounts', fromId);
                 await DB.put('smsMeta', { key:'activeAccountId', value:fromId });
 
-                // 默认账号头像自动同步面具
                 const curMask = await getActiveMask();
                 if (activeAccount?.isDefault && curMask) {
                     activeAccount.avatar = curMask.avatar || '';
@@ -559,7 +553,7 @@
                     disguised = true;
                     peerKey = 'stranger_' + Math.random().toString(36).slice(2, 8);
                     peerAddress = `${peerKey}@stranger.mail`;
-                    peerDisplayName = '神秘人';
+                    peerDisplayName = randomStrangerName();
                     peerAvatar = '';
                 } else if (toVal === 'custom') {
                     if (!toCustom || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toCustom)) {
@@ -639,13 +633,11 @@
                 let convContext = '';
                 let charName = thread.peerDisplayName || '联系人';
                 let charDetail = '';
-                let charIdForReply = '';
 
                 if (thread.peerType === 'conversation' && thread.sourceConversationId) {
                     const conv = await DB.get('conversations', thread.sourceConversationId);
                     const cd = await DB.get('convDetails', thread.sourceConversationId);
                     const ch = conv ? await DB.get('characters', conv.charId) : null;
-                    charIdForReply = ch?.id || '';
                     charName = cd?.charName || ch?.name || charName;
                     charDetail = cd?.charDetail || ch?.detail || '';
                     const chats = await DB.queryByIndex('chats', 'conversationId', thread.sourceConversationId);
@@ -657,7 +649,6 @@
                 let systemPrompt = '';
 
                 if (thread.peerType === 'stranger' || thread.peerType === 'npc') {
-                    // 重点：装陌生人时，char知道对面是谁，且可带目的表达不满/痴迷等
                     let realChar = null;
                     if (thread.disguisedCharId) realChar = await DB.get('characters', thread.disguisedCharId);
                     if (!realChar && thread.sourceConversationId) {
@@ -703,31 +694,21 @@ ${convContext}
                 });
 
                 showStatus('对方正在构思邮件回信...', 'info');
-                if (window.recordApiPending) window.recordPendingText = await callLLM(prompt);
+                if (window.recordApiPending) window.recordApiPending();
+                const replyText = await callLLM(prompt);
 
-                const replyText = await callLLM(prompt);  // 先获取返回值
+                const aiSenderName = thread.peerDisplayName || (thread.peerType === 'stranger' ? '神秘人' : '联系人');
+                const aiSenderAddr = thread.peerAddress || `${thread.peerKey || 'peer'}@haloes.mail`;
 
-const aiSenderName = thread.peerDisplayName || (thread.peerType === 'stranger' ? '神秘人' : '联系人');
-const aiSenderAddr = thread.peerAddress || `${thread.peerKey || 'peer'}@haloes.mail`;
-
-await DB.put('smsMessages', {
-    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-    threadId: thread.id,
-    senderName: aiSenderName,
-    senderAddress: aiSenderAddr,
-    body: replyText,  // 现在有定义了
-    timestamp: Date.now(),
-    isReceived: true
-});
-
-                // 如果这是陌生NPC线程，回复后保留成为可持续发信对象（已经通过线程保留）
-                if (thread.peerType === 'stranger' && !thread.peerAvatar) {
-                    thread.peerType = thread.disguisedCharId ? 'npc' : 'stranger';
-                }
-
-                thread.unread = true;
-                await DB.put('smsThreads', thread);
-                showStatus('收到一封新邮件', 'success');
+                await DB.put('smsMessages', {
+                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+                    threadId: thread.id,
+                    senderName: aiSenderName,
+                    senderAddress: aiSenderAddr,
+                    body: replyText,
+                    timestamp: Date.now(),
+:                    thread.peerType;
+',收到 'success');
 
             } catch (e) {
                 showStatus('发送失败，请重试: ' + e.message, 'error');
@@ -735,7 +716,6 @@ await DB.put('smsMessages', {
         }
 
         async function triggerOneReplyWithoutUserInput(thread) {
-            // 模拟“收取回复”：仅当线程最后是我发出时触发AI回复，不新增我方消息
             const msgs = await DB.queryByIndex('smsMessages', 'threadId', thread.id);
             msgs.sort((a,b) => a.timestamp - b.timestamp);
             if (!msgs.length) return;
@@ -1028,14 +1008,13 @@ ${charDetail ? `人设：${charDetail}` : ''}
 
             document.getElementById('smsSubBackBtn').addEventListener('click', renderInbox);
 
-const wbGroupSel = document.getElementById('newSubWbGroup');
-const wbSel = document.getElementById('newSubWb');  // ✅ 加上分号
-
-wbGroupSel.addEventListener('change', () => {
-    const g = wbGroupSel.value;
-    const list = g ? (wbGroups[g] || []) : [];
-    wbSel.innerHTML = `<option value="">(不关联任何世界书)</option>` + list.map(w => `<option value="${w.id}">${escapeHtml(w.title)}</option>`).join('');
-});
+            const wbGroupSel = document.getElementById('newSubWbGroup');
+            const wbSel = document.getElementById('newSubWb');
+            wbGroupSel.addEventListener('change', () => {
+                const g = wbGroupSel.value;
+                const list = g ? (wbGroups[g] || []) : [];
+                wbSel.innerHTML = `<option value="">(不关联任何世界书)</option>` + list.map(w => `<option value="${w.id}">${escapeHtml(w.title)}</option>`).join('');
+            });
 
             document.getElementById('smsCreateSubBtn').addEventListener('click', async () => {
                 const name = document.getElementById('newSubName').value.trim();
@@ -1135,7 +1114,6 @@ ${wbContext}
             try {
                 showStatus(`正在推送 ${sub.name}...`, 'info');
                 if (window.recordApiPending) window.recordApiPending();
-
                 const contentText = await callLLM([{role:'system', content:systemPrompt}, {role:'user', content:userPrompt}]);
 
                 const threadId = 'sub_th_' + sub.id + '_' + Date.now();
@@ -1301,44 +1279,32 @@ ${wbContext}
             const isAlias = !activeAccount.isDefault;
             const tasks = [];
 
-            // 默认主号：选中会话来信
-            // 小号：降低熟人主动来信概率；更偏陌生 / 垃圾 / NPC
+            // 主号：常规会话来信
             if (!isAlias) {
                 for (const sc of selectedConvs) {
                     tasks.push(generateOneMailFromConversation(sc, false, mask));
                 }
             } else {
+                // 小号：熟人主动来信概率低，且更偏伪装
                 for (const sc of selectedConvs) {
                     if (Math.random() < 0.35) {
-                        tasks.push(generateOneMailFromConversation(sc, true, mask)); // 小号上，熟人更可能伪装
+                        tasks.push(generateOneMailFromConversation(sc, true, mask));
                     }
                 }
             }
 
             if (mixStranger) {
-                // 陌生/NPC池
                 const extraCount = isAlias ? (2 + Math.floor(Math.random() * 2)) : 1;
                 for (let i = 0; i < extraCount; i++) {
                     const candidate = selectedConvs.length ? selectedConvs[Math.floor(Math.random() * selectedConvs.length)] : null;
-                    if (candidate) {
-                        tasks.push(generateOneMailFromConversation(candidate, true, mask));
-                    } else {
-                        tasks.push(generateOnePureStrangerSpam(mask));
-                    }
+                    if (candidate) tasks.push(generateOneMailFromConversation(candidate, true, mask));
+                    else tasks.push(generateOnePureStrangerSpam(mask));
                 }
-            }
-
-            // 小号强制加入垃圾短信概率
-            if (isAlias && Math.random() < 0.8) {
-                tasks.push(generateOnePureStrangerSpam(mask));
-            }
-
-            for (const t of tasks) await t;
+ &&One of tasks) await t;
         }
 
         async function generateOneMailFromConversation(sc, forceDisguise, mask) {
-            const { conv, char, cd, displayName, avatar, detail } = sc;
-            const isDisguised = forceDisguise || (Math.random() > 0.55);
+            const { char, cd, display, const isDisguised = forceDisguise || (Math.random() > 0.55);
 
             const peerType = isDisguised ? 'stranger' : 'conversation';
             const peerKey = isDisguised ? ('stranger_' + Math.random().toString(36).slice(2,8)) : (char?.id || `conv_${conv.id}`);
@@ -1355,7 +1321,7 @@ ${wbContext}
 
             let systemPrompt = '';
             if (isDisguised) {
-                // 重点按你的要求：char装陌生人是“知道对面是谁”且带目的
+                // 陌生人伪装：明确“知道对面是谁”，并可带目的
                 systemPrompt = `
 你是【${displayName}】（真实身份），你知道收件人真实是【${mask?.name || '用户'}】。
 你现在使用陌生人身份发信，可能带有目的：
@@ -1436,7 +1402,6 @@ ${contextText || '无'}
                 });
 
                 showStatus(`收到来自 [${senderName}] 的新邮件`, 'success');
-
             } catch (e) {
                 console.warn('生成主动来信失败', e);
             }
@@ -1534,5 +1499,4 @@ ${contextText || '无'}
 
         init();
     };
-
 })();
