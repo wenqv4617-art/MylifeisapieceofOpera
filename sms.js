@@ -1028,12 +1028,14 @@ ${charDetail ? `人设：${charDetail}` : ''}
 
             document.getElementById('smsSubBackBtn').addEventListener('click', renderInbox);
 
-            const wbGroupSel = document.getElementById('newSubWbGroup');
-            const wbSel = document.getElementById('newSubWb            wbGroupSel.addEventListener('change', () => {
-                const g = wbGroupSel.value;
-                const list = g ? (wbGroups[g] || []) : [];
-                wbSel.innerHTML = `<option value="">(不关联任何世界书)</option>` + list.map(w => `<option value="${w.id}">${escapeHtml(w.title)}</option>`).join('');
-            });
+const wbGroupSel = document.getElementById('newSubWbGroup');
+const wbSel = document.getElementById('newSubWb');  // ✅ 加上分号
+
+wbGroupSel.addEventListener('change', () => {
+    const g = wbGroupSel.value;
+    const list = g ? (wbGroups[g] || []) : [];
+    wbSel.innerHTML = `<option value="">(不关联任何世界书)</option>` + list.map(w => `<option value="${w.id}">${escapeHtml(w.title)}</option>`).join('');
+});
 
             document.getElementById('smsCreateSubBtn').addEventListener('click', async () => {
                 const name = document.getElementById('newSubName').value.trim();
