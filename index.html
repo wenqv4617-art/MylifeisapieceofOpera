@@ -40,6 +40,7 @@
 <link rel="stylesheet" href="fullscreen-float.css">
 <link rel="stylesheet" href="couple-space.css">
 <link rel="stylesheet" href="couple-live.css">
+<link rel="stylesheet" href="sms.css">
     <meta name="theme-color" content="#d8b69f">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <style>
@@ -3548,6 +3549,7 @@
 <script src="couple-truth.js" defer></script>
 <script src="couple-date.js" defer></script>
 <script src="couple-live.js" defer></script>
+<script src="sms.js" defer></script>
 </head>
 <body>
     <div class="phone-mock">
@@ -3665,9 +3667,9 @@
 
     <!-- ==================== Dock栏 ==================== -->
     <div class="home-dock">
-        <div class="dock-item disabled">
-            <div class="dock-icon"><span class="dock-icon-emoji">💬</span></div>
-        </div>
+        <div class="dock-item" data-nav="sms">
+    <div class="dock-icon"><span class="dock-icon-emoji">✉</span></div>
+</div>
         <div class="dock-item" data-nav="diary">
             <div class="dock-icon"><span class="dock-icon-emoji">📔</span></div>
         </div>
@@ -5105,7 +5107,12 @@
                         <button class="forum-logo-btn" id="forumLogoBtn" title="长按生成内容 / 点击返回首页">ℳ</button>
                     </div>
                     <div class="forum-nav-right">
-                        <button class="forum-nav-btn" id="forumSettingsBtn" title="论坛设置">⚛</button>
+                        <button class="forum-nav-btn" id="forumSettingsBtn" title="论坛设置">
+    <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.32.22.66.22 1s-.08.68-.22 1z"></path>
+    </svg>
+</button>
                     </div>
                 </div>
 
@@ -5332,14 +5339,42 @@
 
                 <!-- 底部导航 -->
                 <div class="forum-bottom-nav" id="forumBottomNav">
-                    <button class="forum-bottom-btn active" data-view="main">⌂</button>
-                    <button class="forum-bottom-btn" data-view="trend">⸎</button>
-                    <button class="forum-bottom-btn" data-view="notif">✦<span class="badge-dot" id="notifBadge" style="display:none;"></span></button>
-                    <button class="forum-bottom-btn" data-view="msg">✉</button>
-                </div>
+    <button class="forum-bottom-btn active" data-view="main" title="首页">
+        <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11.5 12 4l9 7.5"></path>
+            <path d="M5 10.5V20h5v-5h4v5h5v-9.5"></path>
+        </svg>
+    </button>
+
+    <button class="forum-bottom-btn" data-view="trend" title="趋势">
+        <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17l6-6 4 4 8-8"></path>
+            <path d="M15 7h6v6"></path>
+        </svg>
+    </button>
+
+    <button class="forum-bottom-btn" data-view="notif" title="通知">
+        <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="badge-dot" id="notifBadge" style="display:none;"></span>
+    </button>
+
+    <button class="forum-bottom-btn" data-view="msg" title="私信">
+        <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+        </svg>
+    </button>
+</div>
 
                 <!-- 浮动发帖按钮 -->
-                <button class="forum-fab" id="forumFabBtn">+</button>
+                <button class="forum-fab" id="forumFabBtn" title="发帖">
+    <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <path d="M12 5v14"></path>
+        <path d="M5 12h14"></path>
+    </svg>
+</button>
             </div>
             <!-- ==================== 论坛页面结束 ==================== -->
             <!-- ========== 逛逛页面 ========== -->
@@ -5633,6 +5668,10 @@
 
             <!-- ==================== [NEW] 群聊对话页 ==================== -->
             <div id="page-group-conversation" class="page"><div class="chat-header"><div class="chat-header-left"><button class="back-btn" id="backFromGroupConvBtn">←</button><h2 id="groupConversationTitle">群聊</h2></div><div class="header-actions"><button class="header-btn" id="groupDetailBtn">📝</button></div></div><div class="chat-messages" id="groupChatMessages"><div class="empty-state">加载中...</div></div><div class="emoticon-picker" id="groupEmoticonPicker"><div class="emoticon-picker-tabs" id="groupEmoticonPickerTabs"></div><div class="emoticon-picker-grid" id="groupEmoticonPickerGrid"></div></div><div class="expand-menu" id="groupExpandMenu"></div><div class="quote-preview-bar" id="groupQuotePreviewBar"><span class="quote-preview-content" id="groupQuotePreviewContent"></span><span class="quote-preview-close" id="groupQuotePreviewClose">✕</span></div><div class="chat-input-area" id="groupChatInputArea"><div class="mini-btn" id="groupExpandMenuBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="input-wrapper"><input type="text" placeholder="输入消息..." id="groupMessageInput"></div><div class="mini-btn" id="groupSendBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="mini-btn" id="groupFetchBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div></div></div>
+
+<div id="page-sms" class="page">
+    <div class="sms-shell" id="smsShell"></div>
+</div>
 
             <!-- [NEW] 群聊详情页 -->
             <div id="page-group-detail" class="page"><div class="chat-header"><div class="chat-header-left"><button class="back-btn" id="backFromGroupDetailBtn">←</button><h2>群聊详情</h2></div></div><div style="flex:1;overflow-y:auto;padding:16px;"><div class="group-detail-section"><h3>群聊管理</h3><div class="form-group"><label>群聊头像</label><div style="display:flex;align-items:center;gap:12px;"><div id="groupAvatarPreview" style="width:60px;height:60px;border-radius:8px;background:#5cb85c;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600;background-size:cover;background-position:center;">群</div><div><button class="small-btn" id="groupAvatarUploadBtn">📷 上传</button><button class="small-btn" id="groupAvatarUrlBtn">🔗 URL</button><button class="small-btn" id="groupAvatarClearBtn" style="color:#c0392b;">清除</button></div><input type="file" id="groupAvatarFile" accept="image/*" style="display:none;"><input type="hidden" id="groupAvatarData" value=""></div></div><div class="form-group"><label>群聊名称</label><input type="text" id="groupDetailName"></div><div class="form-group"><label>当前剧情</label><textarea id="groupDetailPlot" style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid #d4cdc2;resize:vertical;"></textarea></div></div><div class="group-detail-section"><h3>成员管理</h3><div id="groupMemberList" style="display:flex;flex-direction:column;gap:8px;"></div></div><div class="group-detail-section"><h3>NPC系统</h3><div id="groupNPCList" style="display:flex;flex-direction:column;gap:8px;"></div><button class="small-btn primary" id="addGroupNPCBtn" style="margin-top:8px;">添加NPC</button></div><div class="group-detail-section"><h3 style="display:flex;justify-content:space-between;">世界书挂载 <button class="small-btn primary" id="groupWorldbookBtn">挂载</button></h3><div id="groupWorldbookStatus" style="font-size:12px;color:#8ba3c7;">点击挂载按钮设置</div></div><div class="group-detail-section"><h3 style="display:flex;justify-content:space-between;">表情包挂载 <button class="small-btn primary" id="groupEmoticonMountBtn">挂载</button></h3><div id="groupEmoticonMountStatus" style="font-size:12px;color:#8ba3c7;">点击挂载按钮设置</div></div><div class="group-detail-section"><h3>群聊背景</h3><div class="form-group"><div id="groupBgPreview" style="width:100%;height:80px;border-radius:8px;background:#f8f8f8;background-size:cover;background-position:center;border:1px solid #d4cdc2;"></div></div><div style="display:flex;gap:8px;"><button class="small-btn" id="groupBgUploadBtn">上传</button><button class="small-btn" id="groupBgUrlBtn">URL</button><button class="small-btn" id="groupBgClearBtn" style="color:#c0392b;">清除</button></div><input type="file" id="groupBgFile" accept="image/*" style="display:none;"><input type="hidden" id="groupBgData" value=""></div><button class="small-btn primary" id="saveGroupDetailBtn" style="width:100%;padding:14px;margin-top:12px;">保存</button></div></div>
@@ -6205,7 +6244,7 @@
             }
 
             const DB_NAME = "CompanionDB_V18";
-            const DB_VERSION = 27;
+            const DB_VERSION = 28;
             let db = null;
             window.groupCollapsed = window.groupCollapsed || {};
 
@@ -6289,6 +6328,31 @@
                 if (!s.indexNames.contains('groupId')) s.createIndex('groupId', 'groupId');
             }
             if (!d.objectStoreNames.contains('momentsStore')) d.createObjectStore('momentsStore', { keyPath: 'key' });
+
+// SMS
+if (!d.objectStoreNames.contains('smsAccounts')) {
+    const s = d.createObjectStore('smsAccounts', { keyPath: 'id' });
+    if (!s.indexNames.contains('maskId')) s.createIndex('maskId', 'maskId');
+}
+if (!d.objectStoreNames.contains('smsThreads')) {
+    const s = d.createObjectStore('smsThreads', { keyPath: 'id' });
+    if (!s.indexNames.contains('maskId')) s.createIndex('maskId', 'maskId');
+    if (!s.indexNames.contains('accountId')) s.createIndex('accountId', 'accountId');
+    if (!s.indexNames.contains('peerKey')) s.createIndex('peerKey', 'peerKey');
+}
+if (!d.objectStoreNames.contains('smsMessages')) {
+    const s = d.createObjectStore('smsMessages', { keyPath: 'id' });
+    if (!s.indexNames.contains('threadId')) s.createIndex('threadId', 'threadId');
+    if (!s.indexNames.contains('timestamp')) s.createIndex('timestamp', 'timestamp');
+}
+if (!d.objectStoreNames.contains('smsSubs')) {
+    const s = d.createObjectStore('smsSubs', { keyPath: 'id' });
+    if (!s.indexNames.contains('maskId')) s.createIndex('maskId', 'maskId');
+    if (!s.indexNames.contains('accountId')) s.createIndex('accountId', 'accountId');
+}
+if (!d.objectStoreNames.contains('smsMeta')) {
+    d.createObjectStore('smsMeta', { keyPath: 'key' });
+}
         };
 
         req.onsuccess = (e) => {
@@ -12314,6 +12378,7 @@ async function setWallpaper(value) {
 guangguang: document.getElementById('page-guangguang'),
 emoticon: document.getElementById('page-emoticon'),
 moments: document.getElementById('page-moments'),
+sms: document.getElementById('page-sms'),
             };
             const tabs = document.querySelectorAll('.tab-item');
             const mainTabBar = document.getElementById('mainTabBar');
@@ -12429,6 +12494,10 @@ if (pageId === 'guangguang') {
 } else if (pageId === 'moments') {
     if (window.momentsModule?.openMomentsPage) {
         window.momentsModule.openMomentsPage();
+    }
+} else if (pageId === 'sms') {
+    if (window.smsModule?.openSMSPage) {
+        await window.smsModule.openSMSPage();
     }
 } else if (pageId === 'group-conversation') {
     console.log('切换到群聊页面');
@@ -13456,6 +13525,16 @@ if (window.initEmoticonModule) {
 // 初始化朋友圈模块
 if (window.initMomentsModule) {
     await window.initMomentsModule();
+}
+
+// 初始化 SMS 模块
+if (window.initSMSModule) {
+    window.smsModule = window.initSMSModule({
+        DB, showStatus, escapeHtml, callLLM, switchPage, getActiveMask
+    });
+    if (window.smsModule?.init) {
+        await window.smsModule.init();
+    }
 }
 
 // [NEW] 初始化群聊模块
