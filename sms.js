@@ -1451,8 +1451,10 @@ ${convContext}
     for (const id of selectedConvIds) {
         const c = await DB.get('conversations', id);
         if (!c) continue;
+
         const ch = await DB.get('characters', c.charId);
         if (!ch) continue;
+
         const cd = convMap[c.id] || {};
         selectedConvs.push({
             conv: c,
@@ -1468,25 +1470,34 @@ ${convContext}
 
     const tasks = [];
 
+    // 1) 勾选联系人：每个联系人各生成一封，逻辑不变
     for (const sc of selectedConvs) {
         tasks.push(generateOneMailFromConversation(sc, false, mask));
     }
 
-    // 2) 勾选陌生人：增量 1~2 封陌生人独立来信
-    if (mixStranger) {
-    const extraCount = Math.floor(Math.random() * 2) + 1; // 1~2
-    for (let i = 0; i < extraCount; i++) {
-        // 大概率 char 伪装（90%），小概率纯陌生人（10%）
-        const useCharDisguise = selectedConvs.length > 0 && Math.random() < 0.9;
-
-        if (useCharDisguise) {
-            const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
-            tasks.push(generateOneMailFromConversation(sc, true, mask)); // true=伪装
-        } else {
-            tasks.push(generateOnePureStrangerSpam(mask));
+    // 2) 仅勾选陌生人：改为 API 生成陌生人来信，不再走固定模板列表
+    if (mixStranger && selectedConvs.length === 0) {
+        const extraCount = Math.floor(Math.random() * 2) + 1; // 1~2 封
+        for (let i = 0; i < extraCount; i++) {
+            tasks.push(generateOnePureStrangerAIMail(mask));
         }
     }
-}
+
+    // 3) 同时勾选陌生人 + 联系人：原逻辑不变
+    // 大概率联系人伪装，小概率纯陌生人模板
+    if (mixStranger && selectedConvs.length > 0) {
+        const extraCount = Math.floor(Math.random() * 2) + 1; // 1~2
+        for (let i = 0; i < extraCount; i++) {
+            const useCharDisguise = Math.random() < 0.9;
+
+            if (useCharDisguise) {
+                const sc = selectedConvs[Math.floor(Math.random() * selectedConvs.length)];
+                tasks.push(generateOneMailFromConversation(sc, true, mask));
+            } else {
+                tasks.push(generateOnePureStrangerSpam(mask));
+            }
+        }
+    }
 
     for (const t of tasks) {
         await t;
@@ -1615,6 +1626,136 @@ ${contextText || '无'}
                 console.warn('生成主动来信失败', e);
             }
         }
+
+async function generateOnePureStrangerAIMail(mask) {
+    const stranger = await getOrCreateStrangerAccount(activeAccount.maskId, activeAccount.id);
+    const key = stranger.key;
+    const addr = stranger.address;
+    const sender = stranger.displayName;
+
+    const categories = [
+        '营销类邮件：优惠、促销、活动邀请、会员福利、课程推广、产品推荐等，但要像真实邮件，不要太机械。',
+        '交友类邮件：陌生人想认识收件人、偶然看到邮箱、想找人聊天、树洞倾诉、兴趣交友等。',
+        '骚扰邮件类：语气冒昧、频繁打扰、阴阳怪气、匿名试探、令人不适但不涉及违法暴力内容。',
+        '误发类邮件：看似发错对象，但内容有生活感，可以引发后续对话。',
+        '求助类邮件：陌生人遇到小麻烦，希望得到建议、帮忙、倾听或回复。',
+        '神秘类邮件：语气暧昧、含糊、有一点悬疑感，但不涉及真实威胁。',
+        '工作合作类邮件：合作邀请、采访、约稿、项目沟通、商务联络等。',
+        '情感倾诉类邮件：陌生人在深夜倾诉、道歉、怀念某人、想找一个陌生人说话。'
+    ];
+
+    const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
+
+    const systemPrompt = `
+你是一个邮件生成器。你要生成一封来自陌生人的电子邮件，投递给用户的邮箱。
+
+【收件人信息】
+收件人昵称：${mask?.name || '用户'}
+收件邮箱：${activeAccount.address}
+
+【陌生发件人信息】
+发件显示名：${sender}
+发件邮箱：${addr}
+
+【本次邮件类型】
+${selectedCategory}
+
+【生成要求】
+1. 必须像真实陌生人邮件，不要像模板。
+2. 邮件可以是营销类、交友类、骚扰类、误发类、求助类、神秘类、合作类、情感倾诉类等。
+3. 内容要有具体细节，避免空泛。
+4. 可以让用户产生“要不要回复看看”的兴趣。
+5. 禁止代码块。
+6. 不要出现暴力恐吓等内容。
+7. 如果是营销类，可以有商业话术。
+8. 如果是骚扰类，可以是冒昧、阴阳怪气、纠缠式语气。
+9. 输出必须严格遵守格式：
+
+---主题---
+邮件主题
+
+---正文---
+邮件正文
+`;
+
+    const userPrompt = `
+请生成一封陌生人来信。
+要求主题自然，正文 80 到 300 字。
+`;
+
+    try {
+        showStatus('正在生成陌生人来信...', 'info');
+        if (window.recordApiPending) window.recordApiPending();
+
+        const aiResult = await callLLM([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ]);
+
+        const subjMatch = aiResult.match(/---主题---\s*([\s\S]*?)(?:\n---正文---|$)/);
+        const bodyMatch = aiResult.match(/---正文---\s*([\s\S]*?)$/);
+
+        let subject = subjMatch ? subjMatch[1].trim() : '';
+        let body = bodyMatch ? bodyMatch[1].trim() : '';
+
+        if (!subject) subject = '一封陌生来信';
+        if (!body) {
+            body = aiResult
+                .replace(/---主题---[\s\S]*?(?=---正文---|$)/, '')
+                .replace(/---正文---/, '')
+                .trim();
+        }
+        if (!body) body = '你好，冒昧来信。只是突然想找一个陌生人说几句话，如果你愿意回复，我会很感谢。';
+
+        const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+        await DB.put('smsThreads', {
+            id: threadId,
+            maskId: activeAccount.maskId,
+            accountId: activeAccount.id,
+            sourceConversationId: null,
+            peerType: 'stranger',
+            peerKey: key,
+            peerAddress: addr,
+            peerDisplayName: sender,
+            peerAvatar: stranger.avatar || '',
+            subject,
+            isSubscription: false,
+            disguised: false,
+            disguisedCharId: '',
+            unread: true,
+            createdAt: Date.now(),
+            accountAvatarSnapshot: activeAccount.avatar || '',
+            accountNameSnapshot: activeAccount.name || '',
+            replyContext: {
+                charId: '',
+                conversationId: null,
+                charName: sender,
+                charDetail: `陌生来信者。本次来信类型：${selectedCategory}`,
+                userName: mask?.name || '用户'
+            }
+        });
+
+        await DB.put('smsMessages', {
+            id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            threadId,
+            senderName: sender,
+            senderAddress: addr,
+            body,
+            timestamp: Date.now(),
+            isReceived: true
+        });
+
+        stranger.updatedAt = Date.now();
+        await DB.put('smsStrangerAccounts', stranger);
+
+        showStatus(`收到一封陌生来信：${subject}`, 'success');
+
+    } catch (e) {
+        console.warn('AI陌生人来信生成失败', e);
+        showStatus('陌生人来信生成失败: ' + e.message, 'error');
+    }
+}
 
         async function generateOnePureStrangerSpam(mask) {
     const spamTemplates = [
