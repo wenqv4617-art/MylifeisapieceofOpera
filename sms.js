@@ -434,16 +434,47 @@
                 }
             }
 
-            let toOptions = toItems.map(i => {
-                return `<option value="${i.val}" data-avatar="${escapeHtml(i.avatar||'')}" data-name="${escapeHtml(i.displayName)}" data-peeraddr="${escapeHtml(i.peerAddress)}">${escapeHtml(i.displayName)} · 会话#${i.convId}</option>`;
-            }).join('');
+            const recipientItems = [];
 
-            contactedStrangers.forEach(s => {
-                toOptions += `<option value="stranger:${escapeHtml(s.peerAddress)}" data-avatar="${escapeHtml(s.peerAvatar||'')}" data-name="${escapeHtml(s.peerDisplayName)}" data-peeraddr="${escapeHtml(s.peerAddress)}">[陌生人] ${escapeHtml(s.peerDisplayName)} &lt;${escapeHtml(s.peerAddress)}&gt;</option>`;
-            });
+toItems.forEach(i => {
+    recipientItems.push({
+        val: i.val,
+        type: 'conversation',
+        avatar: i.avatar || '',
+        name: i.displayName,
+        subtitle: `会话#${i.convId}`,
+        peerAddress: i.peerAddress || ''
+    });
+});
 
-            toOptions += `<option value="random">随机漂流瓶 (未知陌生人邮件)</option>`;
-            toOptions += `<option value="custom">自定义地址</option>`;
+contactedStrangers.forEach(s => {
+    recipientItems.push({
+        val: `stranger:${s.peerAddress}`,
+        type: 'stranger',
+        avatar: s.peerAvatar || '',
+        name: s.peerDisplayName || '陌生人',
+        subtitle: s.peerAddress || '',
+        peerAddress: s.peerAddress || ''
+    });
+});
+
+recipientItems.push({
+    val: 'random',
+    type: 'random',
+    avatar: '',
+    name: '随机漂流瓶',
+    subtitle: '未知陌生人邮件',
+    peerAddress: ''
+});
+
+recipientItems.push({
+    val: 'custom',
+    type: 'custom',
+    avatar: '',
+    name: '自定义地址',
+    subtitle: '手动输入邮箱地址',
+    peerAddress: ''
+});
 
             const fromOptions = fromAccounts.map(a => {
                 const isActive = a.id === activeAccount?.id;
@@ -482,9 +513,46 @@
                             <select class="sms-compose-select" id="smsComposeFrom">${fromOptions}</select>
                         </div>
                         <div class="sms-compose-row">
-                            <span class="sms-compose-label">到：</span>
-                            <select class="sms-compose-select" id="smsComposeTo">${toOptions}</select>
-                        </div>
+    <span class="sms-compose-label">到：</span>
+    <input type="hidden" id="smsComposeTo" value="">
+    <button type="button" id="smsComposeToPickerBtn" style="
+        flex:1;
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+        border:none;
+        background:transparent;
+        padding:8px 0;
+        cursor:pointer;
+        text-align:left;
+    ">
+        <div id="smsComposeToAvatar" class="sms-sender-avatar" style="
+            width:32px;
+            height:32px;
+            font-size:13px;
+            margin-right:0;
+            flex-shrink:0;
+        ">?</div>
+        <div style="flex:1; min-width:0;">
+            <div id="smsComposeToName" style="
+                font-size:14px;
+                color:#202124;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap;
+            ">选择收件人</div>
+            <div id="smsComposeToSub" style="
+                font-size:11px;
+                color:#5f6368;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap;
+            "></div>
+        </div>
+        <span style="font-size:18px;color:#5f6368;">›</span>
+    </button>
+</div>
                         <div class="sms-compose-row" id="smsComposeToCustomRow" style="display:none;">
                             <span class="sms-compose-label">地址：</span>
                             <input type="text" class="sms-compose-input" id="smsComposeToCustom" placeholder="name@example.com" value="${escapeHtml(presetToCustom)}">
@@ -496,26 +564,100 @@
                         <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="3000">${escapeHtml(presetBody)}</textarea>
                     </div>
                 </div>
+
+                <div class="sms-modal-overlay" id="smsRecipientPickerOverlay" style="
+                    display:none;
+                    position:fixed;
+                    top:0;
+                    left:0;
+                    right:0;
+                    bottom:0;
+                    background:rgba(0,0,0,0.45);
+                    z-index:10000;
+                    align-items:center;
+                    justify-content:center;
+                ">
+                    <div class="sms-modal-content" style="
+                        background:#fff;
+                        border-radius:18px;
+                        width:90%;
+                        max-width:390px;
+                        max-height:78vh;
+                        display:flex;
+                        flex-direction:column;
+                        overflow:hidden;
+                        box-shadow:0 8px 30px rgba(0,0,0,0.18);
+                    ">
+                        <div style="
+                            padding:16px 18px;
+                            border-bottom:1px solid #f1f3f4;
+                            display:flex;
+                            align-items:center;
+                            justify-content:space-between;
+                        ">
+                            <div>
+                                <div style="font-size:17px;font-weight:600;color:#202124;">选择收件人</div>
+                                <div style="font-size:12px;color:#5f6368;margin-top:2px;">联系人、陌生人、漂流瓶或自定义地址</div>
+                            </div>
+                            <button id="smsRecipientPickerCloseBtn" style="
+                                border:none;
+                                background:transparent;
+                                font-size:22px;
+                                color:#5f6368;
+                                cursor:pointer;
+                            ">×</button>
+                        </div>
+
+                        <div id="smsRecipientPickerList" style="
+                            flex:1;
+                            overflow-y:auto;
+                            padding:6px 0;
+                        "></div>
+                    </div>
+                </div>
             `;
 
             const fromSel = document.getElementById('smsComposeFrom');
-            const toSel = document.getElementById('smsComposeTo');
-            const toCustomRow = document.getElementById('smsComposeToCustomRow');
-            const toCustomInput = document.getElementById('smsComposeToCustom');
+const toSel = document.getElementById('smsComposeTo'); // hidden input
+const toPickerBtn = document.getElementById('smsComposeToPickerBtn');
+const toAvatarEl = document.getElementById('smsComposeToAvatar');
+const toNameEl = document.getElementById('smsComposeToName');
+const toSubEl = document.getElementById('smsComposeToSub');
+const toCustomRow = document.getElementById('smsComposeToCustomRow');
+const toCustomInput = document.getElementById('smsComposeToCustom');
 
-            if (presetFromId) fromSel.value = presetFromId;
-            if (presetToVal) toSel.value = presetToVal;
-            if (presetToVal === 'custom') {
-                toCustomRow.style.display = 'flex';
-            }
+const recipientOverlay = document.getElementById('smsRecipientPickerOverlay');
+const recipientListEl = document.getElementById('smsRecipientPickerList');
+const recipientCloseBtn = document.getElementById('smsRecipientPickerCloseBtn');
+            function getRecipientItem(val) {
+    return recipientItems.find(i => i.val === val) || recipientItems[0] || null;
+}
 
-            toSel.addEventListener('change', function() {
-                if (this.value === 'custom') {
-                    toCustomRow.style.display = 'flex';
-                } else {
-                    toCustomRow.style.display = 'none';
-                }
-            });
+function refreshRecipientDisplay() {
+    const item = getRecipientItem(toSel.value);
+    if (!item) {
+        toNameEl.textContent = '选择收件人';
+        toSubEl.textContent = '';
+        toAvatarEl.style.backgroundImage = '';
+        toAvatarEl.style.backgroundColor = '#5f6368';
+        toAvatarEl.textContent = '?';
+        return;
+    }
+
+    toNameEl.textContent = item.name || '未知收件人';
+    toSubEl.textContent = item.subtitle || item.peerAddress || '';
+
+    if (item.avatar) {
+        toAvatarEl.style.backgroundImage = `url('${item.avatar}')`;
+        toAvatarEl.style.backgroundSize = 'cover';
+        toAvatarEl.style.backgroundPosition = 'center';
+        toAvatarEl.style.backgroundColor = 'transparent';
+        toAvatarEl.textContent = '';
+    } else {
+        toAvatarEl.style.backgroundImage = '';
+        toAvatarEl.style.backgroundColor =
+            item.type === 'random' ? '#9334e6' :
+            item.type === 'custom' ? '#5f6368'
 
             document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
                 if (replyThread) openThreadDetail(replyThread.id);
@@ -754,20 +896,44 @@ ${convContext}
                         `;
                     }
                 } else if (thread.peerType === 'conversation') {
-                    systemPrompt = `
+    const isDefaultMailbox = !!activeAccount.isDefault;
+
+    const identityRule = isDefaultMailbox
+        ? `
+你知道这个邮箱是【${mask?.name || '用户'}】平时常用的邮箱，因此可以自然地把发件人当作【${mask?.name || '用户'}】本人。
+`
+        : `
+你收到的是一个陌生/不熟悉的邮箱发来的邮件。
+发件人显示名是【${activeAccount.name}】，邮箱是 <${activeAccount.address}>。
+
+【重要身份规则】
+1. 你不能自动知道这个邮箱背后是谁。
+2. 你不能因为系统给了你聊天上下文，就认定发件人是【${mask?.name || '用户'}】。
+3. 聊天上下文只是你作为【${charName}】最近经历过的记忆，不等于发件人身份线索。
+4. 除非邮件正文里明确承认身份，或写出了非常私密、唯一、排他的共同秘密，否则你不能直接点破“你是不是${mask?.name || '用户'}”。
+5. 如果邮件内容让你觉得有一点熟悉，也只能轻微试探，例如“你说话方式有点熟悉”“我们是不是在哪里聊过”，不要直接确认身份。
+6. 如果邮件内容很普通，你应该把对方当作普通陌生邮箱/新联系人来回复。
+`;
+    
+    systemPrompt = `
 你是【${charName}】。
 你收到来自【${activeAccount.name}】<${activeAccount.address}> 的邮件。
-${activeAccount.isDefault ? `你知道这是【${mask?.name || '用户'}】的常用邮箱。` : `你看到发件人是"${activeAccount.name}"，你可能觉得这像${mask?.name || '用户'}的小号，也可能不认得。`}
+
+${identityRule}
+
 ${charDetail ? `你的人设背景：\n${charDetail}` : ''}
 ${convContext}
-规则：
+
+【邮件回复规则】
 1. 禁止 Emoji。
 2. 使用邮件体裁，口语化但保持邮件格式。
-3. 如果有明显线索表明这是对方的小号，可以在回信中点破或试探。
-4. 不要使用代码块。
-5. 直接写邮件正文，不要加标签。
+3. 如果这是陌生邮箱或小号邮箱，你必须保持合理警惕，但不要开天眼识破。
+4. 不要因为语气、时间、上下文相似就直接断定对方身份。
+5. 只有邮件正文出现强身份线索时，才可以谨慎试探。
+6. 不要使用代码块。
+7. 直接写邮件正文，不要加“主题：”“正文：”等标签。
                     `;
-                } else {
+} else {
                     systemPrompt = `
                 你是一个普通网民，收到了来自陌生人的邮件。
                 你以普通人身份回信。
@@ -871,13 +1037,40 @@ ${convContext}
 禁止 Emoji，保持邮件风格。直接写正文。
                     `;
                 } else if (thread.peerType === 'conversation') {
-                    systemPrompt = `
+    const isDefaultMailbox = !!activeAccount.isDefault;
+
+    const identityRule = isDefaultMailbox
+        ? `
+你知道这是【${mask?.name || '用户'}】的常用邮箱，可以自然地把发件人当作本人。
+`
+        : `
+这封邮件来自一个不熟悉的邮箱。
+发件人显示名是【${activeAccount.name}】，邮箱是 <${activeAccount.address}>。
+
+【重要身份规则】
+1. 你不能自动知道这个邮箱背后是谁。
+2. 你不能因为系统提供了聊天上下文，就认定发件人是【${mask?.name || '用户'}】。
+3. 聊天上下文只是你作为【${charName}】自己的近期记忆，不是发件人身份铁证。
+4. 除非邮件正文明确承认身份，或者写出了非常私密、唯一、排他的共同秘密，否则不能直接点破身份。
+5. 如果觉得熟悉，只能轻微试探，不要直接确认。
+6. 如果邮件内容普通，就按普通陌生联系人回复。
+`;
+
+    systemPrompt = `
 你是【${charName}】。你收到邮件后准备回复。
+
+${identityRule}
+
 ${charDetail ? `人设：${charDetail}` : ''}
 ${convContext}
-禁止 Emoji，保持邮件风格。直接写正文。
+
+规则：
+1. 禁止 Emoji。
+2. 保持邮件风格。
+3. 不要开天眼识破发件人身份。
+4. 直接写正文。
                     `;
-                } else {
+} else {
                     systemPrompt = `
 你是一个普通网民，收到陌生人邮件后回信。
 禁止 Emoji，保持邮件风格。直接写正文。
