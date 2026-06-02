@@ -1839,133 +1839,252 @@ ${convContext}
 }
 
         async function generateOneMailFromConversation(sc, forceDisguise, mask) {
-            const { conv, char, cd, displayName, avatar, detail, userName, relationship } = sc;
-            const isDisguised = !!forceDisguise;
+    const { conv, char, cd, displayName, avatar, detail, userName, relationship } = sc;
+    const isDisguised = !!forceDisguise;
 
-            const peerType = isDisguised ? 'stranger' : 'conversation';
-            const peerKey = isDisguised ? ('stranger_' + Math.random().toString(36).slice(2,8)) : (char?.id || `conv_${conv.id}`);
-            const peerAddress = isDisguised ? `${peerKey}@stranger.mail` : `conv_${conv.id}@haloes.mail`;
-            const senderName = isDisguised ? randomStrangerName() : displayName;
+    const isDefaultMailbox = !!activeAccount?.isDefault;
+    const mailboxDisplayName = activeAccount?.name || '邮箱主人';
+    const mailboxAddress = activeAccount?.address || '';
 
-            let contextText = '';
-            const chats = await DB.queryByIndex('chats', 'conversationId', conv.id);
-            chats.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-            const recent = chats.slice(0, 8).reverse();
-            if (recent.length) {
-                contextText = recent.map(c => {
-                    const rl = c.role === 'user' ? (userName || mask?.name || '用户') : displayName;
-                    return `${rl}: ${(c.content || '').substring(0, 200)}`;
-                }).join('\n');
-            }
+    const peerType = isDisguised ? 'stranger' : 'conversation';
+    const peerKey = isDisguised ? ('stranger_' + Math.random().toString(36).slice(2, 8)) : (char?.id || `conv_${conv.id}`);
+    const peerAddress = isDisguised ? `${peerKey}@stranger.mail` : `conv_${conv.id}@haloes.mail`;
+    const senderName = isDisguised ? randomStrangerName() : displayName;
 
-            let systemPrompt = '';
-            if (isDisguised) {
-                const purposes = [
-                    '表达压抑已久的不满和委屈，借陌生人之口说出平时不敢说的话',
-                    '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆、近乎疯狂的语言表达情感——例如使用“宝宝今天好可爱我好喜欢你”这样的语气，倾诉深深的占有欲',
-                    '试探对方对某些话题的真实态度，暗中观察反应',
-                    '用若即若离的方式撩拨对方，享受这种隐秘的暧昧游戏',
-                    '表达某种抱怨或失落，但用第三人称掩饰自己的真实身份',
-                    '以崇拜者/暗恋者的口吻表达好感，内容中暗示你们之间的熟悉细节（共同的回忆、对方的口头禅、最近的经历等）',
-                    '假装不小心发错邮件，但内容刻意与你们最近的对话相关，引起对方注意',
-                    '用一种疏离又亲近的语气，表达一些平时身份不允许说出的真心话'
-                ];
-                const selectedPurpose = purposes[Math.floor(Math.random() * purposes.length)];
+    let contextText = '';
+    const chats = await DB.queryByIndex('chats', 'conversationId', conv.id);
+    chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    const recent = chats.slice(0, 8).reverse();
 
-                systemPrompt = `
+    if (recent.length) {
+        contextText = recent.map(c => {
+            const rl = c.role === 'user'
+                ? (userName || mask?.name || '用户')
+                : displayName;
+            return `${rl}: ${(c.content || '').substring(0, 200)}`;
+        }).join('\n');
+    }
+
+    let systemPrompt = '';
+
+    if (isDisguised) {
+        if (isDefaultMailbox) {
+            const purposes = [
+                '表达压抑已久的不满和委屈，借陌生人之口说出平时不敢说的话',
+                '以匿名身份表达痴迷、依恋或占有欲，用比平时更大胆、近乎疯狂的语言表达情感',
+                '试探对方对某些话题的真实态度，暗中观察反应',
+                '用若即若离的方式撩拨对方，享受这种隐秘的暧昧游戏',
+                '表达某种抱怨或失落，但用第三人称掩饰自己的真实身份',
+                '以崇拜者/暗恋者的口吻表达好感，内容中暗示你们之间的熟悉细节',
+                '假装不小心发错邮件，但内容刻意与你们最近的对话相关，引起对方注意',
+                '用一种疏离又亲近的语气，表达一些平时身份不允许说出的真心话'
+            ];
+            const selectedPurpose = purposes[Math.floor(Math.random() * purposes.length)];
+
+            systemPrompt = `
 你是【${displayName}】（你的真实身份）。你非常清楚收件人真实就是【${mask?.name || '用户'}】。
 你现在决定放下面具，正在以化名/假邮箱“${senderName}”与用户通信，你带着明确的目的和秘密。
+
 你的目的：${selectedPurpose}
+
 ${detail ? `你的真实人设背景：\n${detail}` : ''}
 ${contextText ? `最近聊天上下文：\n${contextText}` : ''}
 
 【规则】
 1. 禁止使用 Emoji。
-2. 保持陌生人外壳，但在字里行间透露隐约的熟悉感（你其实很了解TA最近的生活习惯、共同回忆、只有你们才知道的秘密等）。
-3. 如果被识破，可以逐步松动伪装。
+2. 保持陌生人外壳，但在字里行间透露隐约的熟悉感。
+3. 你可以暗示你了解收件人最近的生活习惯、共同回忆、只有你们才知道的秘密等。
+4. 如果被识破，可以逐步松动伪装。
+5. 不要使用代码块。
+6. 输出格式必须是：
+---主题---邮件的主题
+---正文---邮件的正文
+            `;
+        } else {
+            const aliasPurposes = [
+                '你偶然看到了这个邮箱，想用陌生人的身份试探邮箱主人是什么样的人',
+                '你以匿名身份写信给这个邮箱，表达一种暧昧、好奇或若即若离的兴趣',
+                '你心情不好，想对一个陌生邮箱倾诉，但又不想暴露真实身份',
+                '你假装发错邮件，但其实是想观察这个邮箱主人会不会回复',
+                '你用陌生人的身份写一封有点冒昧但不过界的信，想引起对方注意',
+                '你像树洞一样给这个邮箱写信，把对方当成一个未知的倾听者',
+                '你对这个邮箱显示名产生兴趣，想试探对方是不是值得继续联系'
+            ];
+            const selectedPurpose = aliasPurposes[Math.floor(Math.random() * aliasPurposes.length)];
+
+            systemPrompt = `
+你是【${displayName}】（你的真实身份），但你现在使用化名/假邮箱“${senderName}”给一个邮箱写信。
+
+【收件邮箱信息】
+显示名：${mailboxDisplayName}
+邮箱：${mailboxAddress}
+
+【极重要身份规则】
+1. 你不知道这个邮箱背后是谁。
+2. 你不能知道、不能猜到、不能暗示这个邮箱属于某个你认识的人。
+3. 系统给你的聊天上下文只是你作为【${displayName}】自己的近期记忆，不是收件人的身份线索。
+4. 禁止在邮件中提到你和某个熟人之间的共同回忆。
+5. 禁止写“我知道你是谁”“你是不是某某”“这语气很像某某”。
+6. 你只能把对方当作邮箱显示名为【${mailboxDisplayName}】的陌生邮箱主人。
+
+你的目的：${selectedPurpose}
+
+${detail ? `你的真实人设背景：\n${detail}` : ''}
+${contextText ? `你的近期记忆，仅用于影响你的语气，不得作为识别收件人的依据：\n${contextText}` : ''}
+
+【规则】
+1. 禁止使用 Emoji。
+2. 保持陌生人外壳。
+3. 邮件要自然，不要暴露你真实身份。
 4. 不要使用代码块。
-5. 直接写邮件正文，不要加"主题："、"正文："等标签。
-                `;
-            } else {
-                systemPrompt = `
-你是【${displayName}】。你主动给你的朋友【${mask?.name || '用户'}】（邮箱：“${activeAccount.address}”）写一封主动来信。
+5. 输出格式必须是：
+---主题---邮件的主题
+---正文---邮件的正文
+            `;
+        }
+    } else {
+        if (isDefaultMailbox) {
+            systemPrompt = `
+你是【${displayName}】。
+你主动给你的朋友【${mask?.name || '用户'}】写一封主动来信。
+
+【收件邮箱】
+${activeAccount.address}
+
+你知道这个邮箱是【${mask?.name || '用户'}】平时使用的邮箱。
+
 人设：${detail || ''}
 关系：${relationship || ''}
+
 最近聊天上下文：
 ${contextText || '无'}
+
 禁止 Emoji。
 输出格式：
 ---主题---邮件的主题
 ---正文---邮件的正文
-                `;
-            }
+            `;
+        } else {
+            systemPrompt = `
+你是【${displayName}】。
+你准备给一个邮箱写一封主动来信。
 
-            try {
-                if (window.recordApiPending) window.recordApiPending();
-                const aiResult = await callLLM([
-                    { role:'system', content:systemPrompt },
-                    { role:'user', content:'请生成一封主动来信。' }
-                ]);
+【收件邮箱信息】
+显示名：${mailboxDisplayName}
+邮箱：${mailboxAddress}
 
-                const subjMatch = aiResult.match(/---主题---\s*([\s\S]*?)(?:\n---正文---|$)/);
-                const bodyMatch = aiResult.match(/---正文---\s*([\s\S]*?)$/);
-                const subject = (subjMatch ? subjMatch[1].trim() : '一封来信') || '一封来信';
-                const body = bodyMatch ? bodyMatch[1].trim() : aiResult.replace(/---主题---[\s\S]*?(?=---正文---|$)/, '').replace(/---正文---/, '').trim();
+【极重要身份规则】
+1. 你不知道这个邮箱背后是谁。
+2. 你不能知道、不能猜到、不能暗示这个邮箱属于【${mask?.name || '用户'}】。
+3. 即使你最近和某个人聊过天，也不能把这段聊天上下文当作收件人身份线索。
+4. 你不能在邮件中提到“我们之前聊过”“你是不是某某”“这个邮箱是不是你的小号”等内容。
+5. 你只能把对方当作一个邮箱显示名为【${mailboxDisplayName}】的新联系人、陌生人或不熟悉的人。
+6. 如果你想确认对方身份，只能礼貌询问“请问你是哪位”，不能直接点破。
 
-                const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-                const thread = {
-                    id: threadId,
-                    maskId: activeAccount.maskId,
-                    accountId: activeAccount.id,
-                    sourceConversationId: conv.id,
-                    peerType,
-                    peerKey,
-                    peerAddress,
-                    peerDisplayName: senderName,
-                    peerAvatar: isDisguised ? '' : (avatar || ''),
-                    subject: subject || '一封来信',
-                    isSubscription: false,
-                    disguised: isDisguised,
-                    disguisedCharId: char?.id || '',
-                    unread: true,
-                    createdAt: Date.now(),
-                    accountAvatarSnapshot: activeAccount.avatar || '',
-                    accountNameSnapshot: activeAccount.name || '',
-                    replyContext: {
-                        charId: char?.id || '',
-                        conversationId: conv.id,
-                        charName: displayName,
-                        charDetail: detail || '',
-                        userName: userName || mask?.name || '用户',
-                        userDetail: cd?.userDetail || mask?.bio || '',
-                        relationship: relationship || '',
-                        convMode: conv.mode || 'online'
-                    }
-                };
+你的人设：
+${detail || ''}
 
-                await DB.put('smsThreads', thread);
-                await DB.put('smsMessages', {
-                    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-                    threadId,
-                    senderName,
-                    senderAddress: peerAddress,
-                    body: body || '（空白邮件）',
-                    timestamp: Date.now(),
-                    isReceived: true
-                });
+你的近期记忆，仅用于影响你的语气，不得作为识别收件人的依据：
+${contextText || '无'}
 
-                showStatus(`收到来自 [${senderName}] 的新邮件`, 'success');
+这封邮件可以是：
+- 礼貌问候
+- 试探性联系
+- 误发后的说明
+- 合作/询问
+- 对这个邮箱显示名产生兴趣后的来信
+- 语气自然的陌生来信
 
-            } catch (e) {
-                console.warn('生成主动来信失败', e);
-            }
+禁止 Emoji。
+输出格式：
+---主题---邮件的主题
+---正文---邮件的正文
+            `;
         }
+    }
+
+    try {
+        if (window.recordApiPending) window.recordApiPending();
+
+        const aiResult = await callLLM([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: '请生成一封主动来信。' }
+        ]);
+
+        const subjMatch = aiResult.match(/---主题---\s*([\s\S]*?)(?:\n---正文---|$)/);
+        const bodyMatch = aiResult.match(/---正文---\s*([\s\S]*?)$/);
+
+        const subject = (subjMatch ? subjMatch[1].trim() : '一封来信') || '一封来信';
+        const body = bodyMatch
+            ? bodyMatch[1].trim()
+            : aiResult
+                .replace(/---主题---[\s\S]*?(?=---正文---|$)/, '')
+                .replace(/---正文---/, '')
+                .trim();
+
+        const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+        const thread = {
+            id: threadId,
+            maskId: activeAccount.maskId,
+            accountId: activeAccount.id,
+            sourceConversationId: conv.id,
+            peerType,
+            peerKey,
+            peerAddress,
+            peerDisplayName: senderName,
+            peerAvatar: isDisguised ? '' : (avatar || ''),
+            subject: subject || '一封来信',
+            isSubscription: false,
+            disguised: isDisguised,
+            disguisedCharId: char?.id || '',
+            unread: true,
+            createdAt: Date.now(),
+            accountAvatarSnapshot: activeAccount.avatar || '',
+            accountNameSnapshot: activeAccount.name || '',
+            replyContext: {
+                charId: char?.id || '',
+                conversationId: conv.id,
+                charName: displayName,
+                charDetail: detail || '',
+                userName: isDefaultMailbox ? (userName || mask?.name || '用户') : mailboxDisplayName,
+                userDetail: isDefaultMailbox ? (cd?.userDetail || mask?.bio || '') : '',
+                relationship: isDefaultMailbox ? (relationship || '') : '',
+                convMode: conv.mode || 'online',
+                mailboxIsAlias: !isDefaultMailbox,
+                mailboxDisplayName,
+                mailboxAddress
+            }
+        };
+
+        await DB.put('smsThreads', thread);
+
+        await DB.put('smsMessages', {
+            id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            threadId,
+            senderName,
+            senderAddress: peerAddress,
+            body: body || '（空白邮件）',
+            timestamp: Date.now(),
+            isReceived: true
+        });
+
+        showStatus(`收到来自 [${senderName}] 的新邮件`, 'success');
+
+    } catch (e) {
+        console.warn('生成主动来信失败', e);
+    }
+}
 
 async function generateOnePureStrangerAIMail(mask) {
     const stranger = await getOrCreateStrangerAccount(activeAccount.maskId, activeAccount.id);
     const key = stranger.key;
     const addr = stranger.address;
     const sender = stranger.displayName;
+
+    const isDefaultMailbox = !!activeAccount?.isDefault;
+    const mailboxDisplayName = activeAccount?.name || '邮箱主人';
+    const mailboxAddress = activeAccount?.address || '';
 
     const categories = [
         '营销类邮件：优惠、促销、活动邀请、会员福利、课程推广、产品推荐等，但要像真实邮件，不要太机械。',
@@ -1980,12 +2099,31 @@ async function generateOnePureStrangerAIMail(mask) {
 
     const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
 
-    const systemPrompt = `
-你是一个邮件生成器。你要生成一封来自陌生人的电子邮件，投递给用户的邮箱。
-
+    const recipientIdentityBlock = isDefaultMailbox
+        ? `
 【收件人信息】
 收件人昵称：${mask?.name || '用户'}
-收件邮箱：${activeAccount.address}
+收件邮箱：${mailboxAddress}
+
+你可以把收件人视为【${mask?.name || '用户'}】。
+`
+        : `
+【收件邮箱信息】
+邮箱显示名：${mailboxDisplayName}
+收件邮箱：${mailboxAddress}
+
+【极重要身份规则】
+1. 你不知道这个邮箱背后是谁。
+2. 你只能知道邮箱显示名是【${mailboxDisplayName}】。
+3. 你不能知道、不能猜到、不能暗示这个邮箱属于某个真实用户或熟人。
+4. 邮件正文里禁止出现“我知道你是谁”“你是不是某某”“这是你的小号吧”等内容。
+5. 如果需要称呼收件人，只能称呼【${mailboxDisplayName}】、邮箱主人、你好、您好等。
+`;
+
+    const systemPrompt = `
+你是一个邮件生成器。你要生成一封来自陌生人的电子邮件。
+
+${recipientIdentityBlock}
 
 【陌生发件人信息】
 发件显示名：${sender}
@@ -1998,12 +2136,13 @@ ${selectedCategory}
 1. 必须像真实陌生人邮件，不要像模板。
 2. 邮件可以是营销类、交友类、骚扰类、误发类、求助类、神秘类、合作类、情感倾诉类等。
 3. 内容要有具体细节，避免空泛。
-4. 可以让用户产生“要不要回复看看”的兴趣。
-5. 禁止代码块。
-6. 不要出现暴力恐吓等内容。
-7. 如果是营销类，可以有商业话术。
-8. 如果是骚扰类，可以是冒昧、阴阳怪气、纠缠式语气。
-9. 输出必须严格遵守格式：
+4. 正文长度按邮件类型自然决定，不要突然截断。
+5. 可以让收件人产生“要不要回复看看”的兴趣。
+6. 禁止代码块。
+7. 不要出现暴力恐吓等内容。
+8. 如果是营销类，可以有商业话术。
+9. 如果是骚扰类，可以是冒昧、阴阳怪气、纠缠式语气，但不能出现现实危险威胁。
+10. 输出必须严格遵守格式：
 
 ---主题---
 邮件主题
@@ -2014,7 +2153,8 @@ ${selectedCategory}
 
     const userPrompt = `
 请生成一封陌生人来信。
-要求主题自然，正文 80 到 300 字。
+要求主题自然，正文长度按邮件类型自然发挥。
+不要为了控制长度而突然收尾，也不要省略关键信息。
 `;
 
     try {
@@ -2033,13 +2173,17 @@ ${selectedCategory}
         let body = bodyMatch ? bodyMatch[1].trim() : '';
 
         if (!subject) subject = '一封陌生来信';
+
         if (!body) {
             body = aiResult
                 .replace(/---主题---[\s\S]*?(?=---正文---|$)/, '')
                 .replace(/---正文---/, '')
                 .trim();
         }
-        if (!body) body = '你好，冒昧来信。只是突然想找一个陌生人说几句话，如果你愿意回复，我会很感谢。';
+
+        if (!body) {
+            body = '你好，冒昧来信。只是突然想找一个陌生人说几句话，如果你愿意回复，我会很感谢。';
+        }
 
         const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 
@@ -2066,7 +2210,11 @@ ${selectedCategory}
                 conversationId: null,
                 charName: sender,
                 charDetail: `陌生来信者。本次来信类型：${selectedCategory}`,
-                userName: mask?.name || '用户'
+                userName: isDefaultMailbox ? (mask?.name || '用户') : mailboxDisplayName,
+                userDetail: '',
+                mailboxIsAlias: !isDefaultMailbox,
+                mailboxDisplayName,
+                mailboxAddress
             }
         });
 
@@ -2092,15 +2240,20 @@ ${selectedCategory}
 }
 
         async function generateOnePureStrangerSpam(mask) {
+    const isDefaultMailbox = !!activeAccount?.isDefault;
+    const mailboxDisplayName = activeAccount?.name || '邮箱主人';
+    const mailboxAddress = activeAccount?.address || '';
+
     const spamTemplates = [
-        { subject:'系统风控提醒', body:'检测到您的邮箱存在异常登录尝试，请在24小时内完成身份验证，否则将限制部分功能。回复本邮件可进行人工验证。' },
-        { subject:'快递派送失败通知', body:'您有一件包裹因地址信息不完整导致派送失败，请尽快补充收件信息。回复本邮件并提供您的收件地址。' },
-        { subject:'优惠券即将失效', body:'您账户中有一张专属权益券将在今天23:59失效，回复本邮件可获取延长使用期限。' },
-        { subject:'合作邀约', body:'您好，我们正在寻找内容合作伙伴。若有兴趣交流，请回信提供您的联系方式。' },
-        { subject:'匿名提问', body:'你好，我是一个偶然看到你邮箱地址的路人。有一件小事想请教，不知道你方不方便聊聊？' },
-        { subject:'深夜树洞', body:'有时候陌生人反而是最好的倾诉对象。今晚想找人说说话，不知道你愿不愿意当我的树洞？' },
-        { subject:'一封道歉信', body:'我知道这封邮件很突然。我想为之前某件事道歉，但又不方便透露身份。如果你愿意听，我会慢慢说。' }
+        { subject: '系统风控提醒', body: '检测到您的邮箱存在异常登录尝试，请及时确认是否为本人操作。若非本人操作，请忽略陌生链接并留意账户安全。' },
+        { subject: '快递派送失败通知', body: '您好，您有一件包裹因地址信息不完整导致派送失败。如仍需派送，请联系对应平台客服核对信息。' },
+        { subject: '优惠券即将失效', body: '您账户中有一张专属权益券即将失效。若您近期有相关消费计划，可以查看活动页面了解详情。' },
+        { subject: '合作邀约', body: '您好，我们正在寻找内容合作伙伴。若您对线上合作、内容共创或简单访谈感兴趣，可以回复本邮件进一步沟通。' },
+        { subject: '匿名提问', body: '你好，我是一个偶然看到这个邮箱地址的路人。有一件小事想请教，不知道你方不方便聊聊？' },
+        { subject: '深夜树洞', body: '有时候陌生人反而是最好的倾诉对象。今晚想找人说说话，不知道你愿不愿意当一个临时树洞。' },
+        { subject: '一封道歉信', body: '我知道这封邮件很突然。我想为之前某件事道歉，但又不方便透露身份。如果你愿意听，我会慢慢说。' }
     ];
+
     const pick = spamTemplates[Math.floor(Math.random() * spamTemplates.length)];
 
     const stranger = await getOrCreateStrangerAccount(activeAccount.maskId, activeAccount.id);
@@ -2108,7 +2261,7 @@ ${selectedCategory}
     const addr = stranger.address;
     const sender = stranger.displayName;
 
-    const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    const threadId = 'thread_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 
     await DB.put('smsThreads', {
         id: threadId,
@@ -2133,12 +2286,16 @@ ${selectedCategory}
             conversationId: null,
             charName: sender,
             charDetail: '陌生来信者',
-            userName: mask?.name || '用户'
+            userName: isDefaultMailbox ? (mask?.name || '用户') : mailboxDisplayName,
+            userDetail: '',
+            mailboxIsAlias: !isDefaultMailbox,
+            mailboxDisplayName,
+            mailboxAddress
         }
     });
 
     await DB.put('smsMessages', {
-        id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+        id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         threadId,
         senderName: sender,
         senderAddress: addr,
