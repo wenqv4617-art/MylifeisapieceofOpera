@@ -2938,7 +2938,7 @@
     </div>
         <div class="app-main">
 
- <!-- ==================== 记账与行经预测主页 ==================== -->
+<!-- ==================== 记账与行经预测主页 ==================== -->
             <div id="page-accounting" class="page">
                 <div class="chat-header">
                     <div class="chat-header-left">
@@ -3147,7 +3147,7 @@
                         </div>
                     </div>
 
-                  <div class="period-status-card">
+                    <div class="period-status-card">
                         <div class="status-header" style="display:flex; flex-direction:column; gap:10px; width:100%;">
                             <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                                 <span id="menstrualDateLabel" class="status-date-label"></span>
@@ -3156,6 +3156,61 @@
                             <div id="menstrualButtonContainer" style="display:flex; gap:8px; width:100%;">
                                 <!-- 状态按钮将由 JS 动态生成并绑定，保证单次绑定，永不重复 -->
                             </div>
+                        </div>
+                    </div>
+
+                    <div id="menstrualLogFormCard" class="period-log-card" style="display: none;">
+                        <div class="period-setting-title">今日行经症状</div>
+                        
+                        <div class="log-field">
+                            <label>血量流量</label>
+                            <div class="select-group" id="menstrualFlowGroup">
+                                <button class="select-btn" data-value="low">少</button>
+                                <button class="select-btn active" data-value="medium">中</button>
+                                <button class="select-btn" data-value="heavy">多</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>痛经程度</label>
+                            <div class="select-group" id="menstrualPainGroup">
+                                <button class="select-btn active" data-value="none">无</button>
+                                <button class="select-btn" data-value="mild">轻度</button>
+                                <button class="select-btn" data-value="moderate">中度</button>
+                                <button class="select-btn" data-value="severe">重度</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>睡眠质量</label>
+                            <div class="select-group" id="menstrualSleepGroup">
+                                <button class="select-btn" data-value="poor">差</button>
+                                <button class="select-btn" data-value="fair">一般</button>
+                                <button class="select-btn active" data-value="good">极佳</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>消化状况</label>
+                            <div class="select-group" id="menstrualDigestionGroup">
+                                <button class="select-btn" data-value="poor">差</button>
+                                <button class="select-btn active" data-value="normal">正常</button>
+                                <button class="select-btn" data-value="bloated">胀气</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>今日日志 (200字内)</label>
+                            <textarea id="menstrualDailyLogText" placeholder="点击这里，写下你今日的身体状况或身体感想..."></textarea>
+                        </div>
+
+                        <button id="menstrualSaveLogBtn" class="menstrual-action-btn primary" style="width: 100%; margin-top: 6px;">保存记录</button>
+                    </div>
+
+                    <div class="period-predictions-card">
+                        <div class="period-setting-title">周期数据与行经预测</div>
+                        <div id="menstrualPredictionDetails" class="prediction-details">
+                            分析中...
                         </div>
                     </div>
                 </div>
