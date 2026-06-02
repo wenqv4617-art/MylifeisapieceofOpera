@@ -20,7 +20,7 @@
     --tech-glass-blur: blur(16px);
 }
 
-/* 页面主背景与全局排版 */
+/* 页面背景 */
 #page-accounting {
     background: linear-gradient(135deg, var(--tech-blue-light) 0%, var(--tech-pink-light) 100%) !important;
     color: var(--tech-text-dark) !important;
@@ -266,6 +266,25 @@
     box-shadow: 0 16px 40px rgba(170, 203, 242, 0.12);
 }
 
+/* 侧边返回按钮 */
+.accounting-back-btn {
+    background: none;
+    border: 1px solid var(--tech-border-blue);
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 13px;
+    color: var(--tech-text-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.accounting-back-btn:hover {
+    background: rgba(255,255,255,0.4);
+}
+
 /* 卡片过渡面板 */
 .accounting-transition-cards {
     display: flex;
@@ -283,6 +302,7 @@
     align-items: center;
     gap: 16px;
     transition: all 0.2s;
+    cursor: pointer;
 }
 
 .accounting-transition-card:hover {
@@ -310,7 +330,7 @@
 .period-setting-title {
     font-size: 14px;
     font-weight: 700;
-    color: var(--tech-pink-dark);
+    color: var(--tech-text-dark);
     margin-bottom: 12px;
     border-left: 3px solid var(--tech-pink-primary);
     padding-left: 8px;
@@ -342,6 +362,7 @@
     font-size: 13px;
     color: var(--tech-text-dark);
     outline: none;
+    width: 100%;
 }
 
 .menstrual-action-btn {
@@ -400,7 +421,7 @@
     filter: drop-shadow(0 0 4px var(--tech-pink-glow));
 }
 
-/* 选择组（如血量、痛感按钮组） */
+/* 选择组 */
 .log-field {
     margin-bottom: 12px;
 }
@@ -447,6 +468,7 @@
     font-size: 13px;
     resize: none;
     outline: none;
+    color: var(--tech-text-dark);
 }
 
 /* 分析与预测 */
@@ -470,7 +492,7 @@
     border-bottom: none;
 }
 
-/* 其他辅助组件：输入框和普通按钮 */
+/* 输入框和按钮 */
 .accounting-form-control,
 #accountingNewTodoInput {
     background: rgba(255, 255, 255, 0.5) !important;
@@ -478,6 +500,7 @@
     border-radius: 16px !important;
     color: var(--tech-text-dark) !important;
     padding: 10px 14px !important;
+    outline: none;
 }
 
 .accounting-btn-add,
@@ -489,7 +512,7 @@
     font-weight: 600 !important;
 }
 
-/* 面具/标签管理器 */
+/* 面单/标签 */
 .accounting-collection-tabs {
     display: flex;
     gap: 4px;
@@ -509,4 +532,43 @@
 .accounting-collection-tab-btn.active {
     color: var(--tech-blue-primary) !important;
     border-bottom-color: var(--tech-blue-primary) !important;
+}
+
+/* 明细与待办事项列表 */
+.accounting-transaction-item,
+.accounting-todo-item {
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid var(--tech-border-blue);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.accounting-todo-completed .accounting-todo-text {
+    text-decoration: line-through;
+    color: var(--tech-text-muted);
+    opacity: 0.7;
+}
+
+.accounting-delete-btn,
+.accounting-todo-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--tech-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.accounting-delete-btn:hover,
+.accounting-todo-delete-btn:hover {
+    background: var(--tech-pink-light);
+    color: #e57373;
 }

@@ -2938,11 +2938,14 @@
     </div>
         <div class="app-main">
 
+ <!-- ==================== 记账与行经预测主页 ==================== -->
             <div id="page-accounting" class="page">
                 <div class="chat-header">
                     <div class="chat-header-left">
-                        <button class="back-btn clickable" id="backFromAccountingBtn">←</button>
-                        <h2>𝓒𝓪𝓵𝓮𝓷𝓭𝓪𝓻</h2>
+                        <button class="back-btn clickable" id="backFromAccountingBtn">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        </button>
+                        <h2>Calendar</h2>
                     </div>
                     <div class="header-actions"></div>
                 </div>
@@ -2950,26 +2953,34 @@
                     <div class="accounting-wrapper">
                         <div class="app-card">
                             <div class="top-bar">
-                                <h1>📒</h1>
+                                <div class="top-bar-icon">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                </div>
                                 <div class="month-nav">
-                                    <button id="accountingPrevMonthBtn">←</button>
-                                    <span class="current-month" id="accountingCurrentMonthDisplay">2025年3月</span>
-                                    <button id="accountingNextMonthBtn">→</button>
-                                    <button id="accountingTodayBtn" style="margin-left:6px; background:#d9d2c5; color:#3a3a3a;">今</button>
+                                    <button id="accountingPrevMonthBtn">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                    </button>
+                                    <span class="current-month" id="accountingCurrentMonthDisplay"></span>
+                                    <button id="accountingNextMonthBtn">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                                    </button>
+                                    <button id="accountingTodayBtn" class="today-btn">今</button>
                                 </div>
                             </div>
 
                             <div class="budget-summary">
-                                <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+                                <div class="budget-grid">
                                     <div class="month-expense-box">
-                                        <span class="summary-label">📉 当月总支出</span>
+                                        <span class="summary-label">当月总支出</span>
                                         <span class="summary-number" id="accountingMonthTotalExpense">¥0</span>
                                     </div>
                                     <div class="budget-left-box">
-                                        <span class="summary-label">✨ 剩余预算</span>
+                                        <span class="summary-label">剩余预算</span>
                                         <span class="summary-number" id="accountingBudgetRemainDisplay">¥0</span>
                                     </div>
-                                    <button class="set-budget-btn" id="accountingShowBudgetInputBtn">💰</button>
+                                    <button class="set-budget-btn" id="accountingShowBudgetInputBtn">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4v-6z"></path></svg>
+                                    </button>
                                 </div>
                                 <div id="accountingBudgetInputRow" class="budget-set-row" style="display: none;">
                                     <input type="number" id="accountingBudgetAmountInput" placeholder="月预算" min="0" step="100" value="3000">
@@ -2977,56 +2988,71 @@
                                 </div>
                             </div>
 
-                            <div class="calendar-grid">
+                            <div class="calendar-grid weekdays">
                                 <div class="weekday">一</div><div class="weekday">二</div><div class="weekday">三</div>
                                 <div class="weekday">四</div><div class="weekday">五</div><div class="weekday">六</div><div class="weekday">日</div>
                             </div>
                             <div id="accountingCalendarDaysContainer" class="calendar-grid"></div>
 
                             <div class="collection-entrance" id="accountingCollectionEntranceBtn">
-                                <div class="collection-icon">📦</div>
+                                <div class="collection-icon">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                </div>
                                 <div class="collection-info">
                                     <h3>收藏室</h3>
                                     <p>API密钥 · 网页收藏 · 更多</p>
                                 </div>
-                                <div style="margin-left: auto; font-size: 24px; opacity: 0.5;">▶</div>
+                                <div class="entrance-arrow" style="margin-left:auto;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- ==================== 过渡选择面板 ==================== -->
             <div id="accountingTransitionPanel" class="accounting-transition-panel">
                 <div class="accounting-transition-content">
                     <div class="accounting-panel-header">
-                        <button class="accounting-back-btn" id="accountingBackToCalendarFromTransition">← 返回日历</button>
-                        <span class="accounting-selected-date-title" id="accountingTransitionDateLabel">2025-03-01</span>
+                        <button class="accounting-back-btn" id="accountingBackToCalendarFromTransition">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> 返回日历
+                        </button>
+                        <span class="accounting-selected-date-title" id="accountingTransitionDateLabel"></span>
                         <span></span>
                     </div>
                     <div class="accounting-transition-cards">
                         <div class="accounting-transition-card" data-target="ledger">
-                            <span class="accounting-card-icon">💰</span>
+                            <span class="accounting-card-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                            </span>
                             <div class="accounting-card-info">
                                 <h3>每日收支</h3>
                                 <p>记账 · 查看流水</p>
                             </div>
                         </div>
                         <div class="accounting-transition-card" data-target="todo">
-                            <span class="accounting-card-icon">✅</span>
+                            <span class="accounting-card-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                            </span>
                             <div class="accounting-card-info">
                                 <h3>待办清单</h3>
                                 <p>创建任务 · 标记完成</p>
                             </div>
                         </div>
                         <div class="accounting-transition-card" data-target="reserved">
-                            <span class="accounting-card-icon">📌</span>
+                            <span class="accounting-card-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7z"></path></svg>
+                            </span>
                             <div class="accounting-card-info">
-                                <h3>预留板块</h3>
-                                <p>未来功能扩展</p>
+                                <h3>行经记录</h3>
+                                <p>月经记录 · 预测分析</p>
                             </div>
                         </div>
                         <div class="accounting-transition-card" data-target="collection">
-                            <span class="accounting-card-icon">📦</span>
+                            <span class="accounting-card-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            </span>
                             <div class="accounting-card-info">
                                 <h3>收藏室</h3>
                                 <p>API · 网页 · 资料库</p>
@@ -3036,107 +3062,196 @@
                 </div>
             </div>
 
+            <!-- ==================== 每日收支明细面板 ==================== -->
             <div id="accountingLedgerDetailPanel" class="accounting-detail-panel">
                 <div class="accounting-detail-content">
                     <div class="accounting-detail-header">
-                        <button class="accounting-back-btn" id="accountingBackToTransitionFromLedger">← 返回</button>
-                        <span class="accounting-detail-title">💰 每日收支</span>
+                        <button class="accounting-back-btn" id="accountingBackToTransitionFromLedger">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> 返回
+                        </button>
+                        <span class="accounting-detail-title">每日收支</span>
                     </div>
                     <div style="margin-bottom: 12px;">
-                        <span id="accountingLedgerDateDisplay" style="font-weight: 500; color: #4a4a4a;"></span>
+                        <span id="accountingLedgerDateDisplay" style="font-weight: 500; color: var(--tech-text-dark);"></span>
                     </div>
-                    <div class="accounting-daily-stats">
-                        <span>💰 收入: <span id="accountingDailyIncome">¥0</span></span>
-                        <span>📉 支出: <span id="accountingDailyExpense">¥0</span></span>
+                    <div class="accounting-daily-stats" style="display:flex; gap:16px; margin-bottom:12px;">
+                        <span>收入: <span id="accountingDailyIncome">¥0</span></span>
+                        <span>支出: <span id="accountingDailyExpense">¥0</span></span>
                     </div>
                     <div class="accounting-add-section">
-                        <div class="accounting-form-row">
-                            <div class="accounting-form-group">
-                                <label>项目</label>
-                                <input type="text" id="accountingDescInput" class="accounting-form-control" placeholder="餐饮/工资" maxlength="20">
+                        <div class="accounting-form-row" style="display:flex; gap:8px; margin-bottom:8px;">
+                            <div class="accounting-form-group" style="flex:1;">
+                                <label style="font-size:12px; color:var(--tech-text-muted);">项目</label>
+                                <input type="text" id="accountingDescInput" class="accounting-form-control" placeholder="餐饮/工资" maxlength="20" style="width:100%;">
                             </div>
-                            <div class="accounting-form-group">
-                                <label>金额</label>
-                                <input type="number" id="accountingAmountInput" class="accounting-form-control" placeholder="0.00" min="0.01" step="0.01">
-                            </div>
-                        </div>
-                        <div class="accounting-form-row" style="justify-content: space-between;">
-                            <div class="accounting-type-toggle" id="accountingTypeToggle">
-                                <button type="button" class="accounting-type-btn income active" data-type="income">📈 收入</button>
-                                <button type="button" class="accounting-type-btn expense" data-type="expense">📉 支出</button>
+                            <div class="accounting-form-group" style="flex:1;">
+                                <label style="font-size:12px; color:var(--tech-text-muted);">金额</label>
+                                <input type="number" id="accountingAmountInput" class="accounting-form-control" placeholder="0.00" min="0.01" step="0.01" style="width:100%;">
                             </div>
                         </div>
-                        <button class="accounting-btn-add" id="accountingAddTransactionBtn">+ 记录</button>
+                        <div class="accounting-form-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div class="accounting-type-toggle" id="accountingTypeToggle" style="display:flex; gap:6px;">
+                                <button type="button" class="accounting-type-btn income active" data-type="income" style="padding:6px 12px; border:1px solid var(--tech-border-blue); border-radius:12px; cursor:pointer;">收入</button>
+                                <button type="button" class="accounting-type-btn expense" data-type="expense" style="padding:6px 12px; border:1px solid var(--tech-border-blue); border-radius:12px; cursor:pointer;">支出</button>
+                            </div>
+                        </div>
+                        <button class="accounting-btn-add" id="accountingAddTransactionBtn" style="width:100%; padding:10px 0; cursor:pointer;">+ 记录</button>
                     </div>
-                    <h4 style="margin: 8px 0 6px; color:#3a3a3a;">📋 当日明细</h4>
-                    <ul class="accounting-transactions-list" id="accountingDetailTransactionList"></ul>
+                    <h4 style="margin: 16px 0 8px; color:var(--tech-text-dark);">当日明细</h4>
+                    <ul class="accounting-transactions-list" id="accountingDetailTransactionList" style="list-style:none; padding:0;"></ul>
                 </div>
             </div>
 
+            <!-- ==================== 待办清单面板 ==================== -->
             <div id="accountingTodoDetailPanel" class="accounting-detail-panel">
                 <div class="accounting-detail-content">
                     <div class="accounting-detail-header">
-                        <button class="accounting-back-btn" id="accountingBackToTransitionFromTodo">← 返回</button>
-                        <span class="accounting-detail-title">✅ 待办清单</span>
+                        <button class="accounting-back-btn" id="accountingBackToTransitionFromTodo">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> 返回
+                        </button>
+                        <span class="accounting-detail-title">待办清单</span>
                     </div>
                     <div style="margin-bottom: 16px;">
-                        <span id="accountingTodoDateDisplay" style="font-weight: 500; color: #4a4a4a;"></span>
+                        <span id="accountingTodoDateDisplay" style="font-weight: 500; color: var(--tech-text-dark);"></span>
                     </div>
-                    <div class="accounting-todo-input-area">
-                        <input type="text" id="accountingNewTodoInput" placeholder="写一个待办…" maxlength="30">
-                        <button class="accounting-todo-add-btn" id="accountingAddTodoBtn">＋</button>
+                    <div class="accounting-todo-input-area" style="display:flex; gap:8px; margin-bottom:12px;">
+                        <input type="text" id="accountingNewTodoInput" placeholder="写一个待办…" maxlength="30" style="flex:1;">
+                        <button class="accounting-todo-add-btn" id="accountingAddTodoBtn" style="padding:0 12px; border-radius:14px; border:none; background:var(--tech-blue-primary); color:white; cursor:pointer;">添加</button>
                     </div>
-                    <ul class="accounting-todo-list" id="accountingTodoListContainer"></ul>
+                    <ul class="accounting-todo-list" id="accountingTodoListContainer" style="list-style:none; padding:0;"></ul>
                 </div>
             </div>
 
+            <!-- ==================== 行经预测与生理记录面板 ==================== -->
             <div id="accountingReservedDetailPanel" class="accounting-detail-panel">
                 <div class="accounting-detail-content">
                     <div class="accounting-detail-header">
-                        <button class="accounting-back-btn" id="accountingBackToTransitionFromReserved">← 返回</button>
-                        <span class="accounting-detail-title">📌 预留板块</span>
+                        <button class="accounting-back-btn" id="accountingBackToTransitionFromReserved">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> 返回
+                        </button>
+                        <span class="accounting-detail-title">经期期纪</span>
                     </div>
-                    <div class="accounting-reserved-placeholder">
-                        🧩 预留板块 <br> 等待您的创意 …
+                    
+                    <div class="period-settings-card">
+                        <div class="period-setting-title">周期基础设置</div>
+                        <div class="period-setting-fields">
+                            <div class="setting-field">
+                                <label>预计周期（天）</label>
+                                <input type="number" id="menstrualIntervalInput" value="28" min="15" max="45">
+                            </div>
+                            <div class="setting-field">
+                                <label>持续行经（天）</label>
+                                <input type="number" id="menstrualDurationInput" value="5" min="2" max="14">
+                            </div>
+                            <button id="menstrualSaveSettingsBtn" class="menstrual-action-btn">保存</button>
+                        </div>
+                    </div>
+
+                    <div class="period-status-card">
+                        <div class="status-header">
+                            <span id="menstrualDateLabel" class="status-date-label"></span>
+                            <label class="switch-container">
+                                <input type="checkbox" id="menstrualTodayCheckbox">
+                                <span class="slider">今日行经</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="menstrualLogFormCard" class="period-log-card" style="display: none;">
+                        <div class="period-setting-title">今日行经症状</div>
+                        
+                        <div class="log-field">
+                            <label>血量流量</label>
+                            <div class="select-group" id="menstrualFlowGroup">
+                                <button class="select-btn" data-value="low">少</button>
+                                <button class="select-btn active" data-value="medium">中</button>
+                                <button class="select-btn" data-value="heavy">多</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>痛经程度</label>
+                            <div class="select-group" id="menstrualPainGroup">
+                                <button class="select-btn active" data-value="none">无</button>
+                                <button class="select-btn" data-value="mild">轻度</button>
+                                <button class="select-btn" data-value="moderate">中度</button>
+                                <button class="select-btn" data-value="severe">重度</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>睡眠质量</label>
+                            <div class="select-group" id="menstrualSleepGroup">
+                                <button class="select-btn" data-value="poor">差</button>
+                                <button class="select-btn" data-value="fair">一般</button>
+                                <button class="select-btn active" data-value="good">极佳</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>消化状况</label>
+                            <div class="select-group" id="menstrualDigestionGroup">
+                                <button class="select-btn" data-value="poor">差</button>
+                                <button class="select-btn active" data-value="normal">正常</button>
+                                <button class="select-btn" data-value="bloated">胀气</button>
+                            </div>
+                        </div>
+
+                        <div class="log-field">
+                            <label>今日日志 (200字内)</label>
+                            <textarea id="menstrualDailyLogText" placeholder="点击这里，写下你今日的身体状况或身体感想..."></textarea>
+                        </div>
+
+                        <button id="menstrualSaveLogBtn" class="menstrual-action-btn primary" style="width: 100%; margin-top: 6px;">保存记录</button>
+                    </div>
+
+                    <div class="period-predictions-card">
+                        <div class="period-setting-title">周期数据与行经预测</div>
+                        <div id="menstrualPredictionDetails" class="prediction-details">
+                            分析中...
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- ==================== 收藏室面板 ==================== -->
             <div id="accountingCollectionPanel" class="accounting-detail-panel">
                 <div class="accounting-detail-content">
                     <div class="accounting-detail-header">
-                        <button class="accounting-back-btn" id="accountingBackToTransitionFromCollection">← 返回</button>
-                        <span class="accounting-detail-title">📦 收藏室</span>
+                        <button class="accounting-back-btn" id="accountingBackToTransitionFromCollection">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> 返回
+                        </button>
+                        <span class="accounting-detail-title">收藏室</span>
                     </div>
 
                     <div class="accounting-collection-tabs">
-                        <button class="accounting-collection-tab-btn active" data-collection-tab="api">🔌 API管理器</button>
-                        <button class="accounting-collection-tab-btn" data-collection-tab="web">🌐 网页收藏器</button>
-                        <button class="accounting-collection-tab-btn" data-collection-tab="placeholder">📌 板块3</button>
+                        <button class="accounting-collection-tab-btn active" data-collection-tab="api">API管理器</button>
+                        <button class="accounting-collection-tab-btn" data-collection-tab="web">网页收藏器</button>
+                        <button class="accounting-collection-tab-btn" data-collection-tab="placeholder">板块3</button>
                     </div>
 
                     <div id="accountingCollectionViewApi" class="accounting-collection-view">
-                        <div class="accounting-section-header">
+                        <div class="accounting-section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <h2>API 密钥库</h2>
-                            <button class="accounting-btn-primary" id="accountingShowApiFormBtn">➕ 新建API</button>
+                            <button class="accounting-btn-primary" id="accountingShowApiFormBtn" style="padding:6px 12px; cursor:pointer;">新建API</button>
                         </div>
-                        <div id="accountingApiCreateCard" class="accounting-create-card" style="display: none;">
-                            <div class="accounting-form-row">
+                        <div id="accountingApiCreateCard" class="accounting-create-card" style="display: none; padding:12px; border:1px dashed var(--tech-border-blue); border-radius:14px; margin-bottom:12px;">
+                            <div class="accounting-form-row" style="display:flex; flex-direction:column; gap:8px;">
                                 <div class="accounting-form-group">
-                                    <label>名称</label>
-                                    <input type="text" id="accountingApiNameInput" placeholder="例: OpenAI">
+                                    <label style="font-size:12px;">名称</label>
+                                    <input type="text" id="accountingApiNameInput" placeholder="例: OpenAI" style="width:100%; padding:6px;">
                                 </div>
                                 <div class="accounting-form-group">
-                                    <label>URL</label>
-                                    <input type="text" id="accountingApiUrlInput" placeholder="https://api.example.com">
+                                    <label style="font-size:12px;">URL</label>
+                                    <input type="text" id="accountingApiUrlInput" placeholder="https://api.example.com" style="width:100%; padding:6px;">
                                 </div>
                                 <div class="accounting-form-group">
-                                    <label>API Key</label>
-                                    <input type="text" id="accountingApiKeyInput" placeholder="sk-...">
+                                    <label style="font-size:12px;">API Key</label>
+                                    <input type="text" id="accountingApiKeyInput" placeholder="sk-..." style="width:100%; padding:6px;">
                                 </div>
-                                <div style="display: flex; gap: 8px; align-items: flex-end;">
-                                    <button class="accounting-btn-primary" id="accountingSaveApiBtn">保存</button>
-                                    <button class="accounting-btn-outline" id="accountingCancelApiBtn">取消</button>
+                                <div style="display: flex; gap: 8px; justify-content:flex-end;">
+                                    <button class="accounting-btn-primary" id="accountingSaveApiBtn" style="padding:6px 12px; cursor:pointer;">保存</button>
+                                    <button class="accounting-btn-outline" id="accountingCancelApiBtn" style="padding:6px 12px; cursor:pointer;">取消</button>
                                 </div>
                             </div>
                         </div>
@@ -3144,27 +3259,27 @@
                     </div>
 
                     <div id="accountingCollectionViewWeb" class="accounting-collection-view">
-                        <div class="accounting-section-header">
+                        <div class="accounting-section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <h2>网页收藏</h2>
-                            <button class="accounting-btn-primary" id="accountingShowWebFormBtn">➕ 新建网页</button>
+                            <button class="accounting-btn-primary" id="accountingShowWebFormBtn" style="padding:6px 12px; cursor:pointer;">新建网页</button>
                         </div>
-                        <div id="accountingWebCreateCard" class="accounting-create-card" style="display: none;">
-                            <div class="accounting-form-row">
+                        <div id="accountingWebCreateCard" class="accounting-create-card" style="display: none; padding:12px; border:1px dashed var(--tech-border-blue); border-radius:14px; margin-bottom:12px;">
+                            <div class="accounting-form-row" style="display:flex; flex-direction:column; gap:8px;">
                                 <div class="accounting-form-group">
-                                    <label>名称</label>
-                                    <input type="text" id="accountingWebNameInput" placeholder="例: 设计系统">
+                                    <label style="font-size:12px;">名称</label>
+                                    <input type="text" id="accountingWebNameInput" placeholder="例: 设计系统" style="width:100%; padding:6px;">
                                 </div>
                                 <div class="accounting-form-group">
-                                    <label>链接</label>
-                                    <input type="text" id="accountingWebUrlInput" placeholder="https://...">
+                                    <label style="font-size:12px;">链接</label>
+                                    <input type="text" id="accountingWebUrlInput" placeholder="https://..." style="width:100%; padding:6px;">
                                 </div>
                                 <div class="accounting-form-group">
-                                    <label>备注</label>
-                                    <input type="text" id="accountingWebNoteInput" placeholder="备注信息">
+                                    <label style="font-size:12px;">备注</label>
+                                    <input type="text" id="accountingWebNoteInput" placeholder="备注信息" style="width:100%; padding:6px;">
                                 </div>
-                                <div style="display: flex; gap: 8px; align-items: flex-end;">
-                                    <button class="accounting-btn-primary" id="accountingSaveWebBtn">保存</button>
-                                    <button class="accounting-btn-outline" id="accountingCancelWebBtn">取消</button>
+                                <div style="display: flex; gap: 8px; justify-content:flex-end;">
+                                    <button class="accounting-btn-primary" id="accountingSaveWebBtn" style="padding:6px 12px; cursor:pointer;">保存</button>
+                                    <button class="accounting-btn-outline" id="accountingCancelWebBtn" style="padding:6px 12px; cursor:pointer;">取消</button>
                                 </div>
                             </div>
                         </div>
@@ -3172,8 +3287,8 @@
                     </div>
 
                     <div id="accountingCollectionViewPlaceholder" class="accounting-collection-view">
-                        <div class="accounting-section-header"><h2>📁 板块3</h2></div>
-                        <div class="accounting-placeholder-content">⏳ 占位区域 · 未来扩展</div>
+                        <div class="accounting-section-header"><h2>板块3</h2></div>
+                        <div class="accounting-placeholder-content" style="text-align:center; padding:20px; color:var(--tech-text-muted);">占位区域 · 未来扩展</div>
                     </div>
                 </div>
             </div>
