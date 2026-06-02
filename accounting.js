@@ -1,6 +1,6 @@
 // ============================================
 // 记账与月经预测模块 - accounting.js
-// 版本：v2.1 (静态绑定 & 生理多维计算版)
+// 版本：v2.2 (生理状态控制与绑防重复版)
 // ============================================
 
 (function() {
@@ -132,7 +132,7 @@
         localStorage.setItem(ACCOUNTING_WEB_KEY, JSON.stringify(accountingWebItems)); 
     }
 
-    // ==================== 生理期、排卵期及黄体期预测逻辑 ====================
+    // ==================== 月经期生理预测逻辑 ====================
     function menstrualLoadData() {
         try {
             const p = localStorage.getItem('menstrual_periods_v1');
@@ -155,7 +155,7 @@
         localStorage.setItem('menstrual_daily_logs_v1', JSON.stringify(menstrualDailyLogs));
     }
 
-    // 生理期自动合并逻辑（若相邻两次记录的时间相隔不超过 2 天，合并为一个行经期）
+    // 生理期自动合并逻辑（若相邻两次记录的时间相隔不超过 2 天，自动合并为一个周期）
     function menstrualMergePeriods(periods) {
         if (periods.length <= 1) return periods;
         periods.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
@@ -194,7 +194,7 @@
         });
     }
 
-    // 今日行经：自动标记今天往后共 N 天为行经状态
+    // 开始行经：自动标记今天往后共 N 天为行经状态
     function menstrualAddPeriodSequence(startDateStr, duration) {
         const start = new Date(startDateStr);
         for (let i = 0; i < duration; i++) {
@@ -213,7 +213,39 @@
         menstrualSaveAll();
     }
 
-    // 智能向后推算行经期日历占位
+    // 行经结束于今日
+    function menstrualEndPeriodOnDate(dateStr) {
+        const targetDate = new Date(dateStr);
+        let changed = false;
+        
+        menstrualPeriods.forEach(p => {
+            const start = new Date(p.startDate);
+            const end = new Date(p.endDate);
+            
+            if (targetDate >= start && targetDate <= end) {
+                p.endDate = dateStr;
+                changed = true;
+            }
+        });
+        
+        if (changed) {
+            menstrualPeriods = menstrualMergePeriods(menstrualPeriods);
+            menstrualSaveAll();
+            accountingRenderCalendar();
+            menstrualOpenPeriodPanel();
+            showStatus('✅ 经期已结束于本日', 'success');
+        }
+    }
+
+    // 清除今日行经记录（智能断开碎片）
+    function menstrualClearDatePeriod(dateStr) {
+        menstrualSetDatePeriod(dateStr, false);
+        accountingRenderCalendar();
+        menstrualOpenPeriodPanel();
+        showStatus('✅ 经期记录已清除', 'success');
+    }
+
+    // 智能向后推算行经期，支持连续多月向后投影
     function menstrualGetPredictedPeriodDays(year, month) {
         const predictedDays = new Set();
         if (menstrualPeriods.length === 0) return predictedDays;
@@ -340,6 +372,7 @@
         menstrualSaveAll();
     }
 
+    // 绑定多组生理状态打分组件的事件监听
     function menstrualSetupSelectGroups() {
         const groups = ['menstrualFlowGroup', 'menstrualPainGroup', 'menstrualSleepGroup', 'menstrualDigestionGroup'];
         groups.forEach(gId => {
@@ -433,11 +466,41 @@
         if (display) display.textContent = accountingSelectedDateStr;
         
         const inPeriod = menstrualIsDateInActualPeriod(accountingSelectedDateStr);
-        const chk = document.getElementById('menstrualTodayCheckbox');
-        if (chk) chk.checked = inPeriod;
-        
+        const statusText = document.getElementById('menstrualStatusText');
+        const btnContainer = document.getElementById('menstrualButtonContainer');
         const logCard = document.getElementById('menstrualLogFormCard');
-        if (logCard) logCard.style.display = inPeriod ? 'block' : 'none';
+        
+        if (btnContainer) {
+            if (inPeriod) {
+                if (statusText) statusText.textContent = '今日处于行经状态';
+                btnContainer.innerHTML = `
+                    <button id="menstrualEndTodayBtn" class="menstrual-action-btn" style="flex:1; background: var(--tech-pink-primary); color: var(--tech-pink-dark);">结束于今日</button>
+                    <button id="menstrualClearTodayBtn" class="menstrual-action-btn" style="flex:1; background: rgba(0,0,0,0.05); color: var(--tech-text-dark); border: 1px solid var(--tech-border-blue);">清除今日记录</button>
+                `;
+                if (logCard) logCard.style.display = 'block';
+                
+                // 绑定多功能状态切换按钮 (动态覆盖旧事件)
+                document.getElementById('menstrualEndTodayBtn').addEventListener('click', () => {
+                    menstrualEndPeriodOnDate(accountingSelectedDateStr);
+                });
+                document.getElementById('menstrualClearTodayBtn').addEventListener('click', () => {
+                    menstrualClearDatePeriod(accountingSelectedDateStr);
+                });
+            } else {
+                if (statusText) statusText.textContent = '今日非行经状态';
+                btnContainer.innerHTML = `
+                    <button id="menstrualStartBtn" class="menstrual-action-btn primary" style="flex:1;">开始行经</button>
+                `;
+                if (logCard) logCard.style.display = 'none';
+                
+                document.getElementById('menstrualStartBtn').addEventListener('click', () => {
+                    const duration = menstrualSettings.defaultDuration || 5;
+                    menstrualAddPeriodSequence(accountingSelectedDateStr, duration);
+                    menstrualOpenPeriodPanel(); // 刷新内部按钮绑定状态
+                    accountingRenderCalendar(); // 刷新日历
+                });
+            }
+        }
         
         menstrualLoadDailyLogForDate(accountingSelectedDateStr);
         
@@ -970,24 +1033,6 @@
             }
         });
 
-        // 今日行经开关 (绑定多天连带设置逻辑)
-        document.getElementById('menstrualTodayCheckbox')?.addEventListener('change', (e) => {
-            const checked = e.target.checked;
-            if (checked) {
-                const duration = menstrualSettings.defaultDuration || 5;
-                menstrualAddPeriodSequence(accountingSelectedDateStr, duration);
-            } else {
-                menstrualSetDatePeriod(accountingSelectedDateStr, false);
-            }
-            
-            accountingRenderCalendar();
-            
-            const logCard = document.getElementById('menstrualLogFormCard');
-            if (logCard) logCard.style.display = checked ? 'block' : 'none';
-            
-            menstrualUpdatePredictionCard();
-        });
-
         // 生理日志保存
         document.getElementById('menstrualSaveLogBtn')?.addEventListener('click', () => {
             const dateStr = accountingSelectedDateStr;
@@ -1006,13 +1051,13 @@
             accountingRenderCalendar();
         });
 
-        // 返回日历主页
+        // 返回日历
         document.getElementById('accountingBackToCalendarFromTransition')?.addEventListener('click', () => {
             accountingCloseAllPanels();
             accountingRenderCalendar();
         });
 
-        // 过渡选择面板分流
+        // 过渡面板事件分发
         document.querySelectorAll('.accounting-transition-card').forEach(card => {
             card.addEventListener('click', () => {
                 const target = card.dataset.target;
@@ -1026,7 +1071,7 @@
             });
         });
 
-        // 二级面板返回键
+        // 返回过渡面板
         document.getElementById('accountingBackToTransitionFromLedger')?.addEventListener('click', () => {
             document.getElementById('accountingLedgerDetailPanel').style.display = 'none';
             document.getElementById('accountingTransitionPanel').style.display = 'block';
@@ -1049,13 +1094,13 @@
             accountingOpenCollectionPanel();
         });
 
-        // 记账添加
+        // 记账表单
         document.getElementById('accountingAddTransactionBtn')?.addEventListener('click', accountingAddTransaction);
         document.getElementById('accountingAmountInput')?.addEventListener('keypress', e => { 
             if (e.key === 'Enter') accountingAddTransaction(); 
         });
 
-        // 收支选择
+        // 收支类型
         document.querySelectorAll('.accounting-type-btn').forEach(btn => {
             btn.addEventListener('click', () => accountingSetActiveType(btn.dataset.type));
         });
@@ -1066,12 +1111,12 @@
             if (e.key === 'Enter') accountingAddTodo(); 
         });
 
-        // 收藏选项卡
+        // 收藏室选项卡
         document.querySelectorAll('.accounting-collection-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => accountingSwitchCollectionTab(btn.dataset.collectionTab));
         });
 
-        // 新建 API 密钥配置
+        // 新建 API 配置
         document.getElementById('accountingShowApiFormBtn')?.addEventListener('click', () => {
             document.getElementById('accountingApiCreateCard').style.display = 'block';
         });
