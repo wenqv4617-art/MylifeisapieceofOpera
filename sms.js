@@ -635,12 +635,14 @@ const recipientCloseBtn = document.getElementById('smsRecipientPickerCloseBtn');
 
 function refreshRecipientDisplay() {
     const item = getRecipientItem(toSel.value);
+
     if (!item) {
         toNameEl.textContent = '选择收件人';
         toSubEl.textContent = '';
         toAvatarEl.style.backgroundImage = '';
         toAvatarEl.style.backgroundColor = '#5f6368';
         toAvatarEl.textContent = '?';
+        toCustomRow.style.display = 'none';
         return;
     }
 
@@ -657,9 +659,148 @@ function refreshRecipientDisplay() {
         toAvatarEl.style.backgroundImage = '';
         toAvatarEl.style.backgroundColor =
             item.type === 'random' ? '#9334e6' :
-            item.type === 'custom' ? '#5f6368'
+            item.type === 'custom' ? '#5f6368' :
+            item.type === 'stranger' ? '#d93025' :
+            getAvatarColor(item.name || '?');
 
-            document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
+        toAvatarEl.textContent =
+            item.type === 'custom' ? '@' :
+            item.type === 'random' ? '漂' :
+            (item.name || '?').charAt(0);
+    }
+
+    toCustomRow.style.display = item.val === 'custom' ? 'flex' : 'none';
+}
+
+function renderRecipientPickerList() {
+    recipientListEl.innerHTML = recipientItems.map(item => {
+        const avatarStyle = item.avatar
+            ? `background-image:url('${item.avatar}');background-size:cover;background-position:center;`
+            : `background-color:${
+                item.type === 'random' ? '#9334e6' :
+                item.type === 'custom' ? '#5f6368' :
+                item.type === 'stranger' ? '#d93025' :
+                getAvatarColor(item.name || '?')
+            };`;
+
+        const avatarText = item.avatar
+            ? ''
+            : item.type === 'custom'
+                ? '@'
+                : item.type === 'random'
+                    ? '漂'
+                    : (item.name || '?').charAt(0);
+
+        const badge =
+            item.type === 'conversation'
+                ? '<span style="font-size:11px;color:#1a73e8;background:#e8f0fe;padding:2px 6px;border-radius:10px;">联系人</span>'
+                : item.type === 'stranger'
+                    ? '<span style="font-size:11px;color:#d93025;background:#fce8e6;padding:2px 6px;border-radius:10px;">陌生人</span>'
+                    : item.type === 'random'
+                        ? '<span style="font-size:11px;color:#9334e6;background:#f3e8fd;padding:2px 6px;border-radius:10px;">漂流瓶</span>'
+                        : '<span style="font-size:11px;color:#5f6368;background:#f1f3f4;padding:2px 6px;border-radius:10px;">自定义</span>';
+
+        const activeStyle = item.val === toSel.value
+            ? 'background:#e8f0fe;'
+            : 'background:#fff;';
+
+        return `
+            <div class="sms-recipient-card" data-val="${escapeHtml(item.val)}" style="
+                display:flex;
+                align-items:center;
+                gap:12px;
+                padding:12px 16px;
+                cursor:pointer;
+                border-bottom:1px solid #f1f3f4;
+                ${activeStyle}
+            ">
+                <div class="sms-sender-avatar" style="
+                    ${avatarStyle}
+                    width:38px;
+                    height:38px;
+                    font-size:14px;
+                    margin-right:0;
+                    flex-shrink:0;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    color:#fff;
+                    font-weight:600;
+                ">${escapeHtml(avatarText)}</div>
+
+                <div style="flex:1;min-width:0;">
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        gap:6px;
+                        min-width:0;
+                    ">
+                        <span style="
+                            font-size:14px;
+                            font-weight:500;
+                            color:#202124;
+                            overflow:hidden;
+                            text-overflow:ellipsis;
+                            white-space:nowrap;
+                        ">${escapeHtml(item.name || '未知收件人')}</span>
+                        ${badge}
+                    </div>
+                    <div style="
+                        font-size:12px;
+                        color:#5f6368;
+                        margin-top:3px;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                        white-space:nowrap;
+                    ">${escapeHtml(item.subtitle || item.peerAddress || '')}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    recipientListEl.querySelectorAll('.sms-recipient-card').forEach(card => {
+        card.addEventListener('click', () => {
+            toSel.value = card.dataset.val;
+            refreshRecipientDisplay();
+            recipientOverlay.style.display = 'none';
+        });
+    });
+}
+
+function openRecipientPicker() {
+    renderRecipientPickerList();
+    recipientOverlay.style.display = 'flex';
+}
+
+function closeRecipientPicker() {
+    recipientOverlay.style.display = 'none';
+}
+
+if (presetFromId) {
+    fromSel.value = presetFromId;
+}
+
+if (presetToVal) {
+    toSel.value = presetToVal;
+} else if (recipientItems.length) {
+    toSel.value = recipientItems[0].val;
+} else {
+    toSel.value = 'custom';
+}
+
+refreshRecipientDisplay();
+
+toPickerBtn.addEventListener('click', openRecipientPicker);
+
+recipientCloseBtn.addEventListener('click', closeRecipientPicker);
+
+recipientOverlay.addEventListener('click', function(e) {
+    if (e.target === recipientOverlay) {
+        closeRecipientPicker();
+    }
+});
+
+document.getElementById('smsComposeBackBtn').addEventListener('click', () => {
                 if (replyThread) openThreadDetail(replyThread.id);
                 else renderInbox();
             });
