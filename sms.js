@@ -561,7 +561,7 @@ recipientItems.push({
                             <span class="sms-compose-label">主题：</span>
                             <input type="text" class="sms-compose-input" id="smsComposeSubject" maxlength="150" value="${escapeHtml(presetSubject)}">
                         </div>
-                        <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="3000">${escapeHtml(presetBody)}</textarea>
+                        <textarea class="sms-compose-body" id="smsComposeBody" placeholder="撰写电子邮件内容..." maxlength="10000">${escapeHtml(presetBody)}</textarea>
                     </div>
                 </div>
 
