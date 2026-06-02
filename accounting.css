@@ -153,8 +153,8 @@
 }
 
 #page-accounting .calendar-day {
-    background: rgba(255, 255, 255, 0.35) !important;
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
     border-radius: 14px !important;
     min-height: 56px !important;
     padding: 6px 4px 4px !important;
@@ -165,7 +165,7 @@
 }
 
 #page-accounting .calendar-day:hover {
-    background: rgba(255, 255, 255, 0.7) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
     border-color: var(--tech-blue-primary) !important;
 }
 
@@ -195,26 +195,82 @@
     font-family: monospace;
 }
 
-/* 经期状态标志 */
+/* -------------------- 经期多维度色彩分级渲染 -------------------- */
 #page-accounting .calendar-day.period-actual {
-    background: var(--tech-pink-light) !important;
-    border: 1.5px solid var(--tech-pink-primary) !important;
     box-shadow: 0 0 10px rgba(245, 188, 203, 0.2) !important;
 }
 
-#page-accounting .calendar-day.period-actual .day-number {
-    color: var(--tech-pink-dark) !important;
+/* 1. 流量：少 (最淡粉色) */
+#page-accounting .calendar-day.period-actual-low {
+    background-color: #fff0f2 !important;
+    border: 1.5px solid #fbc6d3 !important;
+}
+#page-accounting .calendar-day.period-actual-low .day-number {
+    color: #8c5361 !important;
 }
 
+/* 2. 流量：中 (标准粉色) */
+#page-accounting .calendar-day.period-actual-medium {
+    background-color: #fdbccb !important;
+    border: 1.5px solid #f79cb2 !important;
+}
+#page-accounting .calendar-day.period-actual-medium .day-number {
+    color: #732a39 !important;
+}
+
+/* 3. 流量：多 (高饱和深玫红) */
+#page-accounting .calendar-day.period-actual-heavy {
+    background-color: #f595ac !important;
+    border: 1.5px solid #e35a78 !important;
+}
+#page-accounting .calendar-day.period-actual-heavy .day-number {
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 4. 预测行经期 */
 #page-accounting .calendar-day.period-predicted {
-    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(245, 188, 203, 0.1) 100%) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(245, 188, 203, 0.08) 100%) !important;
     border: 1.5px dashed var(--tech-pink-primary) !important;
 }
+
+/* 5. 排卵期 (薰衣草浅紫) */
+#page-accounting .calendar-day.period-ovulation {
+    background-color: #f6ecfc !important;
+    border: 1.5px solid #dcbcf5 !important;
+}
+#page-accounting .calendar-day.period-ovulation .day-number {
+    color: #5c387d !important;
+}
+
+/* 6. 黄体期 (秋叶暖澄橙) */
+#page-accounting .calendar-day.period-luteal {
+    background-color: #fdf5eb !important;
+    border: 1.5px solid #f5d6b3 !important;
+}
+#page-accounting .calendar-day.period-luteal .day-number {
+    color: #8c5b2a !important;
+}
+
+/* ------------------------------------------------------------- */
 
 /* 今日/选中高亮 */
 #page-accounting .today-cell {
     border: 2px solid var(--tech-blue-primary) !important;
     background: var(--tech-blue-light) !important;
+}
+
+/* 日期格子的区分：非本月日期框样式淡化设计 */
+#page-accounting .calendar-day.other-month {
+    background: rgba(244, 245, 246, 0.25) !important;
+    border: 1.5px solid rgba(220, 224, 230, 0.15) !important;
+    opacity: 0.55;
+    box-shadow: none !important;
+}
+
+#page-accounting .calendar-day.other-month .day-number {
+    color: var(--tech-text-muted) !important;
+    font-weight: 400 !important;
 }
 
 /* 收藏室入口 */
@@ -246,7 +302,7 @@
     color: var(--tech-text-muted);
 }
 
-/* ==================== 详情面板核心固定全屏定位 (已修正) ==================== */
+/* 详情与二级面板通用全屏定位 */
 .accounting-transition-panel {
     position: fixed !important;
     top: 0 !important;
@@ -256,7 +312,7 @@
     z-index: 1000 !important;
     overflow-y: auto !important;
     padding: 20px 16px !important;
-    display: none; /* 默认隐藏，由 JS 控制显示 */
+    display: none;
     background: linear-gradient(135deg, var(--tech-blue-light) 0%, var(--tech-pink-light) 100%) !important;
     color: var(--tech-text-dark) !important;
 }
@@ -270,7 +326,7 @@
     z-index: 1100 !important;
     overflow-y: auto !important;
     padding: 20px 16px !important;
-    display: none; /* 默认隐藏，由 JS 控制显示 */
+    display: none;
     background: linear-gradient(135deg, var(--tech-blue-light) 0%, var(--tech-pink-light) 100%) !important;
     color: var(--tech-text-dark) !important;
 }
@@ -288,7 +344,7 @@
     box-shadow: 0 16px 40px rgba(170, 203, 242, 0.12) !important;
 }
 
-/* 侧边返回按钮 */
+/* 侧边返回 */
 .accounting-back-btn {
     background: none;
     border: 1px solid var(--tech-border-blue);
@@ -337,7 +393,7 @@
     color: var(--tech-blue-primary);
 }
 
-/* 经期个人设置样式 */
+/* 经期大面板与卡片 */
 .period-settings-card,
 .period-status-card,
 .period-log-card,
@@ -403,7 +459,7 @@
     opacity: 0.8;
 }
 
-/* 今日行经 Toggle */
+/* 今日行经 Toggle Slider */
 .status-header {
     display: flex;
     justify-content: space-between;
@@ -443,7 +499,7 @@
     filter: drop-shadow(0 0 4px var(--tech-pink-glow));
 }
 
-/* 经期记录表单 */
+/* 打分选择组 */
 .log-field {
     margin-bottom: 12px;
 }
@@ -479,7 +535,7 @@
     font-weight: bold;
 }
 
-/* 行经日志 */
+/* 日志输入框 */
 #menstrualDailyLogText {
     width: 100%;
     height: 64px;
@@ -493,7 +549,7 @@
     color: var(--tech-text-dark);
 }
 
-/* 经期预测信息 */
+/* 预测分析单项 */
 .prediction-details {
     display: flex;
     flex-direction: column;
@@ -514,7 +570,7 @@
     border-bottom: none;
 }
 
-/* 其他输入框/按钮 */
+/* 其他基础部件 */
 .accounting-form-control,
 #accountingNewTodoInput {
     background: rgba(255, 255, 255, 0.5) !important;
@@ -534,7 +590,7 @@
     font-weight: 600 !important;
 }
 
-/* 收藏卡片选项卡 */
+/* 收藏室选项卡 */
 .accounting-collection-tabs {
     display: flex;
     gap: 4px;
@@ -556,7 +612,7 @@
     border-bottom-color: var(--tech-blue-primary) !important;
 }
 
-/* 收支明细项目与待办项 */
+/* 流水列表及待办列表项目 */
 .accounting-transaction-item,
 .accounting-todo-item {
     background: rgba(255, 255, 255, 0.45);

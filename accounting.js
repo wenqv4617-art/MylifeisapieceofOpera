@@ -1,6 +1,6 @@
 // ============================================
 // 记账与月经预测模块 - accounting.js
-// 版本：v2.0 (完全静态绑定版本)
+// 版本：v2.1 (静态绑定 & 生理多维计算版)
 // ============================================
 
 (function() {
@@ -15,7 +15,6 @@
         accountingSetActiveType('income');
         accountingRenderCalendar();
         accountingBindEvents();
-        menstrualSetupSelectGroups();
     };
 
     // ==================== 状态库 ====================
@@ -133,7 +132,7 @@
         localStorage.setItem(ACCOUNTING_WEB_KEY, JSON.stringify(accountingWebItems)); 
     }
 
-    // ==================== 月经经期业务逻辑 ====================
+    // ==================== 生理期、排卵期及黄体期预测逻辑 ====================
     function menstrualLoadData() {
         try {
             const p = localStorage.getItem('menstrual_periods_v1');
@@ -156,7 +155,7 @@
         localStorage.setItem('menstrual_daily_logs_v1', JSON.stringify(menstrualDailyLogs));
     }
 
-    // 生理期自动合并逻辑（若相邻两次记录的时间相隔不超过 2 天，自动合并为一个周期）
+    // 生理期自动合并逻辑（若相邻两次记录的时间相隔不超过 2 天，合并为一个行经期）
     function menstrualMergePeriods(periods) {
         if (periods.length <= 1) return periods;
         periods.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
@@ -195,7 +194,26 @@
         });
     }
 
-    // 智能向后推算行经期，支持连续多月向后投影
+    // 今日行经：自动标记今天往后共 N 天为行经状态
+    function menstrualAddPeriodSequence(startDateStr, duration) {
+        const start = new Date(startDateStr);
+        for (let i = 0; i < duration; i++) {
+            const current = new Date(start);
+            current.setDate(start.getDate() + i);
+            const currentStr = accountingGetDateStr(current.getFullYear(), current.getMonth(), current.getDate());
+            
+            if (!menstrualIsDateInActualPeriod(currentStr)) {
+                menstrualPeriods.push({
+                    id: accountingGenId(),
+                    startDate: currentStr,
+                    endDate: currentStr
+                });
+            }
+        }
+        menstrualSaveAll();
+    }
+
+    // 智能向后推算行经期日历占位
     function menstrualGetPredictedPeriodDays(year, month) {
         const predictedDays = new Set();
         if (menstrualPeriods.length === 0) return predictedDays;
@@ -207,7 +225,6 @@
         const interval = menstrualSettings.defaultInterval || 28;
         const duration = menstrualSettings.defaultDuration || 5;
         
-        // 计算推算12个未来周期的日历占位
         for (let i = 1; i <= 12; i++) {
             const predStart = new Date(latestStart);
             predStart.setDate(latestStart.getDate() + (i * interval));
@@ -225,7 +242,60 @@
         return predictedDays;
     }
 
-    // 设定行经/取消行经及智能断点切割
+    // 获取特定年份月份的排卵期和黄体期预测
+    function menstrualGetPhasesForYearMonth(year, month) {
+        const ovulationDays = new Set();
+        const lutealDays = new Set();
+        const interval = menstrualSettings.defaultInterval || 28;
+
+        // 收集所有的行经开始基准点 (包括实际开始和预测的未来开始点)
+        const cycleStarts = [];
+        
+        menstrualPeriods.forEach(p => {
+            cycleStarts.push(new Date(p.startDate));
+        });
+
+        menstrualPeriods.forEach(p => {
+            const start = new Date(p.startDate);
+            for (let i = 1; i <= 12; i++) {
+                const predStart = new Date(start);
+                predStart.setDate(start.getDate() + (i * interval));
+                cycleStarts.push(predStart);
+            }
+        });
+
+        // 基于每一个行经点，向前计算排卵期与黄体期
+        cycleStarts.forEach(start => {
+            const nextStart = new Date(start);
+            nextStart.setDate(start.getDate() + interval);
+
+            // 排卵期 (Ovulation window)：下个经期前19天至前14天 (共6天)
+            const ovulationStart = new Date(nextStart);
+            ovulationStart.setDate(nextStart.getDate() - 19);
+            const ovulationEnd = new Date(nextStart);
+            ovulationEnd.setDate(nextStart.getDate() - 14);
+
+            // 黄体期 (Luteal phase)：下个经期前13天至前1天
+            const lutealStart = new Date(nextStart);
+            lutealStart.setDate(nextStart.getDate() - 13);
+            const lutealEnd = new Date(nextStart);
+            lutealEnd.setDate(nextStart.getDate() - 1);
+
+            for (let d = new Date(ovulationStart); d <= ovulationEnd; d.setDate(d.getDate() + 1)) {
+                if (d.getFullYear() === year && d.getMonth() === month) {
+                    ovulationDays.add(accountingGetDateStr(year, month, d.getDate()));
+                }
+            }
+            for (let d = new Date(lutealStart); d <= lutealEnd; d.setDate(d.getDate() + 1)) {
+                if (d.getFullYear() === year && d.getMonth() === month) {
+                    lutealDays.add(accountingGetDateStr(year, month, d.getDate()));
+                }
+            }
+        });
+
+        return { ovulationDays, lutealDays };
+    }
+
     function menstrualSetDatePeriod(dateStr, isPeriod) {
         if (isPeriod) {
             if (menstrualIsDateInActualPeriod(dateStr)) return;
@@ -243,7 +313,6 @@
                 const end = new Date(p.endDate);
                 
                 if (targetDate >= start && targetDate <= end) {
-                    // 左侧行经碎片切分
                     const leftEnd = new Date(targetDate);
                     leftEnd.setDate(targetDate.getDate() - 1);
                     if (leftEnd >= start) {
@@ -253,7 +322,6 @@
                             endDate: accountingGetDateStr(leftEnd.getFullYear(), leftEnd.getMonth(), leftEnd.getDate())
                         });
                     }
-                    // 右侧行经碎片切分
                     const rightStart = new Date(targetDate);
                     rightStart.setDate(targetDate.getDate() + 1);
                     if (rightStart <= end) {
@@ -272,7 +340,6 @@
         menstrualSaveAll();
     }
 
-    // 绑定多组打分记录器的事件监听
     function menstrualSetupSelectGroups() {
         const groups = ['menstrualFlowGroup', 'menstrualPainGroup', 'menstrualSleepGroup', 'menstrualDigestionGroup'];
         groups.forEach(gId => {
@@ -420,14 +487,24 @@
 
         // 当前月份的经期行经预测映射
         const predictedDays = menstrualGetPredictedPeriodDays(year, month);
+        // 获取排卵期与黄体期
+        const phases = menstrualGetPhasesForYearMonth(year, month);
 
         // 补全上月
         for (let i = startDayOfWeek - 1; i >= 0; i--) {
             const d = prevMonthDays - i;
             const dateStr = accountingGetDateStr(year, month - 1, d);
             const totals = accountingGetDayTotal(dateStr);
-            const isActualPeriod = menstrualIsDateInActualPeriod(dateStr) ? 'period-actual' : '';
-            cellsHtml += `<div class="calendar-day other-month ${isActualPeriod}" data-date="${dateStr}">
+            
+            let periodClass = 'other-month';
+            if (menstrualIsDateInActualPeriod(dateStr)) {
+                periodClass += ' period-actual';
+                const log = menstrualDailyLogs[dateStr];
+                if (log && log.flow) periodClass += ` period-actual-${log.flow}`;
+                else periodClass += ' period-actual-medium';
+            }
+            
+            cellsHtml += `<div class="calendar-day ${periodClass}" data-date="${dateStr}">
                 <div class="day-number">${d}</div>
                 <div class="day-indicators">
                     <div class="day-income">${totals.income > 0 ? '+' + totals.income.toFixed(0) : ''}</div>
@@ -446,8 +523,15 @@
             let periodClass = '';
             if (menstrualIsDateInActualPeriod(dateStr)) {
                 periodClass = 'period-actual';
+                const log = menstrualDailyLogs[dateStr];
+                if (log && log.flow) periodClass += ` period-actual-${log.flow}`;
+                else periodClass += ' period-actual-medium';
             } else if (predictedDays.has(dateStr)) {
                 periodClass = 'period-predicted';
+            } else if (phases.ovulationDays.has(dateStr)) {
+                periodClass = 'period-ovulation';
+            } else if (phases.lutealDays.has(dateStr)) {
+                periodClass = 'period-luteal';
             }
 
             cellsHtml += `<div class="calendar-day ${isToday} ${periodClass}" data-date="${dateStr}">
@@ -466,8 +550,16 @@
             const nextD = i - rendered + 1;
             const dateStr = accountingGetDateStr(year, month + 1, nextD);
             const totals = accountingGetDayTotal(dateStr);
-            const isActualPeriod = menstrualIsDateInActualPeriod(dateStr) ? 'period-actual' : '';
-            cellsHtml += `<div class="calendar-day other-month ${isActualPeriod}" data-date="${dateStr}">
+            
+            let periodClass = 'other-month';
+            if (menstrualIsDateInActualPeriod(dateStr)) {
+                periodClass += ' period-actual';
+                const log = menstrualDailyLogs[dateStr];
+                if (log && log.flow) periodClass += ` period-actual-${log.flow}`;
+                else periodClass += ' period-actual-medium';
+            }
+            
+            cellsHtml += `<div class="calendar-day ${periodClass}" data-date="${dateStr}">
                 <div class="day-number">${nextD}</div>
                 <div class="day-indicators">
                     <div class="day-income">${totals.income > 0 ? '+' + totals.income.toFixed(0) : ''}</div>
@@ -807,43 +899,42 @@
         accountingRenderWebList();
     }
 
-    // ==================== 全局 DOM 事件绑定 ====================
+    // ==================== 全局 DOM 事件绑定 (带防重复绑定守卫) ====================
+    window.accountingEventsBound = window.accountingEventsBound || false;
+
     function accountingBindEvents() {
-        // 月份切换
-        const prevBtn = document.getElementById('accountingPrevMonthBtn');
-        if (prevBtn && !prevBtn.dataset.accountingBound) {
-            prevBtn.dataset.accountingBound = '1';
-            prevBtn.addEventListener('click', () => {
-                if (accountingCurrentMonth === 0) { accountingCurrentMonth = 11; accountingCurrentYear--; } 
-                else { accountingCurrentMonth--; }
-                accountingRenderCalendar();
-            });
+        if (window.accountingEventsBound) {
+            console.log('📊 记账模块事件已经绑定，跳过重复绑定机制');
+            return;
         }
+        window.accountingEventsBound = true;
+
+        // 月份导航
+        const prevBtn = document.getElementById('accountingPrevMonthBtn');
+        prevBtn?.addEventListener('click', () => {
+            if (accountingCurrentMonth === 0) { accountingCurrentMonth = 11; accountingCurrentYear--; } 
+            else { accountingCurrentMonth--; }
+            accountingRenderCalendar();
+        });
 
         const nextBtn = document.getElementById('accountingNextMonthBtn');
-        if (nextBtn && !nextBtn.dataset.accountingBound) {
-            nextBtn.dataset.accountingBound = '1';
-            nextBtn.addEventListener('click', () => {
-                if (accountingCurrentMonth === 11) { accountingCurrentMonth = 0; accountingCurrentYear++; } 
-                else { accountingCurrentMonth++; }
-                accountingRenderCalendar();
-            });
-        }
+        nextBtn?.addEventListener('click', () => {
+            if (accountingCurrentMonth === 11) { accountingCurrentMonth = 0; accountingCurrentYear++; } 
+            else { accountingCurrentMonth++; }
+            accountingRenderCalendar();
+        });
 
         const todayBtn = document.getElementById('accountingTodayBtn');
-        if (todayBtn && !todayBtn.dataset.accountingBound) {
-            todayBtn.dataset.accountingBound = '1';
-            todayBtn.addEventListener('click', () => {
-                const today = new Date();
-                accountingCurrentYear = today.getFullYear();
-                accountingCurrentMonth = today.getMonth();
-                accountingRenderCalendar();
-                const y = today.getFullYear();
-                const m = String(today.getMonth() + 1).padStart(2, '0');
-                const d = String(today.getDate()).padStart(2, '0');
-                accountingOpenTransitionPanel(`${y}-${m}-${d}`);
-            });
-        }
+        todayBtn?.addEventListener('click', () => {
+            const today = new Date();
+            accountingCurrentYear = today.getFullYear();
+            accountingCurrentMonth = today.getMonth();
+            accountingRenderCalendar();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            accountingOpenTransitionPanel(`${y}-${m}-${d}`);
+        });
 
         // 预算管理
         document.getElementById('accountingShowBudgetInputBtn')?.addEventListener('click', () => {
@@ -879,10 +970,15 @@
             }
         });
 
-        // 今日行经开关
+        // 今日行经开关 (绑定多天连带设置逻辑)
         document.getElementById('menstrualTodayCheckbox')?.addEventListener('change', (e) => {
             const checked = e.target.checked;
-            menstrualSetDatePeriod(accountingSelectedDateStr, checked);
+            if (checked) {
+                const duration = menstrualSettings.defaultDuration || 5;
+                menstrualAddPeriodSequence(accountingSelectedDateStr, duration);
+            } else {
+                menstrualSetDatePeriod(accountingSelectedDateStr, false);
+            }
             
             accountingRenderCalendar();
             
@@ -906,15 +1002,17 @@
             };
             menstrualSaveAll();
             alert('生理状态日志保存成功');
+            // 数据有变时，日记要进行深度重绘以显示血量对应的色彩深度
+            accountingRenderCalendar();
         });
 
-        // 返回日历
+        // 返回日历主页
         document.getElementById('accountingBackToCalendarFromTransition')?.addEventListener('click', () => {
             accountingCloseAllPanels();
             accountingRenderCalendar();
         });
 
-        // 过渡面板事件分发
+        // 过渡选择面板分流
         document.querySelectorAll('.accounting-transition-card').forEach(card => {
             card.addEventListener('click', () => {
                 const target = card.dataset.target;
@@ -928,7 +1026,7 @@
             });
         });
 
-        // 返回过渡面板
+        // 二级面板返回键
         document.getElementById('accountingBackToTransitionFromLedger')?.addEventListener('click', () => {
             document.getElementById('accountingLedgerDetailPanel').style.display = 'none';
             document.getElementById('accountingTransitionPanel').style.display = 'block';
@@ -951,13 +1049,13 @@
             accountingOpenCollectionPanel();
         });
 
-        // 记账表单
+        // 记账添加
         document.getElementById('accountingAddTransactionBtn')?.addEventListener('click', accountingAddTransaction);
         document.getElementById('accountingAmountInput')?.addEventListener('keypress', e => { 
             if (e.key === 'Enter') accountingAddTransaction(); 
         });
 
-        // 收支类型
+        // 收支选择
         document.querySelectorAll('.accounting-type-btn').forEach(btn => {
             btn.addEventListener('click', () => accountingSetActiveType(btn.dataset.type));
         });
@@ -968,12 +1066,12 @@
             if (e.key === 'Enter') accountingAddTodo(); 
         });
 
-        // 收藏室选项卡
+        // 收藏选项卡
         document.querySelectorAll('.accounting-collection-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => accountingSwitchCollectionTab(btn.dataset.collectionTab));
         });
 
-        // 新建 API 配置
+        // 新建 API 密钥配置
         document.getElementById('accountingShowApiFormBtn')?.addEventListener('click', () => {
             document.getElementById('accountingApiCreateCard').style.display = 'block';
         });
@@ -998,7 +1096,7 @@
             document.getElementById('accountingApiKeyInput').value = '';
         });
 
-        // 新建网页收藏
+        // 新建网页
         document.getElementById('accountingShowWebFormBtn')?.addEventListener('click', () => {
             document.getElementById('accountingWebCreateCard').style.display = 'block';
         });
@@ -1022,6 +1120,9 @@
             document.getElementById('accountingWebUrlInput').value = '';
             document.getElementById('accountingWebNoteInput').value = '';
         });
+
+        // 绑定打分按钮组 (只需在此绑定一次)
+        menstrualSetupSelectGroups();
     }
 
     console.log('📊 记账与月经预测模块脚本就绪，等待 initAccountingModule() 被触发调用');
