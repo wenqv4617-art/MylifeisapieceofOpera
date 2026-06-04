@@ -7043,6 +7043,10 @@ function buildSafeHtmlCardIframe(rawHtml) {
 
     const frameId = 'html_card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
+    // 保存 HTML 内容到全局映射，用于后续通过 contentDocument.write() 注入 iframe
+    // 使用映射而非 data-* 属性，避免 HTML 属性转义问题
+    if (!window.__htmlCardContentMap) window.__htmlCardContentMap = {};
+
     // 注意：
     // 1. 不注入全局 max-width / box-sizing / font-family，尽量不改变卡片原始样式
     // 2. 只注入最小必要的 html/body 边距清理
@@ -7188,17 +7192,18 @@ ${safeHtml}
 </body>
 </html>`;
 
-    return `
-        <div class="html-card-frame-wrap" data-html-frame-id="${frameId}">
-            <iframe
-                class="html-card-frame"
-                data-frame-id="${frameId}"
-                sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
-                referrerpolicy="no-referrer"
-                srcdoc="${escapeHtml(srcdoc).replace(/"/g, '"')}">
-            </iframe>
-        </div>
-    `;
+    // 将完整的 HTML 内容存入全局映射，后续通过 contentDocument.write() 注入 iframe
+    // 不使用 srcdoc/data-* 属性以避免 HTML 属性转义导致 <script>/<style> 被破坏
+    window.__htmlCardContentMap[frameId] = srcdoc;
+
+    return [
+        '<div class="html-card-frame-wrap" data-html-frame-id="' + frameId + '">',
+        '<iframe class="html-card-frame" data-frame-id="' + frameId + '"',
+        'src="about:blank"',
+        'sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"',
+        'referrerpolicy="no-referrer">',
+        '</iframe></div>'
+    ].join('\n');
 }
 function setupHtmlCardIframes(root) {
     if (!root) return;
@@ -7234,6 +7239,51 @@ function setupHtmlCardIframes(root) {
         frame.style.display = "block";
         frame.style.height = "100px";
         frame.style.overflow = "auto";
+
+        // 从全局映射中获取 HTML 内容，通过 contentDocument.write() 注入
+        // 避免使用 srcdoc 属性或 data-* 属性，防止 HTML 标签被转义破坏
+        var frameId = frame.getAttribute('data-frame-id');
+        var htmlContent = frameId && window.__htmlCardContentMap && window.__htmlCardContentMap[frameId];
+        if (htmlContent && !frame.dataset.contentWritten) {
+            frame.dataset.contentWritten = '1';
+            // 先尝试直接写入（about:blank 同源，contentDocument 立即可用）
+            var writeSuccess = false;
+            try {
+                var doc = frame.contentDocument || frame.contentWindow.document;
+                if (doc && doc.open) {
+                    doc.open();
+                    doc.write(htmlContent);
+                    doc.close();
+                    writeSuccess = true;
+                }
+            } catch(e) {}
+            // 若直接写入失败，改为在 load 事件中写入
+            if (!writeSuccess) {
+                frame.addEventListener('load', function onFrameLoad() {
+                    frame.removeEventListener('load', onFrameLoad);
+                    try {
+                        var doc2 = frame.contentDocument || frame.contentWindow.document;
+                        if (doc2 && doc2.open) {
+                            doc2.open();
+                            doc2.write(htmlContent);
+                            doc2.close();
+                        } else if (htmlContent) {
+                            // 降级：使用 srcdoc 属性
+                            try { frame.srcdoc = htmlContent; } catch(e2) {}
+                        }
+                    } catch(e3) {
+                        // 降级：使用 srcdoc 属性
+                        if (htmlContent) {
+                            try { frame.srcdoc = htmlContent; } catch(e4) {}
+                        }
+                    }
+                });
+            }
+            // 写入完成后释放映射，节约内存
+            if (frameId && window.__htmlCardContentMap) {
+                try { delete window.__htmlCardContentMap[frameId]; } catch(e3) {}
+            }
+        }
 
         const wrap = frame.closest(".html-card-frame-wrap");
         if (wrap) {
