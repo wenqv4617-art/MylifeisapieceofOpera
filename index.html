@@ -6614,7 +6614,7 @@ if (window.wbE) {
         if (mountedWorldbooks.length > 0) {
             worldbookSection = '\n\n';
             mountedWorldbooks.forEach(wb => {
-                worldbookSection += `--- ${wb.title} ---\n${wb.content}\n\n`;
+                worldbookSection += `--- ${wb.title} ---\n${wb.fullContent || wb.content}\n\n`;
             });
         }
     }
@@ -10417,7 +10417,7 @@ const charCount = (wb.mountChars || []).length;
                         <span class="worldbook-card-title">${escapeHtml(wb.title)}</span>
                         <span class="worldbook-card-group">${escapeHtml(wb.group || '未分组')}</span>
                     </div>
-                    <div class="worldbook-card-preview">${escapeHtml((wb.content || '').substring(0, 100))}${wb.content?.length > 100 ? '...' : ''}</div>
+                    <div class="worldbook-card-preview">${escapeHtml((wb.fullContent || wb.content || '').substring(0, 100))}${(wb.fullContent || wb.content || '').length > 100 ? '...' : ''}</div>
                     <div class="worldbook-card-meta">
     ${persistentBadge}
     ${!isPersistent ? (scenes || '<span class="wb-meta-chip"><span>未设置场景</span></span>') : ''}
@@ -10448,7 +10448,7 @@ if (window.wbE) {
     document.getElementById('worldbookDetailTitle').textContent = wb.title || '编辑世界书';
     document.getElementById('wbTitleInput').value = wb.title || '';
     document.getElementById('wbGroupInput').value = wb.group || '';
-    document.getElementById('wbContentInput').value = wb.content || '';
+    document.getElementById('wbContentInput').value = wb.fullContent || wb.content || '';
 
     // 设置挂载类型单选
     const isPersistent = wb.mountCategory === 'persistent';
@@ -10839,7 +10839,7 @@ try {
                     <div style="flex:1;min-width:0;">
                         <div class="wb-mount-title">${escapeHtml(wb.title || '未命名世界书')}</div>
                         <div class="wb-mount-preview">
-                            ${escapeHtml((wb.content || '').substring(0, 70))}${(wb.content || '').length > 70 ? '...' : ''}
+                            ${escapeHtml((wb.fullContent || wb.content || '').substring(0, 70))}${(wb.fullContent || wb.content || '').length > 70 ? '...' : ''}
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
                             <span class="wb-badge-depth">${escapeHtml(depth)}</span>
