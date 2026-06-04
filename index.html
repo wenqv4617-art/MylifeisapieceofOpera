@@ -3887,16 +3887,36 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                             <label class="wb-form-label">
     <span class="wb-label-icon">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72 1.72"/></svg>
     </span>
-    挂载设置
+    挂载类型
 </label>
                         </div>
 
                         <div class="mount-section">
-                            <div style="font-size: 14px; color: #8ba3c7; margin-bottom: 10px;">挂载场景</div>
-                            <div class="mount-options" id="wbSceneOptions">
-                                <label class="mount-checkbox wb-mount-checkbox">
+                            <div style="display:flex;gap:12px;margin-top:4px;">
+                                <label class="mount-radio" style="flex:1;display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid #d4cdc2;border-radius:12px;cursor:pointer;transition:all 0.2s;">
+                                    <input type="radio" name="wbMountCategory" value="manual" id="wbMountManual" checked>
+                                    <span style="display:flex;flex-direction:column;gap:2px;">
+                                        <span style="font-weight:600;font-size:14px;">📋 手动挂载</span>
+                                        <span style="font-size:12px;color:#7a8a7e;">仅按场景、联系人或显式勾选挂载</span>
+                                    </span>
+                                </label>
+                                <label class="mount-radio" style="flex:1;display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid #d4cdc2;border-radius:12px;cursor:pointer;transition:all 0.2s;">
+                                    <input type="radio" name="wbMountCategory" value="persistent" id="wbMountPersistent">
+                                    <span style="display:flex;flex-direction:column;gap:2px;">
+                                        <span style="font-weight:600;font-size:14px;">📌 常驻挂载</span>
+                                        <span style="font-size:12px;color:#7a8a7e;">在所有场景中自动生效，无需手动勾选</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="wbManualMountSettings" style="margin-top:16px;">
+                            <div class="mount-section">
+                                <div style="font-size: 14px; color: #8ba3c7; margin-bottom: 10px;">挂载场景</div>
+                                <div class="mount-options" id="wbSceneOptions">
+                                    <label class="mount-checkbox wb-mount-checkbox">
     <input type="checkbox" value="chat" id="wbSceneChat">
     <span class="wb-mount-name">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
@@ -3918,15 +3938,22 @@
         <span>邮件（待开发）</span>
     </span>
 </label>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="mount-section" style="margin-top: 20px;">
-                            <div style="font-size: 14px; color: #8ba3c7; margin-bottom: 10px;">挂载对象（联系人）</div>
-                            <div id="wbCharOptions" class="mount-options">
+                            <div class="mount-section" style="margin-top: 12px;">
+                                <div style="font-size: 14px; color: #8ba3c7; margin-bottom: 10px;">挂载对象（联系人）</div>
+                                <div id="wbCharOptions" class="mount-options">
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <style>
+                        .mount-radio input[type="radio"] { display:none; }
+                        .mount-radio input[type="radio"]:checked ~ span { color:#1a73e8; }
+                        .mount-radio:has(input[type="radio"]:checked) { border-color:#1a73e8; background:#f0f7ff; }
+                    </style>
 
                     <div style="display: flex; gap: 12px; margin-top: 24px; padding-bottom: 20px;">
                         <button class="worldbook-btn danger" id="deleteWorldbookBtn" style="display: none;">删除</button>
@@ -7019,19 +7046,35 @@ function buildSafeHtmlCardIframe(rawHtml) {
     // 注意：
     // 1. 不注入全局 max-width / box-sizing / font-family，尽量不改变卡片原始样式
     // 2. 只注入最小必要的 html/body 边距清理
-    // 3. 注入 resize 脚本用于自动高度
+    // 3. 注入 resize 脚本用于自动高度 & 溢出滚动支持
     // 4. iframe sandbox 不给 allow-same-origin，内部脚本拿不到父页面 DOM
+    // 5. 沙盒内部可滚动：通过 max-height 限制 + overflow:auto，超出时内部出现滚动条
     const srcdoc = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <base target="_blank">
 <style>
 html, body {
     margin: 0;
     padding: 0;
     background: transparent;
+    /* 沙盒内部滚动支持：不超过父 iframe 限制的高度时自然展开，超出时滚动 */
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+/* 让 body 作为滚动容器，确保内部元素不会溢出到不可见区域 */
+body {
+    min-height: 0;
+    height: auto;
+}
+/* 卡片根容器默认撑满，但不强制最小高度 */
+.card-root, [class*="card-"] {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 </style>
 </head>
@@ -7044,7 +7087,8 @@ ${safeHtml}
 
     var FRAME_ID = ${JSON.stringify(frameId)};
 
-    function getHeight() {
+    // 计算内容实际需要的推荐高度（用于父 iframe 高度适配）
+    function getContentHeight() {
         var body = document.body;
         var html = document.documentElement;
 
@@ -7067,8 +7111,9 @@ ${safeHtml}
 
     var lastHeight = 0;
     function sendHeight() {
-        var h = getHeight();
-        if (Math.abs(h - lastHeight) < 2) return;
+        var h = getContentHeight();
+        // 小幅度变化忽略，避免频繁抖动
+        if (Math.abs(h - lastHeight) < 3) return;
         lastHeight = h;
 
         parent.postMessage({
@@ -7151,8 +7196,7 @@ ${safeHtml}
                 data-frame-id="${frameId}"
                 sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
                 referrerpolicy="no-referrer"
-                scrolling="no"
-                srcdoc="${escapeHtml(srcdoc).replace(/"/g, '&quot;')}">
+                srcdoc="${escapeHtml(srcdoc).replace(/"/g, '"')}">
             </iframe>
         </div>
     `;
@@ -10288,11 +10332,13 @@ async function forceUpdateApp() {
 
                 let html = '';
                 filtered.forEach(wb => {
+                    const isPersistent = wb.mountCategory === 'persistent';
                     const sceneLabels = {
     chat: `<span class="wb-meta-chip">${WB_ICONS.chat}<span>线上聊天</span></span>`,
     diary: `<span class="wb-meta-chip">${WB_ICONS.diary}<span>日记</span></span>`,
     email: `<span class="wb-meta-chip"><span>邮件</span></span>`
 };
+const persistentBadge = isPersistent ? `<span class="wb-meta-chip" style="background:#e8f0fe;color:#1a73e8;"><span>📌 常驻</span></span>` : '';
 const scenes = (wb.mountScenes || []).map(s => sceneLabels[s] || `<span class="wb-meta-chip"><span>${escapeHtml(s)}</span></span>`).join('');
 const charCount = (wb.mountChars || []).length;
 
@@ -10304,8 +10350,9 @@ const charCount = (wb.mountChars || []).length;
                     </div>
                     <div class="worldbook-card-preview">${escapeHtml((wb.content || '').substring(0, 100))}${wb.content?.length > 100 ? '...' : ''}</div>
                     <div class="worldbook-card-meta">
-    ${scenes || '<span class="wb-meta-chip"><span>未设置场景</span></span>'}
-    ${charCount > 0 ? `<span class="wb-meta-chip">${WB_ICONS.user}<span>${charCount} 个联系人</span></span>` : ''}
+    ${persistentBadge}
+    ${!isPersistent ? (scenes || '<span class="wb-meta-chip"><span>未设置场景</span></span>') : ''}
+    ${!isPersistent && charCount > 0 ? `<span class="wb-meta-chip">${WB_ICONS.user}<span>${charCount} 个联系人</span></span>` : ''}
 </div>
                 </div>
             `;
@@ -10333,6 +10380,13 @@ if (window.wbE) {
     document.getElementById('wbTitleInput').value = wb.title || '';
     document.getElementById('wbGroupInput').value = wb.group || '';
     document.getElementById('wbContentInput').value = wb.content || '';
+
+    // 设置挂载类型单选
+    const isPersistent = wb.mountCategory === 'persistent';
+    document.getElementById('wbMountPersistent').checked = isPersistent;
+    document.getElementById('wbMountManual').checked = !isPersistent;
+    const manualSettings = document.getElementById('wbManualMountSettings');
+    manualSettings.style.display = isPersistent ? 'none' : 'block';
 
     document.getElementById('wbSceneChat').checked = (wb.mountScenes || []).includes('chat');
     document.getElementById('wbSceneDiary').checked = (wb.mountScenes || []).includes('diary');
@@ -10385,6 +10439,9 @@ if (window.wbE) {
                 document.getElementById('wbTitleInput').value = '';
                 document.getElementById('wbGroupInput').value = '';
                 document.getElementById('wbContentInput').value = '';
+                document.getElementById('wbMountManual').checked = true;
+                document.getElementById('wbMountPersistent').checked = false;
+                document.getElementById('wbManualMountSettings').style.display = 'block';
                 document.getElementById('wbSceneChat').checked = false;
                 document.getElementById('wbSceneDiary').checked = false;
 
@@ -10415,20 +10472,28 @@ async function saveWorldbook() {
                 const group = document.getElementById('wbGroupInput').value.trim() || '默认';
                 const content = document.getElementById('wbContentInput').value.trim();
 
-                const mountScenes = [];
-                if (document.getElementById('wbSceneChat').checked) mountScenes.push('chat');
-                if (document.getElementById('wbSceneDiary').checked) mountScenes.push('diary');
+                // 获取挂载类型
+                const mountCategory = document.getElementById('wbMountPersistent').checked ? 'persistent' : 'manual';
 
+                const mountScenes = [];
                 const mountChars = [];
-                document.querySelectorAll('#wbCharOptions input[type="checkbox"]:checked').forEach(cb => {
-                    mountChars.push(cb.value);
-                });
+
+                // 仅当为手动挂载时才读取场景和联系人设置
+                if (mountCategory === 'manual') {
+                    if (document.getElementById('wbSceneChat').checked) mountScenes.push('chat');
+                    if (document.getElementById('wbSceneDiary').checked) mountScenes.push('diary');
+
+                    document.querySelectorAll('#wbCharOptions input[type="checkbox"]:checked').forEach(cb => {
+                        mountChars.push(cb.value);
+                    });
+                }
 
                 const worldbook = {
     id: currentWorldbookId || 'wb_' + Date.now(),
     title,
     group,
     content,
+    mountCategory,
     mountScenes,
     mountChars,
     injectDepth: window.wbE ? window.wbE.getDepth() : 'before',
