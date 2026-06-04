@@ -4345,9 +4345,9 @@
                 <div class="reunion-container">
                     <div class="reunion-top">
                         <div class="dimension-tabs">
-                            <button class="dimension-tab active" data-dim="personality">😊 性格</button>
-                            <button class="dimension-tab" data-dim="world">🌍 世界观</button>
-                            <button class="dimension-tab" data-dim="plot">📖 剧本</button>
+                            <button class="dimension-tab active" data-dim="personality"><svg class="reunion-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg> 性格</button>
+                            <button class="dimension-tab" data-dim="world"><svg class="reunion-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> 世界观</button>
+                            <button class="dimension-tab" data-dim="plot"><svg class="reunion-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> 剧本</button>
                         </div>
                         <div class="tag-scroll-container" id="reunionTagSelection">
                         </div>
@@ -4370,8 +4370,13 @@
                                     </button>
                                 </div>
                             </div>
+                            <!-- 开盲盒按钮 -->
+                            <div class="reunion-luck-btn-row">
+                                <button class="reunion-luck-btn" id="reunionLuckBtn">
+                                    <span class="luck-icon">🎲</span> 开盲盒 · 随机生成
+                                </button>
+                            </div>
                         </div>
-
                         <div class="reunion-panel" id="reunionNPCPoolPanel">
                             <div class="npc-pool-area">
                                 <div class="npc-filter-bar" id="reunionFilterBar">
@@ -4386,12 +4391,35 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="reunion-panel" id="reunionWorldbookPanel">
+                            <div class="worldbook-npc-selection">
+                                <div class="worldbook-npc-section-title">📋 选择NPC（可选）</div>
+                                <div class="worldbook-npc-list" id="reunionWorldbookNPCList">
+                                    <div class="worldbook-empty-hint">加载中...</div>
+                                </div>
+                            </div>
+                            <div class="worldbook-input-group">
+                                <div class="worldbook-input-label">🏷️ 标签关键词（可选，逗号分隔）</div>
+                                <input class="worldbook-tags-input" id="reunionWorldbookTagsInput" placeholder="如：魔法、宫廷、悬疑" />
+                            </div>
+                            <div class="worldbook-input-group">
+                                <div class="worldbook-input-label">📝 自然语言描述（可选）</div>
+                                <textarea class="worldbook-desc-textarea" id="reunionWorldbookDescInput" placeholder="描述你想要的这个世界的感觉、风格、氛围..." maxlength="300"></textarea>
+                            </div>
+                            <div class="worldbook-input-group">
+                                <div class="worldbook-input-label">📖 世界书标题</div>
+                                <input class="worldbook-title-input" id="reunionWorldbookTitleInput" placeholder="输入世界书的标题..." />
+                            </div>
+                            <button class="worldbook-generate-btn" id="reunionWorldbookGenerateBtn">
+                                ✨ 生成世界书
+                            </button>
+                        </div>
                     </div>
-
                     <div class="reunion-bottom-tabs">
-                        <button class="reunion-bottom-tab active" data-panel="generate">✨ 生成</button>
-                        <button class="reunion-bottom-tab" data-panel="npcpool">📋 NPC池</button>
-                    </div>
+                        <button class="reunion-bottom-tab active" data-panel="generate"><svg class="reunion-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg> 生成</button>
+                        <button class="reunion-bottom-tab" data-panel="npcpool"><svg class="reunion-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> NPC池</button>
+                        <button class="reunion-bottom-tab" data-panel="worldbook"><svg class="reunion-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v7M9 9h6"/></svg> 世界书</button>
+</div>
                 </div>
             </div>
 
@@ -4496,8 +4524,8 @@
                     <div class="forum-nav-right">
                         <button class="forum-nav-btn" id="forumSettingsBtn" title="论坛设置">
     <svg viewBox="0 0 24 24" class="forum-svg-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l1.09 4.26a7.9 7.9 0 0 1 2.42 1.4l4.09-1.22 1.5 3.8-3.31 2.73a7.9 7.9 0 0 1 0 2.82l3.31 2.73-1.5 3.8-4.09-1.22a7.9 7.9 0 0 1-2.42 1.4L12 22l-1.09-4.26a7.9 7.9 0 0 1-2.42-1.4l-4.09 1.22-1.5-3.8 3.31-2.73a7.9 7.9 0 0 1 0-2.82L2.9 7.84l1.5-3.8 4.09 1.22A7.9 7.9 0 0 1 10.91 2z"></path>
         <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.32.22.66.22 1s-.08.68-.22 1z"></path>
     </svg>
 </button>
                     </div>
