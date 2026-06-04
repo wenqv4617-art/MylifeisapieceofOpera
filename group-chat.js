@@ -129,7 +129,7 @@ if (g.worldbookIds?.length > 0) {
         if (resolved.middle) wbGroupExtra += '\n' + resolved.middle + '\n';
         if (resolved.after) wbGroupExtra += '\n' + resolved.after + '\n';
         if (resolved.hasHtml) {
-            wbGroupExtra += '\n[HTML 卡片格式] 在群聊中输出 HTML 卡片时，使用：[角色名]:[MSG]html_card:<你的 html>。使用卡片工具类。不要使用 script 标签。\n';
+            wbGroupExtra += '\n[HTML 卡片格式] 在群聊中输出 HTML 卡片时，使用：[角色名]:[MSG]html_card:<你的 html>。使用卡片工具类。禁止 script/iframe/on*事件/javascipt:协议；允许使用 input/button/textarea/select/form 等原生标签做交互，form 需阻止默认提交。卡片会自动显示在可滚动的安全沙盒中。\n';
         }
     } else {
         const mounted = allWorldbooks.filter(wb => g.worldbookIds.includes(wb.id));
@@ -684,9 +684,13 @@ ${charsSection}
     bubbleContent = renderGroupMediaBubble('voice', m.content);
 } else if (m.messageType === 'voice_call_start' || m.messageType === 'voice_call_end') {
     bubbleContent = renderGroupCallBubble(m.content);
-} else if (m.messageType === 'html_card') {
-    const sanitized = window.wbE ? window.wbE.sanitize(m.content || '') : window.escapeHtml(m.content || '');
-    bubbleContent = `<div class="html-card-bubble">${sanitized}</div>`;
+    } else if (m.messageType === 'html_card') {
+    if (window.buildSafeHtmlCardIframe) {
+        bubbleContent = window.buildSafeHtmlCardIframe(m.content || '');
+    } else {
+        const sanitized = window.wbE ? window.wbE.sanitize(m.content || '') : window.escapeHtml(m.content || '');
+        bubbleContent = `<div class="html-card-bubble">${sanitized}</div>`;
+    }
 } else {
     bubbleContent = renderQuotedGroupBubble(m.content);
 }

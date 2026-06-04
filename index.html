@@ -7060,10 +7060,9 @@ html, body {
     margin: 0;
     padding: 0;
     background: transparent;
-    /* 沙盒内部滚动支持：不超过父 iframe 限制的高度时自然展开，超出时滚动 */
+    /* 沙盒内部滚动支持：不超过父 iframe 限制的高度时自然展开，超出时双向滚动 */
     max-height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: auto;
     -webkit-overflow-scrolling: touch;
 }
 /* 让 body 作为滚动容器，确保内部元素不会溢出到不可见区域 */
@@ -7234,7 +7233,7 @@ function setupHtmlCardIframes(root) {
         frame.style.border = "0";
         frame.style.display = "block";
         frame.style.height = "100px";
-        frame.style.overflow = "hidden";
+        frame.style.overflow = "auto";
 
         const wrap = frame.closest(".html-card-frame-wrap");
         if (wrap) {
@@ -9211,15 +9210,13 @@ ${contextText}
 5. 数值必须填具体数字，不能保留模板占位。
 6. HTML 必须是完整可独立展示的片段。
 7. 禁止依赖外层页面的 JS、CSS、DOM 或全局变量。
-8. 禁止 <script>、<iframe>、object、embed、form、input、button、textarea、select。
-9. 禁止 on* 事件属性，例如 onclick、onload、onerror。
-10. 禁止 javascript:、vbscript:、data:text/html 协议。
-11. 如果需要交互，只能使用原生 HTML/CSS 能力，例如：
+8. 禁止 <script>、<iframe>、object、embed，禁止 on* 事件属性（如 onclick、onload、onerror），禁止 javascript:、vbscript:、data:text/html 协议。
+9. ✨ 允许使用 <input>、<button>、<textarea>、<select>、<form> 等原生表单标签完成简单交互（输入、按钮点击、下拉选择等），但必须阻止默认提交行为：form 必须设置 onsubmit="return false" 或内部按钮 type="button"，确保不会刷新页面。
+10. 如果不需要表单交互，仍然可以使用以下原生能力：
     - details / summary
     - checkbox + label
-    - CSS hover
-    - CSS animation
-    - CSS transition
+    - CSS hover / animation / transition
+11. 支持上下左右滚动显示超出卡片尺寸的内容（卡片内部通过 CSS overflow:auto 自动处理），确保内容可访问。
 12. 不要写会自动跳转、刷新、提交表单的结构。
 13. 所有 CSS 选择器都要套在卡片自定义根类下，避免污染 iframe 内其他元素。
 14. 不要使用 position: fixed 试图覆盖整个页面。
