@@ -7039,13 +7039,68 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
 }
 
 function buildSafeHtmlCardIframe(rawHtml) {
-    const safeHtml = window.wbE ? window.wbE.sanitize(rawHtml || '') : escapeHtml(rawHtml || '');
+    var input = (rawHtml || '').trim();
+    var frameId = 'html_card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 
-    const frameId = 'html_card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    // 智能检测：如果输入已经是完整 HTML 文档（包含 <!DOCTYPE html> 或 <html>），
+    // 则直接使用其自身结构，只在 </body> 前注入 resize 脚本和事件拦截脚本，
+    // 避免嵌套 <html>/<head>/<body> 导致的渲染异常
+    var isFullDoc = /<!DOCTYPE\s+html/i.test(input) || /<html[\s>]/i.test(input);
 
-    // 保存 HTML 内容到全局映射，用于后续通过 contentDocument.write() 注入 iframe
-    // 使用映射而非 data-* 属性，避免 HTML 属性转义问题
-    if (!window.__htmlCardContentMap) window.__htmlCardContentMap = {};
+    if (isFullDoc) {
+        // 对完整文档，用 sanitize 过滤内容（但保留文档结构）
+        // 注意：sanitize 可能移除 <!DOCTYPE> 和 <html> 标签，所以只过滤 <body> 内部内容
+        var bodyContent = '';
+        var headContent = '';
+        var bodyMatch = input.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        var headMatch = input.match(/<head[^>]*>([\s\S]*)<\/head>/i);
+        if (bodyMatch) {
+            bodyContent = window.wbE ? window.wbE.sanitize(bodyMatch[1]) : escapeHtml(bodyMatch[1]);
+        } else {
+            // 没有完整 body 标签，整体过滤
+            bodyContent = window.wbE ? window.wbE.sanitize(input) : escapeHtml(input);
+        }
+        if (headMatch) {
+            headContent = headMatch[1];
+        }
+
+        // 基础 sandbox 滚动/边距样式
+        var baseStyle = '\nhtml,body{margin:0;padding:0;background:transparent;max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch}body{min-height:0;height:auto}.card-root,[class*="card-"]{max-width:100%;box-sizing:border-box}\n';
+
+        // resize 脚本 + 事件拦截 —— 注入到 </body> 前
+        var injectScript = '\n<script>\n(function(){\n"use strict";\nvar F='+JSON.stringify(frameId)+';\nfunction h(){var b=document.body,e=document.documentElement;if(!b||!e)return 100;var r=[],t;try{r.push(b.getBoundingClientRect().height||0);r.push(e.getBoundingClientRect().height||0)}catch(x){}r.push(b.scrollHeight||0);r.push(b.offsetHeight||0);r.push(e.scrollHeight||0);r.push(e.offsetHeight||0);t=Math.max.apply(Math,r);return Math.ceil(Math.max(t,100))}\nvar L=0;function s(){var n=h();if(Math.abs(n-L)<3)return;L=n;parent.postMessage({type:"HALOES_HTML_CARD_RESIZE",frameId:F,height:n},"*")}\ndocument.addEventListener("submit",function(e){e.preventDefault();e.stopPropagation()},true);\ndocument.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a");if(a){a.setAttribute("target","_blank");a.setAttribute("rel","noopener noreferrer")}},true);\nwindow.addEventListener("load",function(){s();setTimeout(s,50);setTimeout(s,150);setTimeout(s,400);setTimeout(s,1e3);setTimeout(s,2e3)});\nif(window.ResizeObserver){var ro=new ResizeObserver(function(){s()});ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}\nif(window.MutationObserver){var mo=new MutationObserver(function(){s();setTimeout(s,100)});mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,characterData:true})}\nwindow.addEventListener("resize",s);\ndocument.addEventListener("toggle",function(){s();setTimeout(s,150)},true);\nArray.prototype.forEach.call(document.images||[],function(i){if(!i.complete){i.addEventListener("load",s);i.addEventListener("error",s)}});\ns();\n})();\n<\/script>\n';
+
+        // 组装：保留原始 head（追加基础样式），保留原始 body（追加脚本）
+        var result = input;
+
+        // 在 </head> 前注入基础样式
+        result = result.replace(/<\/head>/i, baseStyle + '</head>');
+
+        // 在 </body> 前注入 resize 脚本
+        result = result.replace(/<\/body>/i, injectScript + '</body>');
+
+        // 如果没有 </body>，追加
+        if (result.indexOf('</body>') === -1) {
+            result += injectScript + '\n</body>\n</html>';
+        }
+        // 如果没有 </html>，追加
+        if (result.indexOf('</html>') === -1) {
+            result += '\n</html>';
+        }
+
+        var srcUri = 'data:text/html;charset=UTF-8,' + encodeURIComponent(result);
+        return [
+            '<div class="html-card-frame-wrap" data-html-frame-id="' + frameId + '">',
+            '<iframe class="html-card-frame" data-frame-id="' + frameId + '"',
+            'src="' + srcUri + '"',
+            'sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"',
+            'referrerpolicy="no-referrer">',
+            '</iframe></div>'
+        ].join('\n');
+    }
+
+    // 非完整文档：保持原有逻辑，将内容嵌入固定文档模板
+    var safeHtml = window.wbE ? window.wbE.sanitize(input) : escapeHtml(input);
 
     // 注意：
     // 1. 不注入全局 max-width / box-sizing / font-family，尽量不改变卡片原始样式
@@ -7053,153 +7108,14 @@ function buildSafeHtmlCardIframe(rawHtml) {
     // 3. 注入 resize 脚本用于自动高度 & 溢出滚动支持
     // 4. iframe sandbox 不给 allow-same-origin，内部脚本拿不到父页面 DOM
     // 5. 沙盒内部可滚动：通过 max-height 限制 + overflow:auto，超出时内部出现滚动条
-    const srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<base target="_blank">
-<style>
-html, body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    /* 沙盒内部滚动支持：不超过父 iframe 限制的高度时自然展开，超出时双向滚动 */
-    max-height: 100%;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-}
-/* 让 body 作为滚动容器，确保内部元素不会溢出到不可见区域 */
-body {
-    min-height: 0;
-    height: auto;
-}
-/* 卡片根容器默认撑满，但不强制最小高度 */
-.card-root, [class*="card-"] {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-</style>
-</head>
-<body>
-${safeHtml}
+    var srcdoc = '<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">\n<base target="_blank">\n<style>\nhtml,body{margin:0;padding:0;background:transparent;max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch}body{min-height:0;height:auto}.card-root,[class*="card-"]{max-width:100%;box-sizing:border-box}\n</style>\n</head>\n<body>\n' + safeHtml + '\n<script>\n(function(){\n"use strict";\nvar F=' + JSON.stringify(frameId) + ';\nfunction h(){var b=document.body,e=document.documentElement;if(!b||!e)return 100;var r=[];try{r.push(b.getBoundingClientRect().height||0);r.push(e.getBoundingClientRect().height||0)}catch(x){}r.push(b.scrollHeight||0);r.push(b.offsetHeight||0);r.push(e.scrollHeight||0);r.push(e.offsetHeight||0);var t=Math.max.apply(Math,r);return Math.ceil(Math.max(t,100))}\nvar L=0;function s(){var n=h();if(Math.abs(n-L)<3)return;L=n;parent.postMessage({type:"HALOES_HTML_CARD_RESIZE",frameId:F,height:n},"*")}\ndocument.addEventListener("submit",function(e){e.preventDefault();e.stopPropagation()},true);\ndocument.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a");if(a){a.setAttribute("target","_blank");a.setAttribute("rel","noopener noreferrer")}},true);\nwindow.addEventListener("load",function(){s();setTimeout(s,50);setTimeout(s,150);setTimeout(s,400);setTimeout(s,1e3);setTimeout(s,2e3)});\nif(window.ResizeObserver){var ro=new ResizeObserver(function(){s()});ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}\nif(window.MutationObserver){var mo=new MutationObserver(function(){s();setTimeout(s,100)});mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,characterData:true})}\nwindow.addEventListener("resize",s);\ndocument.addEventListener("toggle",function(){s();setTimeout(s,150)},true);\nArray.prototype.forEach.call(document.images||[],function(i){if(!i.complete){i.addEventListener("load",s);i.addEventListener("error",s)}});\ns();\n})();\n<\/script>\n</body>\n</html>';
 
-<script>
-(function() {
-    "use strict";
-
-    var FRAME_ID = ${JSON.stringify(frameId)};
-
-    // 计算内容实际需要的推荐高度（用于父 iframe 高度适配）
-    function getContentHeight() {
-        var body = document.body;
-        var html = document.documentElement;
-
-        if (!body || !html) return 100;
-
-        var rects = [];
-        try {
-            rects.push(body.getBoundingClientRect().height || 0);
-            rects.push(html.getBoundingClientRect().height || 0);
-        } catch (e) {}
-
-        rects.push(body.scrollHeight || 0);
-        rects.push(body.offsetHeight || 0);
-        rects.push(html.scrollHeight || 0);
-        rects.push(html.offsetHeight || 0);
-
-        var h = Math.max.apply(Math, rects);
-        return Math.ceil(Math.max(h, 100));
-    }
-
-    var lastHeight = 0;
-    function sendHeight() {
-        var h = getContentHeight();
-        // 小幅度变化忽略，避免频繁抖动
-        if (Math.abs(h - lastHeight) < 3) return;
-        lastHeight = h;
-
-        parent.postMessage({
-            type: "HALOES_HTML_CARD_RESIZE",
-            frameId: FRAME_ID,
-            height: h
-        }, "*");
-    }
-
-    // 防止 form/button 默认提交导致 iframe 或父页面异常跳转
-    document.addEventListener("submit", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }, true);
-
-    // 防止普通链接尝试顶层跳转；链接会因为 base target=_blank 走新窗口
-    document.addEventListener("click", function(e) {
-        var a = e.target && e.target.closest ? e.target.closest("a") : null;
-        if (a) {
-            a.setAttribute("target", "_blank");
-            a.setAttribute("rel", "noopener noreferrer");
-        }
-    }, true);
-
-    window.addEventListener("load", function() {
-        sendHeight();
-        setTimeout(sendHeight, 50);
-        setTimeout(sendHeight, 150);
-        setTimeout(sendHeight, 400);
-        setTimeout(sendHeight, 1000);
-        setTimeout(sendHeight, 2000);
-    });
-
-    if (window.ResizeObserver) {
-        var ro = new ResizeObserver(function() {
-            sendHeight();
-        });
-        ro.observe(document.documentElement);
-        if (document.body) ro.observe(document.body);
-    }
-
-    if (window.MutationObserver) {
-        var mo = new MutationObserver(function() {
-            sendHeight();
-            setTimeout(sendHeight, 100);
-        });
-        mo.observe(document.documentElement, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            characterData: true
-        });
-    }
-
-    window.addEventListener("resize", sendHeight);
-
-    // details/summary 展开、图片加载、字体变化等兜底
-    document.addEventListener("toggle", function() {
-        sendHeight();
-        setTimeout(sendHeight, 150);
-    }, true);
-
-    Array.prototype.forEach.call(document.images || [], function(img) {
-        if (!img.complete) {
-            img.addEventListener("load", sendHeight);
-            img.addEventListener("error", sendHeight);
-        }
-    });
-
-    sendHeight();
-})();
-<\/script>
-</body>
-</html>`;
-
-    // 将完整的 HTML 内容存入全局映射，后续通过 contentDocument.write() 注入 iframe
-    // 不使用 srcdoc/data-* 属性以避免 HTML 属性转义导致 <script>/<style> 被破坏
-    window.__htmlCardContentMap[frameId] = srcdoc;
+    var srcUri = 'data:text/html;charset=UTF-8,' + encodeURIComponent(srcdoc);
 
     return [
         '<div class="html-card-frame-wrap" data-html-frame-id="' + frameId + '">',
         '<iframe class="html-card-frame" data-frame-id="' + frameId + '"',
-        'src="about:blank"',
+        'src="' + srcUri + '"',
         'sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"',
         'referrerpolicy="no-referrer">',
         '</iframe></div>'
@@ -7240,50 +7156,9 @@ function setupHtmlCardIframes(root) {
         frame.style.height = "100px";
         frame.style.overflow = "auto";
 
-        // 从全局映射中获取 HTML 内容，通过 contentDocument.write() 注入
-        // 避免使用 srcdoc 属性或 data-* 属性，防止 HTML 标签被转义破坏
-        var frameId = frame.getAttribute('data-frame-id');
-        var htmlContent = frameId && window.__htmlCardContentMap && window.__htmlCardContentMap[frameId];
-        if (htmlContent && !frame.dataset.contentWritten) {
-            frame.dataset.contentWritten = '1';
-            // 先尝试直接写入（about:blank 同源，contentDocument 立即可用）
-            var writeSuccess = false;
-            try {
-                var doc = frame.contentDocument || frame.contentWindow.document;
-                if (doc && doc.open) {
-                    doc.open();
-                    doc.write(htmlContent);
-                    doc.close();
-                    writeSuccess = true;
-                }
-            } catch(e) {}
-            // 若直接写入失败，改为在 load 事件中写入
-            if (!writeSuccess) {
-                frame.addEventListener('load', function onFrameLoad() {
-                    frame.removeEventListener('load', onFrameLoad);
-                    try {
-                        var doc2 = frame.contentDocument || frame.contentWindow.document;
-                        if (doc2 && doc2.open) {
-                            doc2.open();
-                            doc2.write(htmlContent);
-                            doc2.close();
-                        } else if (htmlContent) {
-                            // 降级：使用 srcdoc 属性
-                            try { frame.srcdoc = htmlContent; } catch(e2) {}
-                        }
-                    } catch(e3) {
-                        // 降级：使用 srcdoc 属性
-                        if (htmlContent) {
-                            try { frame.srcdoc = htmlContent; } catch(e4) {}
-                        }
-                    }
-                });
-            }
-            // 写入完成后释放映射，节约内存
-            if (frameId && window.__htmlCardContentMap) {
-                try { delete window.__htmlCardContentMap[frameId]; } catch(e3) {}
-            }
-        }
+        // 通过 src="data:text/html;..." 加载内容，在 iframe 内部自动渲染
+        // iframe 内部的 resize 脚本会通过 parent.postMessage("*") 向父页面报告高度
+        // postMessage 跨源通信不受 sandbox 影响，可正常工作
 
         const wrap = frame.closest(".html-card-frame-wrap");
         if (wrap) {
