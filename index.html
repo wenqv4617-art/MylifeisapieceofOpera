@@ -6963,7 +6963,6 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
         const type = m[1];
         let content = m[2].trim();
         if (!content) continue;
-        // 容错：AI 偶尔会把 HTML 包进 ```html ... ``` 里
         if (type === 'html_card') {
             content = content
                 .replace(/^```(?:html)?\s*\n?/i, '')
