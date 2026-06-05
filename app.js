@@ -1261,13 +1261,6 @@ ${timeAwareBlock}
 【回复准则】
 你是一个有血有肉的真人。你在跟朋友/爱人闲聊。
 
-
-【❗重要：分句与心声强制规则】
-1. **每条文字消息长度强制限制在25字以内**。这是硬性规定，不允许超长。
-2. **本轮回复必须包含至少2条文字消息**。
-3. **只要用户没有明确拒绝，就必须输出【心声】部分**。心声格式为：---心声开始---（你的内心独白）---心声结束---。
-4. **严禁输出以";"或空格结尾的过长句子**。如果一句话超过25字，必须拆成两条。
-
 说话风格 · 严格匹配人设：
 - 你的语言风格必须从【你是谁】的人设中推导出来，不要套用统一模板
 - 沉稳的人 → 句子完整、用词克制、不轻易用语气词、不刷网络梗
@@ -3044,16 +3037,16 @@ window.openConversation = openConversation;
                 const mask = await DB.get('userProfiles', conv.maskId);
                 if (!char) { showStatus('联系人不存在', 'error'); return; }
 
-                // 在 fetchAIReplyInConv 函数内部，确保 systemPrompt 在每次调用时生成
-const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
-const chats = await DB.queryByIndex('chats', 'conversationId', convId);
-const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
-contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-const recent = contextChats.slice(-rounds * 2);
+                const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
+                const chats = await DB.queryByIndex('chats', 'conversationId', convId);
+                const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
+                contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
-// ===== 关键修改：每次调用都重新生成系统指令 =====
-const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
-const messages = [{ role: 'system', content: systemPrompt }];
+                const recent = contextChats.slice(-rounds * 2);
+
+                const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
+                const messages = [{ role: 'system', content: systemPrompt }];
+
                 if (mode === 'offline') {
                     recent.forEach(m => {
                         const roleName = (m.role === 'user') ? (mask?.name || '用户') : char.name;
@@ -3627,16 +3620,15 @@ ${contextText}
     }
     // === 否则走原有普通对话流程 ===
 
-                // 在 fetchAIReplyInConv 函数内部，确保 systemPrompt 在每次调用时生成
-const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
-const chats = await DB.queryByIndex('chats', 'conversationId', convId);
-const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
-contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-const recent = contextChats.slice(-rounds * 2);
+                const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
+                const chats = await DB.queryByIndex('chats', 'conversationId', convId);
+                const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
+                contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                const recent = contextChats.slice(-rounds * 2);
 
-// ===== 关键修改：每次调用都重新生成系统指令 =====
-const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
-const messages = [{ role: 'system', content: systemPrompt }];
+                const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
+                const messages = [{ role: 'system', content: systemPrompt }];
+
                 if (mode === 'offline') {
                     recent.forEach(m => {
                         const roleName = (m.role === 'user' || m.role === 'char') ?
