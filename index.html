@@ -6949,16 +6949,14 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
             window.parseAIResponse = parseAIResponse;
 
 function parseMSGMessages(text) {
-    // 安全守护：如果传入的不是字符串，直接返回空数组，防止崩溃
-    if (typeof text !== 'string') {
+    if (typeof text !== "string") {
         return [];
     }
 
     var messages = [];
     var rawParts = text.split(/\[MSG\]/);
     var parts = [];
-    
-    // 兼容过滤空字符串（替换 filter 和 箭头函数）
+
     for (var i = 0; i < rawParts.length; i++) {
         var trimmed = rawParts[i].trim();
         if (trimmed) {
@@ -6967,37 +6965,46 @@ function parseMSGMessages(text) {
     }
 
     var typeMap = {
-        '文字': 'text', '图片': 'image', '语音': 'voice',
-        '线下邀约': 'offline_invite', '表情包': 'emoticon',
-        'html_card': 'html_card'
+        "文字": "text",
+        "图片": "image",
+        "语音": "voice",
+        "线下邀约": "offline_invite",
+        "表情包": "emoticon",
+        "html_card": "html_card"
     };
 
-    // 采用标准 for 循环，替换 for...of 循环
     for (var j = 0; j < parts.length; j++) {
         var part = parts[j];
-        
-        // 不再用 /m 加 $，避免多行 HTML 被截到第一行
         var m = part.match(/^(html_card|文字|图片|语音|线下邀约|表情包)\s*[:：]\s*([\s\S]*)$/);
-        if (!m) continue;
-        
+        if (!m) {
+            continue;
+        }
+
         var type = m[1];
         var content = m[2].trim();
-        if (!content) continue;
-        
-        if (type === 'html_card') {
+        if (!content) {
+            continue;
+        }
+
+        if (type === "html_card") {
             content = content
-                .replace(/^```(?:html)?\s*\n?/i, '')
-                .replace(/\n?```\s*$/, '')
+                .replace(/^```(html|)\s*[\n\r]{0,1}/i, "")
+                .replace(/[\n\r]{0,1}```\s*$/, "")
                 .trim();
         }
-        messages.push({ type: typeMap[type] || 'text', content: content });
+
+        var mappedType = typeMap[type];
+        if (!mappedType) {
+            mappedType = "text";
+        }
+
+        messages.push({ type: mappedType, content: content });
     }
 
-    // 兜底逻辑
     if (messages.length === 0 && text.trim()) {
-        messages.push({ type: 'text', content: text.trim() });
+        messages.push({ type: "text", content: text.trim() });
     }
-    
+
     return messages;
 }
 
