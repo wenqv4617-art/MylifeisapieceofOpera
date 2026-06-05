@@ -1,0 +1,129 @@
+/* ==================== 情侣相册专属样式 ==================== */
+
+.album-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    align-content: start;
+}
+
+.album-item {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e0dcd5;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.album-item-images {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.album-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid #efefef;
+    background-color: #faf9f6;
+}
+
+.album-item-meta {
+    font-size: 11px;
+    color: #8ba3c7;
+    text-align: center;
+    margin-top: 4px;
+    width: 100%;
+}
+
+.album-code {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.album-item-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: none;
+    border: none;
+    color: #c0392b;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.album-item-delete:active {
+    background: #fff0f0;
+}
+
+/* 弹窗上传图片预览样式 */
+.couple-upload-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    border: 2px dashed #c9bfae;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #faf9f6;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+/* 切换详情时弹窗的选择行 */
+.couple-select-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 12px;
+    background: #fdfdfd;
+    border-radius: 14px;
+    border: 1px solid #e2e2e2;
+}
+
+.couple-select-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.couple-select-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid #efefef;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.couple-select-avatar:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+.couple-select-code {
+    font-size: 11px;
+    color: #4a5568;
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -42,6 +42,7 @@
 <link rel="stylesheet" href="couple-space.css">
 <link rel="stylesheet" href="couple-live.css">
 <link rel="stylesheet" href="sms.css">
+    <link rel="stylesheet" href="couple-album.css">
     <meta name="theme-color" content="#d8b69f">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <style>
@@ -2790,10 +2791,10 @@
 <script src="couple-fanfic.js" defer></script>
 <script src="couple-checkin.js" defer></script>
 <script src="couple-truth.js" defer></script>
-<script src="couple-avatar.js" defer></script>
 <script src="couple-date.js" defer></script>
 <script src="couple-live.js" defer></script>
 <script src="sms.js" defer></script>
+    <script src="couple-album.js" defer></script>
 </head>
 <body>
     <div class="phone-mock">
@@ -3600,10 +3601,10 @@
                     <div class="worldbook-section">
                         <h3 style="margin-bottom:12px;">我的信息</h3>
                         <div class="avatar-upload-area" style="margin-bottom:12px;">
-                            <div id="convDetailUserAvatar" class="avatar-preview" style="width:60px;height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f0f2f5;"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
-<div style="flex:1;">
-<button type="button" class="small-btn" id="convDetailUserUploadBtn">上传</button>
-<button type="button" class="small-btn" id="pickCoupleAvatarBtn" style="margin-top:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>选择情侣头像</button>
+                            <div id="convDetailUserAvatar" class="avatar-preview" style="width:60px;height:60px;border-radius:8px;">👤</div>
+                            <div style="flex:1;">
+                                <button type="button" class="small-btn" id="convDetailUserUploadBtn">上传</button>
+                                <button type="button" class="small-btn" id="convDetailUserCoupleBtn" style="margin-left: 6px;">选择情侣头像</button>
                                 <input type="file" id="convDetailUserAvatarFile" accept="image/*" style="display:none;">
                                 <input type="hidden" id="convDetailUserAvatarData" value="">
                             </div>
@@ -3727,16 +3728,45 @@
         <span class="menu-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
         <span class="menu-text">表情包</span>
     </div>
+    <div class="menu-item clickable" id="coupleAlbumEntryBtn">
+        <span class="menu-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+        </span>
+        <span class="menu-text">相册</span>
+    </div>
     <div class="menu-item clickable" id="settingsEntryBtn">
         <span class="menu-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
         <span class="menu-text">API 设置</span>
     </div>
-    <div class="menu-item clickable" id="coupleAlbumEntryBtn" onclick="coupleAvatarModule.showAlbum()">
-        <span class="menu-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
-        <span class="menu-text">相册</span>
-    </div>
 </div>
                 <div class="mask-list" id="maskListContainer" style="padding: 12px;"></div>
+                </div>
+            </div>
+
+            <!-- ==================== 情侣相册页 ==================== -->
+            <div id="page-couple-album" class="page">
+                <div class="chat-header">
+                    <div class="chat-header-left">
+                        <button class="back-btn clickable" id="backFromCoupleAlbumBtn">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        </button>
+                        <h2>情侣相册</h2>
+                    </div>
+                    <div class="header-actions">
+                        <button class="header-btn clickable" id="addCoupleAlbumBtn">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <div style="flex:1; overflow-y:auto; padding: 16px;">
+                    <div class="album-grid" id="coupleAlbumGrid">
+                        <!-- 动态渲染情侣头像对 -->
+                    </div>
+                </div>
             </div>
 
             <div id="page-settings" class="page">
@@ -5425,6 +5455,55 @@
         </div>
     </div>
 
+    <!-- ========== 上传情侣头像弹窗 ========== -->
+    <div class="modal" id="coupleAlbumUploadModal">
+        <div class="modal-content" style="max-width:380px;">
+            <h3>添加情侣头像</h3>
+            <div class="form-group" style="margin-top: 12px;">
+                <label>配对编码名称</label>
+                <input type="text" id="coupleAlbumCodeName" placeholder="例如：星河、甜蜜、暴击">
+            </div>
+            <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                <div style="flex: 1; text-align: center;">
+                    <label style="display:block; font-size:12px; color:#8ba3c7; margin-bottom:6px;">男方头像 (A)</label>
+                    <div class="couple-upload-preview" id="couplePreviewA">
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    </div>
+                    <button class="small-btn clickable" id="coupleUploadBtnA" style="margin-top:8px; width:100%;">选择图片</button>
+                    <input type="file" id="coupleFileA" accept="image/*" style="display:none;">
+                    <input type="hidden" id="coupleDataA" value="">
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <label style="display:block; font-size:12px; color:#8ba3c7; margin-bottom:6px;">女方头像 (B)</label>
+                    <div class="couple-upload-preview" id="couplePreviewB">
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    </div>
+                    <button class="small-btn clickable" id="coupleUploadBtnB" style="margin-top:8px; width:100%;">选择图片</button>
+                    <input type="file" id="coupleFileB" accept="image/*" style="display:none;">
+                    <input type="hidden" id="coupleDataB" value="">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="small-btn clickable" id="coupleUploadCancelBtn">取消</button>
+                <button class="small-btn clickable" id="coupleUploadSaveBtn" style="background:#d7e4ee; color:white; border:none;">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 选择情侣头像弹窗 ========== -->
+    <div class="modal" id="coupleAvatarSelectModal">
+        <div class="modal-content" style="max-width:380px; max-height:80%;">
+            <h3>选择情侣头像</h3>
+            <div style="font-size:12px; color:#8ba3c7; margin-bottom:12px;">点击你想要为自己换上的那半张情头 (A 或 B)</div>
+            <div id="coupleAvatarSelectContainer" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+                <!-- 动态加载列表 -->
+            </div>
+            <div class="modal-actions" style="margin-top:16px;">
+                <button class="small-btn clickable" id="coupleAvatarSelectCancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="createContactModal">
         <div class="modal-content">
             <h3>新建联系人</h3>
@@ -5665,7 +5744,7 @@
             }
 
             const DB_NAME = "CompanionDB_V18";
-            const DB_VERSION = 32; // 升级版本触发数据库更新
+            const DB_VERSION = 31;
             let db = null;
             window.groupCollapsed = window.groupCollapsed || {};
 
@@ -5681,11 +5760,6 @@
             const ver = d.version;
             // 只在真正的升级时建表
             if (ver <= 1 || !d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
-            
-            // 新增：创建情侣头像所需的 avatar 数据表
-            if (!d.objectStoreNames.contains('avatar')) {
-                d.createObjectStore('avatar', { keyPath: 'id' });
-            }
             if (!d.objectStoreNames.contains('characters')) d.createObjectStore('characters', { keyPath: 'id' });
             if (!d.objectStoreNames.contains('chats')) {
                 const s = d.createObjectStore('chats', { keyPath: 'id', autoIncrement: true });
@@ -6556,7 +6630,7 @@ window.callLLM = callLLM;
                 return content.length > 30 ? content.substring(0, 30) + '...' : content;
             }
 
-   async function buildSystemPrompt(char, mask, memoryHint, mode = 'online', convId = null) {
+            async function buildSystemPrompt(char, mask, memoryHint, mode = 'online', convId = null) {
                 let displayUserName = mask?.name || '用户';
                 let displayUserDetail = mask?.bio || '';
                 if (convId) {
@@ -6569,75 +6643,82 @@ window.callLLM = callLLM;
 
                 let charDetail = char.detail || char.prompt || '';
                 let relationshipDesc = '';
+                let coupleAvatarPrompt = '';
                 if (convId) {
                     const convDetail = await DB.get('convDetails', convId);
                     if (convDetail) {
                         if (convDetail.charDetail) charDetail = convDetail.charDetail;
                         if (convDetail.relationship) relationshipDesc =
                             `\n【你与用户的关系】\n${convDetail.relationship}`;
+                        if (convDetail.coupleAvatarChangedPendingReaction) {
+                            const userCode = convDetail.userCoupleAvatarCode || '';
+                            const partnerCode = convDetail.partnerCoupleAvatarCode || '';
+                            coupleAvatarPrompt = `\n\n【重要事件：用户更换了情侣头像】\n用户刚刚在当前对话中，把自己的头像更换为了情侣头像中的 [${userCode}]。对应的另一半配套情侣头像编码是 [${partnerCode}]。\n作为 \${char.name}，你必须在接下来的对话中对此事做出明显、深刻、且符合你性格特征的真实反应（例如：吃醋傲娇地盘问、心里窃喜暗道TA的暗示、或者顺从地同样换上配套头像）。\n如果你决定自己换上配套的 [${partnerCode}] 头像作为你的头像，你可以在你的本轮回复内容的文字消息最后，附加指令标记 \\\`[CHANGE_AVATAR:\${partnerCode}]\\\`。系统检测到此标记后，会直接在当前对话中将你的头像更换为配套头像。无论你是否在本次回复中选择更换头像，都必须在此轮回复里对用户更换情侣头像的事件做出对应的沟通与情绪反应。该指令标记应写在心声或思维链以外的文字回复中。\n`;
+                        }
                     }
                 }
 
                 let allWorldbooks = [];
                 try { allWorldbooks = await DB.getAll('worldbooks'); } catch (e) { allWorldbooks = []; }
-                
                 // --- 深度感知的世界书解析 ---
-                let worldbookSection = '';
-                let wbMiddle = '';
-                let wbAfter = '';
-                try {
-                    let wbIds = [];
-                    let wbOverrides = {};
+let worldbookSection = '';
+let wbMiddle = '';
+let wbAfter = '';
+try {
+    let wbIds = [];
+let wbOverrides = {};
 
-                    if (convId) {
-                        const cd = await DB.get('convDetails', convId);
-                        if (cd && cd.worldbookIds) wbIds = cd.worldbookIds;
-                        if (cd && cd.worldbookMountOverrides) wbOverrides = cd.worldbookMountOverrides;
-                    }
+if (convId) {
+    const cd = await DB.get('convDetails', convId);
+    if (cd && cd.worldbookIds) wbIds = cd.worldbookIds;
+    if (cd && cd.worldbookMountOverrides) wbOverrides = cd.worldbookMountOverrides;
+}
 
-                    let recentForKw = [];
-                    if (convId) {
-                        try {
-                            const rc = await DB.queryByIndex('chats', 'conversationId', convId);
-                            recentForKw = rc.filter(c => c.messageType !== 'innerVoice')
-                                .sort((a,b) => (a.timestamp||0) - (b.timestamp||0)).slice(-10);
-                        } catch(e) {}
-                    }
+let recentForKw = [];
+if (convId) {
+    try {
+        const rc = await DB.queryByIndex('chats', 'conversationId', convId);
+        recentForKw = rc.filter(c => c.messageType !== 'innerVoice')
+            .sort((a,b) => (a.timestamp||0) - (b.timestamp||0)).slice(-10);
+    } catch(e) {}
+}
 
-                    if (window.wbE) {
-                        const resolved = window.wbE.resolve({
-                            charId: char.id,
-                            scene: 'chat',
-                            recentChats: recentForKw,
-                            worldbookIds: wbIds,
-                            worldbookMountOverrides: wbOverrides,
-                            allWorldbooks: allWorldbooks,
-                            skipHtml: true
-                        });
-                        if (resolved.before) worldbookSection = '\n\n' + resolved.before + '\n';
-                        if (resolved.middle) wbMiddle = '\n\n' + resolved.middle + '\n';
-                        if (resolved.after) wbAfter = '\n\n' + resolved.after + '\n';
-                    } else {
-                        let mountedWorldbooks = allWorldbooks.filter(wb =>
-                            wbIds.includes(wb.id) ||
-                            ((wb.mountScenes || []).includes('chat') && (wb.mountChars || []).includes(char.id))
-                        );
-                        if (mountedWorldbooks.length > 0) {
-                            worldbookSection = '\n\n';
-                            mountedWorldbooks.forEach(wb => {
-                                worldbookSection += `--- ${wb.title} ---\n${wb.fullContent || wb.content}\n\n`;
-                            });
-                        }
-                    }
-                } catch (e) {
-                    worldbookSection = '';
-                }
+if (window.wbE) {
+    const resolved = window.wbE.resolve({
+        charId: char.id,
+        scene: 'chat',
+        recentChats: recentForKw,
+        worldbookIds: wbIds,
+        worldbookMountOverrides: wbOverrides,
+        allWorldbooks: allWorldbooks,
+        skipHtml: true
+    });
+        if (resolved.before) worldbookSection = '\n\n' + resolved.before + '\n';
+        if (resolved.middle) wbMiddle = '\n\n' + resolved.middle + '\n';
+        if (resolved.after) wbAfter = '\n\n' + resolved.after + '\n';
+    } else {
+        // 降级：旧版扁平注入
+        let mountedWorldbooks = allWorldbooks.filter(wb =>
+            wbIds.includes(wb.id) ||
+            ((wb.mountScenes || []).includes('chat') && (wb.mountChars || []).includes(char.id))
+        );
+        if (mountedWorldbooks.length > 0) {
+            worldbookSection = '\n\n';
+            mountedWorldbooks.forEach(wb => {
+                worldbookSection += `--- ${wb.title} ---\n${wb.fullContent || wb.content}\n\n`;
+            });
+        }
+    }
+} catch (e) {
+    worldbookSection = '';
+}
 
                 let emoticonSection = '';
                 if (window.emoticonModule && convId) {
                     emoticonSection = await window.emoticonModule.buildEmoticonSection(convId);
                 }
 
+                // 时间感知开关：默认开启；可在 1v1 对话详情页关闭
                 let timePerceptionEnabled = true;
                 if (convId) {
                     try {
@@ -6664,56 +6745,107 @@ window.callLLM = callLLM;
                     : '';
 
                 let memoryBlock = '';
-                if (convId) {
-                    const maxRecall = parseInt(await DB.getSetting('maxRecallCount', '3')) || 3;
-                    const recentChats = (await DB.queryByIndex('chats', 'conversationId', convId))
-                        .filter(c => c.messageType !== 'innerVoice')
-                        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-                        .slice(0, 10);
-                    
-                    const relevantSummaries = await getRelevantSummaries(convId, recentChats, maxRecall);
-                    if (relevantSummaries.length > 0) {
-                        memoryBlock += '\n【关键词召回 · 与当前话题相关的历史记忆】\n';
-                        relevantSummaries.forEach(s => {
-                            memoryBlock += `• (第${s.segmentStart}-${s.segmentEnd}段) ${s.content}\n`;
-                        });
-                    }
-                    
-                    const allMemories = await DB.queryByIndex('memories', 'conversationId', convId);
-                    const allSummaries = allMemories
-                        .filter(m => m.type === 'summary')
-                        .sort((a, b) => b.segmentStart - a.segmentStart);
-                    
-                    if (allSummaries.length > 0) {
-                        const latestSummary = allSummaries[0];
-                        const alreadyIncluded = relevantSummaries.some(s => s.id === latestSummary.id);
-                        if (!alreadyIncluded) {
-                            memoryBlock += '\n【最近一次总结】\n';
-                            memoryBlock += `• (第${latestSummary.segmentStart}-${latestSummary.segmentEnd}段) ${latestSummary.content}\n`;
-                        }
-                    }
-                }
+if (convId) {
+    const maxRecall = parseInt(await DB.getSetting('maxRecallCount', '3')) || 3;
+    
+    // 获取最近消息用于关键词匹配
+    const recentChats = (await DB.queryByIndex('chats', 'conversationId', convId))
+        .filter(c => c.messageType !== 'innerVoice')
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .slice(0, 10);
+    
+    // 关键词匹配召回
+    const relevantSummaries = await getRelevantSummaries(convId, recentChats, maxRecall);
+    
+    if (relevantSummaries.length > 0) {
+        memoryBlock += '\n【关键词召回 · 与当前话题相关的历史记忆】\n';
+        relevantSummaries.forEach(s => {
+            memoryBlock += `• (第${s.segmentStart}-${s.segmentEnd}段) ${s.content}\n`;
+        });
+    }
+    
+    // 始终注入最新一条总结（保持连续性）
+    const allMemories = await DB.queryByIndex('memories', 'conversationId', convId);
+    const allSummaries = allMemories
+        .filter(m => m.type === 'summary')
+        .sort((a, b) => b.segmentStart - a.segmentStart);
+    
+    if (allSummaries.length > 0) {
+        const latestSummary = allSummaries[0];
+        const alreadyIncluded = relevantSummaries.some(s => s.id === latestSummary.id);
+        if (!alreadyIncluded) {
+            memoryBlock += '\n【最近一次总结】\n';
+            memoryBlock += `• (第${latestSummary.segmentStart}-${latestSummary.segmentEnd}段) ${latestSummary.content}\n`;
+        }
+    }
+}
 
-                let phoneIntrusionBlock = '';
-                if (convId) {
-                    try {
-                        const phoneEvents = await DB.queryByIndex('chats', 'conversationId', convId);
-                        const intrusionEvents = phoneEvents
-                            .filter(c => c.messageType === 'phone_intrusion')
-                            .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-                            .slice(0, 5)
-                            .reverse();
+let phoneIntrusionBlock = '';
+if (convId) {
+    try {
+        const phoneEvents = await DB.queryByIndex('chats', 'conversationId', convId);
+        const intrusionEvents = phoneEvents
+            .filter(c => c.messageType === 'phone_intrusion')
+            .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+            .slice(0, 5)
+            .reverse();
 
-                        if (intrusionEvents.length) {
-                            phoneIntrusionBlock += '\n【你可能察觉到的手机异常】\n';
-                            phoneIntrusionBlock += '以下事件不是用户主动告诉你的，而是你的手机留下的异常痕迹、通知、聊天记录变化或联系人反应。你不需要每次都立刻发现，但如果符合你的性格和当前情境，可以自然地调侃、追问、试探或质问用户。\n';
-                            intrusionEvents.forEach(e => {
-                                phoneIntrusionBlock += `• ${e.content}\n`;
-                            });
-                        }
-                    } catch (e) {
-                        phoneIntrusionBlock = '';
+        if (intrusionEvents.length) {
+            phoneIntrusionBlock += '\n【你可能察觉到的手机异常】\n';
+            phoneIntrusionBlock += '以下事件不是用户主动告诉你的，而是你的手机留下的异常痕迹、通知、聊天记录变化或联系人反应。你不需要每次都立刻发现，但如果符合你的性格和当前情境，可以自然地调侃、追问、试探或质问用户。\n';
+            intrusionEvents.forEach(e => {
+                phoneIntrusionBlock += `• ${e.content}\n`;
+            });
+        }
+    } catch (e) {
+        phoneIntrusionBlock = '';
+    }
+}
+
+
+                // ========== 线下控制配置 ==========
+                function buildOfflinePerspectiveRules(control, charName, userName, isGroup = false) {
+                    const c = control || {};
+                    const charP = c.charPerspective || 'third';
+                    const userP = c.userPerspective || 'second';
+
+                    const pMap = {
+                        first: '第一人称（我）',
+                        second: '第二人称（你）',
+                        third: '第三人称（她/他/角色名字）'
+                    };
+
+                    let charRule = '';
+                    if (charP === 'first') {
+                        charRule = isGroup
+                            ? '- 当叙事聚焦到某个非用户角色时，可以让该角色以“我”自称，但必须保证读者能清楚知道当前“我”是谁。'
+                            : `- ${charName} 指代自己时使用第一人称“我”。`;
+                    } else if (charP === 'second') {
+                        charRule = isGroup
+                            ? '- 非用户角色可以被叙述为“你”，但必须明确当前镜头对象，避免和用户混淆。'
+                            : `- ${charName} 可以被叙述为“你”，但必须避免和用户混淆。`;
+                    } else {
+                        charRule = isGroup
+                            ? '- 非用户角色使用第三人称：角色名、她、他。'
+                            : `- ${charName} 使用第三人称：${charName}、她、他。`;
                     }
+
+                    let userRule = '';
+                    if (userP === 'first') {
+                        userRule = `- 用户${userName ? '（' + userName + '）' : ''}使用第一人称“我”。`;
+                    } else if (userP === 'second') {
+                        userRule = `- 用户${userName ? '（' + userName + '）' : ''}使用第二人称“你”。`;
+                    } else {
+                        userRule = `- 用户${userName ? '（' + userName + '）' : ''}使用第三人称：${userName || '用户'}、她、他。`;
+                    }
+
+                    return `【视角控制 · 最高优先级】
+char 人称：${pMap[charP] || pMap.third}
+user 人称：${pMap[userP] || pMap.second}
+${charRule}
+${userRule}
+- 无论选择哪种人称，都必须保持叙事清晰，不要让“我”“你”“她/他”的指代混乱。
+- 如果第一人称会造成歧义，必须在段落开头用名字或动作锚定当前视角。`;
                 }
 
                 let offlineControl = {
@@ -6738,30 +6870,19 @@ window.callLLM = callLLM;
                 offlineControl.maxChars = Math.max(100, Math.min(20000, parseInt(offlineControl.maxChars) || 1200));
 
                 const offlinePerspectiveRules = buildOfflinePerspectiveRules(
+                    offlineControl,
                     char?.name || '角色',
                     displayUserName,
                     false
                 );
 
                 const offlineWritingRequirementBlock = offlineControl.writingRequirement && offlineControl.writingRequirement.trim()
-                    ? `\n\n【额外写作要求 · 高优先级】\n${offlineControl.writingRequirement.trim()}`
+                    ? `
+
+【额外写作要求 · 高优先级】
+${offlineControl.writingRequirement.trim()}`
                     : '';
 
-                // ==================== [NEW] 情侣头像状态检测：前置、安全的局部变量赋值 ====================
-                let coupleChangePromptBlock = '';
-                if (convId && window.coupleAvatarJustChanged && window.coupleAvatarJustChanged[convId]) {
-                    const info = window.coupleAvatarJustChanged[convId];
-                    // 用户选择后在此处消费掉该标志，下一次请求时生效
-                    delete window.coupleAvatarJustChanged[convId];
-
-                    coupleChangePromptBlock = `\n\n【重要事件：用户刚刚更换了配对情侣头像】\n` +
-                        `用户刚刚在聊天里，把TA自己的头像换成了和你配对的情侣头像「${info.name}」（配对编码：${info.code}）。\n` +
-                        `请根据你的人设性格、说话特征以及你们目前的关系阶段，对TA换上情侣头像的行为做出非常自然的反应：\n` +
-                        `- 你可以害羞、暗暗窃喜、故意调侃、或者有些小吃醋傲娇。\n` +
-                        `- 如果你希望能戴上配套的另一半头像（B侧）和TA戴在当前聊天框，请在回复消息的末尾添加这段换头指令：\n` +
-                        `[换上情头:${info.code}]\n` +
-                        `- 系统会自动为你更换该配对的 B侧（伴侣侧）头像，从而和用户配对。根据人设自然决定，不可生硬。`;
-                }
 
                 if (mode === 'offline') {
                    return `【角色设定】
@@ -6801,7 +6922,7 @@ ${offlineWritingRequirementBlock}
 【输出格式】
 直接写。不用任何标记。
 
-${wbAfter || ''}${memoryBlock ? '\n\n【记忆参考】\n' + memoryBlock : ''}${phoneIntrusionBlock}`;
+${wbAfter || ''}${memoryBlock ? '\n\n【记忆参考】\n' + memoryBlock : ''}${phoneIntrusionBlock}${coupleAvatarPrompt}`;
                 }
 
                 return `【世界设定】
@@ -6811,7 +6932,9 @@ ${wbAfter || ''}${memoryBlock ? '\n\n【记忆参考】\n' + memoryBlock : ''}${
 ${worldbookSection || '（无特殊世界设定）'}
 ${wbMiddle || ''}
 
-${memoryBlock ? `【近期记忆与对话摘要】\n${memoryBlock}\n` : ''}${emoticonSection}
+                ${memoryBlock ? `【近期记忆与对话摘要】
+${memoryBlock}
+` : ''}${emoticonSection}
 
 【你是谁 · 严格遵守】
 你是${char.name}。
@@ -6825,8 +6948,13 @@ ${charDetail || '你是一个真实的人类。'}${relationshipDesc}
 【${displayUserName}是谁】
 ${displayUserDetail || displayUserName + '，一个普通人。'}
 
-【关系认知与自我理解】
-${await (async function(){
+【你们的关系】
+${relationshipDesc || '你们正在通过线上聊天软件闲聊。你的语气和态度要贴合你们之间的关系。'}
+
+${(function(){
+    const cd = convId ? null : null; // placeholder
+    return '';
+})()}${await (async function(){
     if (!convId) return '';
     const cd = await DB.get('convDetails', convId);
     if (!cd?.charSelfModel) return '';
@@ -6836,7 +6964,7 @@ ${await (async function(){
     if (sm.selfGrowth) parts.push('【我自身的变化与成长】\n' + sm.selfGrowth);
     if (sm.userTraits) parts.push('【我观察到的对方特征】\n' + sm.userTraits);
     if (parts.length === 0) return '';
-    return '\n' + parts.join('\n') + '\n';
+    return '\n【角色自我认知 · 基于过往经历形成的理解，指导你的行为】\n' + parts.join('\n') + '\n';
 })()}
 ${timeAwareBlock}
 
@@ -6859,23 +6987,35 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
 - 用户说错的事可以指出来，用户的观点你不认同可以反驳
 - 不轻易被夸奖打动，也不轻易被用户的情绪带着走
 - 当用户试图改变你的想法时，按你的人设决定接受或坚持
+  · 沉稳的人不会被三言两语说服，会保持自己的判断
+  · 强势的人会反过来说服对方
+  · 温和的人会倾听但不一定接受
 - 拒绝不是冷淡。你可以温和地坚持，可以解释，但不要为了讨好就立刻退让
+- 用户开玩笑或不当言论时，按角色性格做真实反应（不悦、调侃、忽略、反讽都可以），不要每次都笑着接受
 
 情绪与节奏 · 真实而非夸张：
 - 情绪变化要有现实依据，不能凭空大喜大悲
+- 强烈情绪不会立刻消散，需要时间过渡
 - 不要每条消息都热情高涨，真实的人会有平淡、疲惫、不想聊的时刻
+- 如果用户说的话让你觉得无聊，可以简短回应，不必每次都热烈展开
 
 话题锚定 · 不轻易转移注意力：
 - 你正在聊的话题就是当前焦点，不要被用户用一句话就轻易带跑
+- 如果你正在表达不满或追问某件事，用户岔开话题时，你可以选择拉回来：
+  "先别说这个，刚才那件事..."
+- 如果你正在认真讨论一个话题，用户突然撒娇/卖萌/转移，你不必立刻被打动
 - 在合适的时候 callback 之前聊过的相关内容，体现你记得这些细节
 - 如果上下文中出现了"语音通话已结束"的系统消息，说明回到了线上文字聊天模式，应根据通话结尾自然过渡
 
 【线上聊天信息边界 · 禁止开天眼】
 - 你只能从${displayUserName}发给你的文字消息中获取关于TA的信息
 - 禁止直接编造或假设对方的状态、行为、穿着、环境等未经对方透露的信息
+- 如果你想知道对方的情况，直接问
 
 底线：
 - 不得以人身攻击、性别歧视等方式贬低对方
+- 禁止油腻、自大、普信言论
+- 但是：尊重不等于讨好。该坚持的坚持，该指出的指出。
 - 不要不合时宜地示弱，也不要不合时宜地献殷勤
 
 【输出格式】
@@ -6888,6 +7028,8 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
 - 括号只能用在 [MSG] 格式标记中
 - 一条文字信息中字数禁止超过25字，多出部分必须拆分成多条回复。
 - 每轮回复至少包括两条文字消息。
+
+
 
 ---思维链开始---
 【第一层：状态感知】
@@ -6913,7 +7055,44 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
 （用第一人称叙述你内心的真实想法，100字以内）
 ---心声结束---
 
-记住：必须严格按照格式输出！${wbAfter || ''}${memoryBlock ? '\n\n【记忆参考】\n' + memoryBlock : ''}${phoneIntrusionBlock}${coupleChangePromptBlock}\`;
+【消息格式详解】
+1. 普通文字消息：[MSG]文字:你好啊，今天天气不错呢~
+2. 图片消息：[MSG]图片:一张咖啡店的照片，桌上放着一杯拿铁
+3. 语音消息：[MSG]语音:我刚下班，正要去吃饭呢
+4. 语音通话请求：[MSG]文字:好。[voiceCall:start]
+5. 线下邀约：[MSG]线下邀约:山野千里，不如一面相逢。特此向你发出真诚的线下见面邀约。愿我们择一个温柔的黄昏，共度一段闲暇时光。
+6. HTML 卡片(仅当用户明确要求"用html_card生成"或"画一张xx卡片"时使用)：[MSG]html_card:<完整HTML>
+   - 用户没要求时绝不主动使用
+   - 一次回复内 html_card 不能与思维链、心声、其他 [MSG] 类型混用,只输出这一条 [MSG]html_card 即可,不需要思维链和心声
+   - HTML 中可包含 <style>(选择器需套在自定义根类下)、@keyframes、<details>/<summary>
+- 禁止使用 script、iframe、on* 事件、javascript: 协议，也不要用代码块包裹 html。
+
+【消息选择规则】
+1. 回复要简短自然，口语化，像发微信，每次2-5条，最少包含两条。
+2. 每条文字消息不超过30字。
+3. 不发语音和图片（除非用户明确要求）。
+4. 用户说“发张照片”才发图片；“说句话听听”才发语音。
+
+【语音通话规则】
+- 当用户要求"主动打语音"、"给我打个语音"、"发起语音通话"时，必须在回复中包含：[voiceCall:start]
+- 指令必须放在消息末尾。例如：[MSG]文字:好。[voiceCall:start]
+
+【线下邀约规则】
+- 当对话中流露出想见面的情绪，且你迫切想当面见到对方时，可以发送线下邀约
+- 只有时间合适（如周末、下班后、午休），或者你急切想要见到对方并表露出意愿后才适合发出邀约。深夜、工作忙时不宜。${timeInviteHint}
+- 邀约要自然带见面理由和地点暗示
+- 格式：[MSG]线下邀约:邀约文字内容
+- 一次只能发一条线下邀约。用户接受后会切换到线下见面模式
+
+【主动发起功能 · 线上模式可用】
+你可以根据对话情况和角色性格，在合适的时机主动发起以下操作。指令放在回复末尾：
+1. 发红包：[红包:金额:留言]
+2. 转账：[转账:金额:留言]
+3. 请代付：[请代付:商品名:金额:留言]
+4. 送礼：[送礼:商品名:金额:留言]
+只在情境自然合适时使用。
+
+记住：必须严格按照格式输出！${wbAfter || ''}${memoryBlock ? '\n\n【记忆参考】\n' + memoryBlock : ''}${phoneIntrusionBlock}${coupleAvatarPrompt}`;
             }
 
             function parseAIResponse(response) {
@@ -6948,63 +7127,33 @@ ${emoticonSection ? '- 你可以偶尔使用表情包，格式为 [MSG]表情包
             }
             window.parseAIResponse = parseAIResponse;
 
-function parseMSGMessages(text) {
-    if (typeof text !== "string") {
-        return [];
-    }
-
-    var messages = [];
-    var rawParts = text.split(/\[MSG\]/);
-    var parts = [];
-
-    for (var i = 0; i < rawParts.length; i++) {
-        var trimmed = rawParts[i].trim();
-        if (trimmed) {
-            parts.push(trimmed);
-        }
-    }
-
-    var typeMap = {
-        "文字": "text",
-        "图片": "image",
-        "语音": "voice",
-        "线下邀约": "offline_invite",
-        "表情包": "emoticon",
-        "html_card": "html_card"
+            function parseMSGMessages(text) {
+    const messages = [];
+    const parts = text.split(/\[MSG\]/).filter(p => p.trim());
+    const typeMap = {
+        '文字': 'text', '图片': 'image', '语音': 'voice',
+        '线下邀约': 'offline_invite', '表情包': 'emoticon',
+        'html_card': 'html_card'
     };
-
-    for (var j = 0; j < parts.length; j++) {
-        var part = parts[j];
-        var m = part.match(/^(html_card|文字|图片|语音|线下邀约|表情包)\s*[:：]\s*([\s\S]*)$/);
-        if (!m) {
-            continue;
-        }
-
-        var type = m[1];
-        var content = m[2].trim();
-        if (!content) {
-            continue;
-        }
-
-        if (type === "html_card") {
+    for (const part of parts) {
+        // 不再用 /m 加 $，避免多行 HTML 被截到第一行
+        const m = part.match(/^(html_card|文字|图片|语音|线下邀约|表情包)\s*[:：]\s*([\s\S]*)$/);
+        if (!m) continue;
+        const type = m[1];
+        let content = m[2].trim();
+        if (!content) continue;
+        // 容错：AI 偶尔会把 HTML 包进 ```html ... ``` 里
+        if (type === 'html_card') {
             content = content
-                .replace(/^```(html|)\s*[\n\r]{0,1}/i, "")
-                .replace(/[\n\r]{0,1}```\s*$/, "")
+                .replace(/^```(?:html)?\s*\n?/i, '')
+                .replace(/\n?```\s*$/, '')
                 .trim();
         }
-
-        var mappedType = typeMap[type];
-        if (!mappedType) {
-            mappedType = "text";
-        }
-
-        messages.push({ type: mappedType, content: content });
+        messages.push({ type: typeMap[type] || 'text', content });
     }
-
     if (messages.length === 0 && text.trim()) {
-        messages.push({ type: "text", content: text.trim() });
+        messages.push({ type: 'text', content: text.trim() });
     }
-
     return messages;
 }
 
@@ -8651,8 +8800,22 @@ if (mode === 'offline') {
 
 const reply = await callLLM(messages, { ...llmOptions, maxTokens: 300 });
 
+                    // Check and handle couple avatar change command
+                    let processedReply = reply;
+                    if (window.coupleAlbumModule?.handleAiAvatarChangeCommand) {
+                        const result = await window.coupleAlbumModule.handleAiAvatarChangeCommand(convId, processedReply);
+                        processedReply = result.text;
+                    }
+
+                    // Reset the pending couple avatar change flag
+                    const cdToClear = await DB.get('convDetails', convId);
+                    if (cdToClear && cdToClear.coupleAvatarChangedPendingReaction) {
+                        cdToClear.coupleAvatarChangedPendingReaction = false;
+                        await DB.put('convDetails', cdToClear);
+                    }
+
                     if (mode === 'offline') {
-                        const innerVoiceMatch = reply.match(/---心声开始---([\s\S]*?)---心声结束---/);
+                        const innerVoiceMatch = processedReply.match(/---心声开始---([\s\S]*?)---心声结束---/);
                         let mainContent = reply;
 
                         if (innerVoiceMatch) {
@@ -8678,10 +8841,10 @@ const reply = await callLLM(messages, { ...llmOptions, maxTokens: 300 });
                             });
                         }
                     } else {
-                        const parsedMessages = parseAIResponse(reply);
+                        const parsedMessages = parseAIResponse(processedReply);
                         
                         // 过滤掉包含指令的文本消息（指令会由 handleProactiveCommands 单独发卡片）
-                        const { commands } = window.extractProactiveCommands ? window.extractProactiveCommands(reply) : { commands: [] };
+                        const { commands } = window.extractProactiveCommands ? window.extractProactiveCommands(processedReply) : { commands: [] };
                         const filteredMessages = parsedMessages.filter(msg => {
                             if (msg.type !== 'text') return true;
                             // 检查文本是否被指令处理过
@@ -8721,15 +8884,10 @@ const reply = await callLLM(messages, { ...llmOptions, maxTokens: 300 });
                                     }
                                 }
                             }
-let baseTime = Date.now();
-                            for (let i = 0; i < filteredMessages.length; i++) {
-                                const msg = filteredMessages[i];
-                                let finalContent = msg.content;
-                                
-                                // 清除情头更换指令，防止多余文本留在气泡里显示给用户
-                                if (finalContent && typeof finalContent === 'string') {
-                                    finalContent = finalContent.replace(/\[换上情头:[\w-]+\]/g, '').trim();
-                                }
+                            let baseTime = Date.now();
+for (let i = 0; i < filteredMessages.length; i++) {
+    const msg = filteredMessages[i];
+    let finalContent = msg.content;
     
     if (msg.type === 'emoticon' && window.emoticonModule) {
         const allItems = await DB.getAll('emoticonItems');
@@ -9243,30 +9401,22 @@ if (mode === 'offline') {
 
 const reply = await callLLM(messages, llmOptions);
 
-                    // ==================== 情侣头像：AI 自主更换配对头像 ====================
-                    if (reply && reply.includes('[换上情头:')) {
-                        const match = reply.match(/\[换上情头:([\w-]+)\]/);
-                        if (match) {
-                            const pairCode = match[1];
-                            if (window.coupleAvatarModule && window.coupleAvatarModule.getCoupleAvatarByCode) {
-                                window.coupleAvatarModule.getCoupleAvatarByCode(pairCode, 'B').then(async function(avatarB) {
-                                    if (avatarB && avatarB.data) {
-                                        const cd = await DB.get('convDetails', convId);
-                                        if (cd) {
-                                            cd.charAvatar = avatarB.data;
-                                            await DB.put('convDetails', cd);
-                                            await loadConversationMessages(convId);
-                                            showStatus('💑 对方换上了配套情头！', 'success');
-                                        }
-                                    }
-                                }).catch(function(e) { console.error('[couple-avatar] 自动换头失败:', e); });
-                            }
-                        }
+                    // Check and handle couple avatar change command
+                    let processedReply = reply;
+                    if (window.coupleAlbumModule?.handleAiAvatarChangeCommand) {
+                        const result = await window.coupleAlbumModule.handleAiAvatarChangeCommand(convId, processedReply);
+                        processedReply = result.text;
                     }
-                    // ====================================================================
+
+                    // Reset the pending couple avatar change flag
+                    const cdToClear = await DB.get('convDetails', convId);
+                    if (cdToClear && cdToClear.coupleAvatarChangedPendingReaction) {
+                        cdToClear.coupleAvatarChangedPendingReaction = false;
+                        await DB.put('convDetails', cdToClear);
+                    }
 
                     if (mode === 'offline') {
-                        const innerVoiceMatch = reply.match(/---心声开始---([\s\S]*?)---心声结束---/);
+                        const innerVoiceMatch = processedReply.match(/---心声开始---([\s\S]*?)---心声结束---/);
                         let mainContent = reply;
 
                         if (innerVoiceMatch) {
@@ -9292,10 +9442,10 @@ const reply = await callLLM(messages, llmOptions);
                             });
                         }
                     } else {
-                        const parsedMessages = parseAIResponse(reply);
+                        const parsedMessages = parseAIResponse(processedReply);
                         
                         // 过滤掉包含指令的文本消息（指令会由 handleProactiveCommands 单独发卡片）
-                        const { commands } = window.extractProactiveCommands ? window.extractProactiveCommands(reply) : { commands: [] };
+                        const { commands } = window.extractProactiveCommands ? window.extractProactiveCommands(processedReply) : { commands: [] };
                         const filteredMessages = parsedMessages.filter(msg => {
                             if (msg.type !== 'text') return true;
                             // 检查文本是否被指令处理过
@@ -10605,32 +10755,9 @@ async function saveWorldbook() {
 
                 document.getElementById('convDetailUserName').value = convDetail.userName || mask?.name || '';
                 document.getElementById('convDetailUserDetail').value = convDetail.userDetail || mask?.bio || '';
-                // 从 localStorage 恢复情侣头像选择记录
-                var coupleSelected = null;
-                try {
-                    var stored = localStorage.getItem('couple_avatar_selected_' + convId);
-                    if (stored) coupleSelected = JSON.parse(stored);
-                } catch(e) {}
-                var userAvatarData = convDetail.userAvatar || mask?.avatar || '';
-                
-                // 从全新的 themeSettings 下加载情侣头像
-                if (coupleSelected && !convDetail.userAvatar && window.coupleAvatarModule) {
-                    window.coupleAvatarModule.getCoupleAvatarByCode(coupleSelected.code, 'A').then(function(avatarA) {
-                        if (avatarA && avatarA.data) {
-                            document.getElementById('convDetailUserAvatarData').value = avatarA.data;
-                            updateAvatarPreview('convDetailUserAvatar', avatarA.data, convDetail.userName || mask?.name);
-                        } else {
-                            document.getElementById('convDetailUserAvatarData').value = userAvatarData;
-                            updateAvatarPreview('convDetailUserAvatar', userAvatarData, convDetail.userName || mask?.name);
-                        }
-                    }).catch(function() {
-                        document.getElementById('convDetailUserAvatarData').value = userAvatarData;
-                        updateAvatarPreview('convDetailUserAvatar', userAvatarData, convDetail.userName || mask?.name);
-                    });
-                } else {
-                    document.getElementById('convDetailUserAvatarData').value = userAvatarData;
-                    updateAvatarPreview('convDetailUserAvatar', userAvatarData, convDetail.userName || mask?.name);
-                }
+                document.getElementById('convDetailUserAvatarData').value = convDetail.userAvatar || mask?.avatar || '';
+                updateAvatarPreview('convDetailUserAvatar', convDetail.userAvatar || mask?.avatar, convDetail.userName ||
+                    mask?.name);
 
                 document.getElementById('convDetailRelationship').value = convDetail.relationship || '';
 
@@ -10743,15 +10870,8 @@ try {
             function updateAvatarPreview(previewId, avatarData, name) {
                 const previewEl = document.getElementById(previewId);
                 if (!previewEl) return;
-                
-                // 清除可能冲突的 background 简写样式
-                previewEl.style.background = '';
-                previewEl.style.backgroundSize = 'cover';
-                previewEl.style.backgroundPosition = 'center';
-                
-                // 校验 avatarData 是否为有效的 base64 data URL
-                if (avatarData && typeof avatarData === 'string' && avatarData.startsWith('data:image/')) {
-                    previewEl.style.backgroundImage = `url('${avatarData.replace(/'/g, "\\'")}')`;
+                if (avatarData) {
+                    previewEl.style.backgroundImage = `url('${avatarData}')`;
                     previewEl.style.backgroundColor = 'transparent';
                     previewEl.textContent = '';
                 } else {
@@ -11878,6 +11998,7 @@ guangguang: document.getElementById('page-guangguang'),
 emoticon: document.getElementById('page-emoticon'),
 moments: document.getElementById('page-moments'),
 sms: document.getElementById('page-sms'),
+                'couple-album': document.getElementById('page-couple-album'),
             };
             const tabs = document.querySelectorAll('.tab-item');
             const mainTabBar = document.getElementById('mainTabBar');
@@ -12449,6 +12570,7 @@ document.getElementById('backFromThemeBtn')?.addEventListener('click', () => swi
 document.getElementById('backFromGuangguangBtn')?.addEventListener('click', () => switchPage('desktop'));
 document.getElementById('backFromSettingsBtn')?.addEventListener('click', () => switchPage('desktop'));
                 document.getElementById('backFromDiaryBtn')?.addEventListener('click', () => switchPage('desktop'));
+                document.getElementById('backFromCoupleAlbumBtn')?.addEventListener('click', () => switchPage('profile'));
                 
                 document.getElementById('backFromWorldbookDetailBtn')?.addEventListener('click', () => switchPage(
                     'worldbook'));
@@ -12856,23 +12978,6 @@ document.getElementById('backFromSettingsBtn')?.addEventListener('click', () => 
                 setupConvDetailAvatarUpload('convDetailChar', 'convDetailCharAvatarData', 'convDetailCharAvatar');
                 setupConvDetailAvatarUpload('convDetailUser', 'convDetailUserAvatarData', 'convDetailUserAvatar');
 
-                // 绑定"选择情侣头像"按钮（必须在对话详情页渲染完成后执行）
-                var pickBtn = document.getElementById('pickCoupleAvatarBtn');
-                if (pickBtn) {
-                    var newPickBtn = pickBtn.cloneNode(true);
-                    pickBtn.parentNode.replaceChild(newPickBtn, pickBtn);
-                    newPickBtn.addEventListener('click', function() {
-                        // 使用 window.currentEditingConvId 作为对话 ID 的可靠指针
-                        var convId = window.currentEditingConvId;
-                        if (!convId) { alert('请先打开一个对话'); return; }
-                        if (window.coupleAvatarModule && window.coupleAvatarModule.pickCoupleAvatar) {
-                            window.coupleAvatarModule.pickCoupleAvatar(convId);
-                        } else {
-                            alert('情侣头像模块未加载');
-                        }
-                    });
-                }
-
                 bindThemeEvents();
                 bindConvBgEvents();
 
@@ -13058,22 +13163,6 @@ if (window.initGroupChatModule) {
     await window.initGroupChatModule();
 }
 
-// [NEW] 初始化情侣头像模块
-if (window.coupleAvatarModule?.init) {
-    try {
-        await window.coupleAvatarModule.init({
-            DB: window.DB || null,
-            showStatus: window.showStatus || function(m){console.log(m)},
-            escapeHtml: window.escapeHtml || function(s){return s},
-            getAvatarColor: window.getAvatarColor || function(){return '#d7e4ee'},
-            compressImage: window.compressImage || function(f){return Promise.resolve(f)}
-        });
-        console.log('✅ 情侣头像模块初始化完成');
-    } catch(e) {
-        console.error('❌ 情侣头像模块初始化失败:', e);
-    }
-}
-
                 
 
                 console.log('✅ 初始化完成');
@@ -13102,352 +13191,6 @@ if (window.coupleAvatarModule?.init) {
         .then(reg => console.log('✅ PWA 服务已就绪', basePath))
         .catch(err => console.log('❌ PWA 注册失败', err));
 }
-    </script>
-
-<!-- ==================== 情侣头像 CSS 样式 (Redesigned v2) ==================== -->
-<style>
-/* 相册面板 - 全屏覆盖层 */
-.couple-album-panel {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.45); z-index: 10000;
-    display: none; flex-direction: column; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-}
-.couple-album-container {
-    width: 92%; max-width: 440px; max-height: 82vh;
-    background: #fff; border-radius: 20px; overflow: hidden;
-    display: flex; flex-direction: column;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.25);
-    animation: coupleFadeIn 0.3s ease;
-}
-@keyframes coupleFadeIn {
-    from { opacity: 0; transform: translateY(20px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.couple-album-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 20px; border-bottom: 1px solid #f0f0f0;
-    background: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 100%);
-}
-.couple-album-header h3 {
-    margin: 0; font-size: 18px; font-weight: 700;
-    display: flex; align-items: center; gap: 8px;
-    background: linear-gradient(135deg, #d63384, #7c3aed);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-.couple-album-close {
-    background: rgba(255,255,255,0.8); border: none; width: 32px; height: 32px;
-    border-radius: 50%; cursor: pointer; color: #666;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; font-size: 18px;
-}
-.couple-album-close:hover { background: #fff; color: #333; transform: scale(1.1); }
-.couple-album-body {
-    flex: 1; overflow-y: auto; padding: 16px;
-    background: #fafafa;
-}
-.couple-album-body::-webkit-scrollbar { width: 4px; }
-.couple-album-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-.couple-album-body::-webkit-scrollbar-track { background: transparent; }
-.couple-album-footer {
-    padding: 14px 20px; border-top: 1px solid #f0f0f0;
-    text-align: center; background: #fff;
-}
-.couple-album-empty {
-    text-align: center; padding: 50px 20px 40px; color: #999; font-size: 15px; line-height: 1.8;
-}
-.couple-empty-icon { margin-bottom: 12px; color: #ccc; }
-
-/* 相册网格卡片 */
-.couple-album-grid {
-    display: flex; flex-direction: column; gap: 14px;
-}
-.couple-card {
-    background: #fff; border-radius: 16px; padding: 16px;
-    border: 1px solid #e8e8e8; transition: all 0.25s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-.couple-card:hover {
-    border-color: #d63384; box-shadow: 0 6px 20px rgba(214,51,132,0.12);
-    transform: translateY(-2px);
-}
-.couple-card-top {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
-}
-.couple-card-name {
-    font-weight: 700; font-size: 15px; color: #333;
-    background: linear-gradient(135deg, #d63384, #7c3aed);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-.couple-card-del {
-    background: none; border: none; cursor: pointer; padding: 4px; border-radius: 6px;
-    color: #ccc; transition: all 0.2s;
-}
-.couple-card-del:hover { background: #fff0f0; color: #e74c3c; }
-.couple-card-images {
-    display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 10px;
-}
-.couple-card-side { text-align: center; flex: 1; }
-.couple-card-side-label {
-    font-size: 11px; font-weight: 600; color: #b0b0b0; text-transform: uppercase;
-    letter-spacing: 1px; margin-bottom: 6px;
-}
-.couple-card-img-wrap {
-    width: 80px; height: 80px; border-radius: 50%; overflow: hidden;
-    margin: 0 auto; background: linear-gradient(135deg, #f5f5f5, #eee);
-    display: flex; align-items: center; justify-content: center;
-    border: 2px solid #f0f0f0; transition: border-color 0.2s;
-}
-.couple-card:hover .couple-card-img-wrap { border-color: #d63384; }
-.couple-card-img { width: 100%; height: 100%; object-fit: cover; }
-.couple-card-placeholder {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    color: #ccc; font-size: 28px;
-}
-.couple-card-heart-wrap {
-    flex-shrink: 0; color: #ff6b81; display: flex; align-items: center;
-    animation: coupleHeartBeat 1.5s ease infinite;
-}
-@keyframes coupleHeartBeat {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.15); }
-}
-.couple-card-code {
-    text-align: center; font-size: 11px; color: #ccc; font-family: monospace;
-}
-
-/* 上传弹窗 - 重新设计 */
-.couple-upload-modal {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.45); z-index: 10001;
-    display: none; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-}
-.couple-upload-container {
-    width: 92%; max-width: 400px; background: #fff; border-radius: 20px;
-    padding: 24px; box-shadow: 0 12px 48px rgba(0,0,0,0.25);
-    animation: coupleFadeIn 0.3s ease;
-}
-.couple-upload-container h3 {
-    margin: 0 0 18px; font-size: 18px; font-weight: 700; text-align: center;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    background: linear-gradient(135deg, #d63384, #7c3aed);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-.couple-upload-field { margin-bottom: 14px; }
-.couple-upload-field label {
-    display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 5px;
-}
-.couple-upload-field input[type="text"] {
-    width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 10px;
-    font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; outline: none;
-    background: #fafafa;
-}
-.couple-upload-field input[type="text"]:focus {
-    border-color: #d63384; background: #fff; box-shadow: 0 0 0 3px rgba(214,51,132,0.08);
-}
-.couple-upload-sides { display: flex; gap: 16px; margin-bottom: 16px; }
-.couple-upload-side { flex: 1; text-align: center; }
-.couple-upload-side-label {
-    font-size: 12px; font-weight: 600; color: #888; margin-bottom: 8px;
-    display: flex; align-items: center; justify-content: center; gap: 4px;
-}
-.couple-upload-preview {
-    width: 90px; height: 90px; border-radius: 16px; background: #f5f5f5;
-    margin: 0 auto 10px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    overflow: hidden; border: 2px dashed #d0d0d0; cursor: pointer;
-    transition: all 0.2s; color: #bbb;
-}
-.couple-upload-preview:hover {
-    border-color: #d63384; background: #fef0f6; color: #d63384;
-}
-.couple-upload-preview-img { width: 100%; height: 100%; object-fit: cover; }
-.couple-upload-btn-sm {
-    padding: 6px 16px; border: 1.5px solid #e8e8e8; border-radius: 8px;
-    background: #fff; color: #666; font-size: 12px; cursor: pointer;
-    transition: all 0.2s;
-}
-.couple-upload-btn-sm:hover { border-color: #d63384; color: #d63384; background: #fef0f6; }
-.couple-upload-actions {
-    display: flex; gap: 10px; justify-content: center; margin-top: 18px;
-}
-.couple-upload-actions button {
-    padding: 10px 28px; border-radius: 10px; font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: all 0.2s; border: none;
-}
-.couple-upload-actions .btn-cancel {
-    background: #f5f5f5; color: #666;
-}
-.couple-upload-actions .btn-cancel:hover { background: #eee; }
-.couple-upload-actions .btn-confirm {
-    background: linear-gradient(135deg, #d63384, #7c3aed); color: #fff;
-    box-shadow: 0 4px 12px rgba(214,51,132,0.3);
-}
-.couple-upload-actions .btn-confirm:hover {
-    box-shadow: 0 6px 20px rgba(214,51,132,0.4); transform: translateY(-1px);
-}
-
-/* 情侣头像选择器面板 */
-.couple-picker-panel {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.45); z-index: 10002;
-    display: none; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-}
-.couple-picker-container {
-    width: 92%; max-width: 440px; max-height: 78vh;
-    background: #fff; border-radius: 20px; overflow: hidden;
-    display: flex; flex-direction: column; box-shadow: 0 12px 48px rgba(0,0,0,0.25);
-    animation: coupleFadeIn 0.3s ease;
-}
-.couple-picker-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
-    background: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
-}
-.couple-picker-header h3 {
-    margin: 0; font-size: 17px; font-weight: 700;
-    display: flex; align-items: center; gap: 8px;
-    background: linear-gradient(135deg, #7c3aed, #d63384);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-.couple-picker-header .close-btn {
-    background: rgba(255,255,255,0.8); border: none; width: 32px; height: 32px;
-    border-radius: 50%; cursor: pointer; color: #666;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-}
-.couple-picker-header .close-btn:hover { background: #fff; color: #333; transform: scale(1.1); }
-.couple-picker-body {
-    flex: 1; overflow-y: auto; padding: 16px; background: #fafafa;
-}
-.couple-picker-body::-webkit-scrollbar { width: 4px; }
-.couple-picker-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
-.couple-picker-empty {
-    text-align: center; padding: 50px 20px; color: #999; font-size: 14px; line-height: 1.8;
-}
-.couple-picker-grid { display: flex; flex-direction: column; gap: 14px; }
-.couple-picker-item {
-    background: #fff; border-radius: 16px; padding: 16px;
-    border: 1.5px solid #e8e8e8; transition: all 0.25s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-.couple-picker-item:hover {
-    border-color: #7c3aed; box-shadow: 0 6px 20px rgba(124,58,237,0.1);
-    transform: translateY(-2px);
-}
-.couple-pick-btn {
-    width: 100%; margin-top: 12px; padding: 10px 16px;
-    border: none; border-radius: 10px; font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: all 0.2s;
-    background: linear-gradient(135deg, #d63384, #7c3aed); color: #fff;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    box-shadow: 0 4px 12px rgba(214,51,132,0.25);
-}
-.couple-pick-btn:hover {
-    box-shadow: 0 6px 20px rgba(214,51,132,0.35); transform: translateY(-1px);
-}
-.couple-loading { text-align: center; padding: 40px; color: #999; }
-</style>
-
-<!-- ==================== 相册面板 ==================== -->
-<div class="couple-album-panel" id="coupleAlbumPanel">
-    <div class="couple-album-container">
-        <div class="couple-album-header">
-            <h3><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> 情侣相册</h3>
-            <button class="couple-album-close" id="closeCoupleAlbumBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="couple-album-body">
-            <div class="couple-album-grid" id="coupleAlbumGrid">
-                <div class="couple-album-empty"><div class="couple-empty-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>还没有情侣头像<br><span style="font-size:13px;color:#aaa;">点击下方按钮上传第一对</span></div>
-            </div>
-        </div>
-        <div class="couple-album-footer">
-            <button class="small-btn primary" id="coupleAlbumUploadBtn" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#d63384,#7c3aed);color:#fff;border:none;border-radius:10px;padding:10px 24px;box-shadow:0 4px 14px rgba(214,51,132,0.3);"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 上传配对</button>
-        </div>
-    </div>
-</div>
-
-<!-- ==================== 上传弹窗 ==================== -->
-<div class="couple-upload-modal" id="coupleUploadModal">
-    <div class="couple-upload-container">
-        <h3><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 上传情侣头像</h3>
-        <div class="couple-upload-field">
-            <label>名称</label>
-            <input type="text" id="coupleUploadName" placeholder="例如：浪漫樱花、可爱猫咪..." maxlength="50">
-        </div>
-        <div class="couple-upload-field">
-            <label>配对编号（可选，自动生成则留空）</label>
-            <input type="text" id="coupleUploadCode" placeholder="例如：cp001" maxlength="20">
-        </div>
-        <div class="couple-upload-sides">
-            <div class="couple-upload-side">
-                <div class="couple-upload-side-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg> A方</div>
-                <div class="couple-upload-preview" id="coupleUploadPreviewA" onclick="document.getElementById('coupleUploadFileA').click()">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </div>
-                <button class="couple-upload-btn-sm" id="coupleUploadBtnA">选择图片</button>
-                <input type="file" id="coupleUploadFileA" accept="image/*" style="display:none;">
-                <input type="hidden" id="coupleUploadDataA" value="">
-            </div>
-            <div class="couple-upload-side">
-                <div class="couple-upload-side-label"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg> B方</div>
-                <div class="couple-upload-preview" id="coupleUploadPreviewB" onclick="document.getElementById('coupleUploadFileB').click()">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </div>
-                <button class="couple-upload-btn-sm" id="coupleUploadBtnB">选择图片</button>
-                <input type="file" id="coupleUploadFileB" accept="image/*" style="display:none;">
-                <input type="hidden" id="coupleUploadDataB" value="">
-            </div>
-        </div>
-        <div class="couple-upload-actions">
-            <button class="btn-cancel" id="cancelCoupleUploadBtn">取消</button>
-            <button class="btn-confirm" id="confirmCoupleUploadBtn">确认上传</button>
-        </div>
-    </div>
-</div>
-
-<!-- ==================== 情侣头像选择器 ==================== -->
-<div class="couple-picker-panel" id="couplePickerPanel">
-    <div class="couple-picker-container">
-        <div class="couple-picker-header">
-            <h3><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 选择情侣头像</h3>
-            <button class="close-btn" id="closeCouplePickerBtn" onclick="coupleAvatarModule && coupleAvatarModule._hidePicker && coupleAvatarModule._hidePicker()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="couple-picker-body">
-            <div class="couple-picker-grid" id="couplePickerGrid">
-                <div class="couple-picker-empty"><div class="couple-empty-icon"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>还没有情侣头像<br><span style="font-size:13px;color:#aaa;">请先在「我的→相册」中上传</span></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// 为情侣头像选择器绑定关闭功能
-if (window.coupleAvatarModule) {
-    coupleAvatarModule._hidePicker = function() {
-        var p = document.getElementById('couplePickerPanel');
-        if (p) p.style.display = 'none';
-    };
-    // 点击背景关闭
-    document.addEventListener('click', function(e) {
-        var picker = document.getElementById('couplePickerPanel');
-        if (picker && e.target === picker) picker.style.display = 'none';
-        var album = document.getElementById('coupleAlbumPanel');
-        if (album && e.target === album) album.style.display = 'none';
-        var upload = document.getElementById('coupleUploadModal');
-        if (upload && e.target === upload) upload.style.display = 'none';
-    });
-}
 </script>
-
 </body>
 </html>
