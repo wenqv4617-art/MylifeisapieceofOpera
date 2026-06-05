@@ -3044,16 +3044,16 @@ window.openConversation = openConversation;
                 const mask = await DB.get('userProfiles', conv.maskId);
                 if (!char) { showStatus('联系人不存在', 'error'); return; }
 
-                const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
-                const chats = await DB.queryByIndex('chats', 'conversationId', convId);
-                const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
-                contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                // 在 fetchAIReplyInConv 函数内部，确保 systemPrompt 在每次调用时生成
+const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
+const chats = await DB.queryByIndex('chats', 'conversationId', convId);
+const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
+contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+const recent = contextChats.slice(-rounds * 2);
 
-                const recent = contextChats.slice(-rounds * 2);
-
-                const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
-                const messages = [{ role: 'system', content: systemPrompt }];
-
+// ===== 关键修改：每次调用都重新生成系统指令 =====
+const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
+const messages = [{ role: 'system', content: systemPrompt }];
                 if (mode === 'offline') {
                     recent.forEach(m => {
                         const roleName = (m.role === 'user') ? (mask?.name || '用户') : char.name;
@@ -3627,15 +3627,16 @@ ${contextText}
     }
     // === 否则走原有普通对话流程 ===
 
-                const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
-                const chats = await DB.queryByIndex('chats', 'conversationId', convId);
-                const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
-                contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                const recent = contextChats.slice(-rounds * 2);
+                // 在 fetchAIReplyInConv 函数内部，确保 systemPrompt 在每次调用时生成
+const rounds = parseInt(document.getElementById('contextRoundsInput')?.value || 4);
+const chats = await DB.queryByIndex('chats', 'conversationId', convId);
+const contextChats = chats.filter(c => c.messageType !== 'innerVoice');
+contextChats.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+const recent = contextChats.slice(-rounds * 2);
 
-                const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
-                const messages = [{ role: 'system', content: systemPrompt }];
-
+// ===== 关键修改：每次调用都重新生成系统指令 =====
+const systemPrompt = await buildSystemPrompt(char, mask, null, mode, convId);
+const messages = [{ role: 'system', content: systemPrompt }];
                 if (mode === 'offline') {
                     recent.forEach(m => {
                         const roleName = (m.role === 'user' || m.role === 'char') ?
