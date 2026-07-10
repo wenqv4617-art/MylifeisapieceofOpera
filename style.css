@@ -1,17 +1,17 @@
 :root {
-  --bg-main: #f0f4f8;          /* 极简浅蓝灰背景 */
-  --surface: #ffffff;          /* 纯白卡片 */
-  --surface-hover: #f1f3f4;
-  --primary: #1a73e8;          /* 经典现代蓝 */
-  --primary-light: #e8f0fe;
-  --text-primary: #202124;
-  --text-secondary: #5f6368;
-  --border: #dadce0;
-  --danger: #d93025;
-  --shadow-sm: 0 1px 3px rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --radius: 12px;
+  --bg-main: #f4f6fa;          /* 高级灰蓝主背景 */
+  --surface: #ffffff;          /* 纯白 */
+  --surface-hover: #f1f5f9;
+  --primary: #1e88e5;          /* 晴空浅蓝色 */
+  --primary-light: #e3f2fd;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --danger: #ef4444;
+  --shadow-sm: 0 4px 12px rgba(15,23,42,0.04);
+  --shadow-md: 0 8px 30px rgba(15,23,42,0.06);
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius: 16px;
 }
 
 * {
@@ -23,7 +23,7 @@
 
 body {
   font-family: var(--font-family);
-  background-color: #2c3e50; /* PC端看时用深色背景衬托 */
+  background-color: #0f172a;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -32,75 +32,67 @@ body {
   user-select: none;
 }
 
-/* 模拟手机主容器 */
 #phone-container {
   width: 100%;
-  max-width: 412px; /* 模拟主流安卓机型宽度 */
+  max-width: 412px;
   height: 100%;
-  max-height: 892px; /* 模拟长宽比 */
+  max-height: 892px;
   background-color: var(--bg-main);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  border-radius: 36px; /* 圆角手机边框 */
-  border: 8px solid #222; /* 物理黑边 */
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  border-radius: 40px;
+  border: 12px solid #1e293b;
 }
 
-/* 顶部状态栏 */
 #status-bar {
-  height: 34px;
-  background-color: transparent;
+  height: 38px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
   font-size: 13px;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
   z-index: 10;
 }
 .status-icons {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  gap: 8px;
 }
 
-/* 桌面主区域 */
 #desktop {
   flex: 1;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
+  padding: 20px;
 }
 
 .app-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px 16px;
-  justify-items: center;
-  align-content: start;
+  min-height: 200px;
 }
 
-/* 应用图标组件 */
 .app-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 72px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  cursor: grab;
+  transition: transform 0.15s ease;
 }
 .app-icon:active {
-  transform: scale(0.9);
+  cursor: grabbing;
+  transform: scale(0.95);
 }
 .icon-wrapper {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
   background-color: var(--surface);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-sm);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -115,42 +107,33 @@ body {
 .app-icon span {
   font-size: 11px;
   color: var(--text-primary);
-  text-align: center;
-  font-weight: 500;
-  text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  text-align: center;
 }
 
-/* 底部 Dock 栏 */
 #dock {
-  padding: 12px 16px;
-  margin-bottom: 16px;
+  padding: 12px 16px 20px 16px;
 }
 .dock-container {
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 24px;
-  height: 76px;
+  border-radius: 28px;
+  height: 78px;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow-md);
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-/* 响应式支持（当直接用手机打开时填满屏幕，去掉多余物理黑边） */
-@media (max-width: 480px), (max-height: 500px) {
-  body {
-    background-color: var(--bg-main);
-  }
+@media (max-width: 480px) {
+  body { background-color: var(--bg-main); }
   #phone-container {
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: 0;
-    border: none;
+    max-width: 100%; max-height: 100%; border-radius: 0; border: none;
   }
 }

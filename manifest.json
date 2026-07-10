@@ -5,7 +5,7 @@
     {
       "src": "icon-144.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "144x144"
     },
     {
       "src": "icon-512.png",
@@ -14,8 +14,8 @@
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#f0f4f8",
-  "theme_color": "#1a73e8",
+  "background_color": "#f4f6fa",
+  "theme_color": "#1e88e5",
   "display": "standalone",
   "orientation": "portrait"
 }
