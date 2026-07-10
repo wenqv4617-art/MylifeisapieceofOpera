@@ -1,0 +1,339 @@
+/* 应用窗口通用样式 */
+#app-window-container {
+  position: absolute;
+  top: 34px; /* 状态栏下方 */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.app-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.25s linear;
+  z-index: 101;
+}
+
+.app-window.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 窗口头部 */
+.win-header {
+  height: 56px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  justify-content: space-between;
+}
+.win-header h3 {
+  font-size: 17px;
+  color: var(--text-primary);
+  font-weight: 600;
+  flex: 1;
+  margin-left: 12px;
+}
+
+/* 按钮及图标样式 */
+.btn-icon {
+  background: none;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-icon:hover, .btn-icon:active {
+  background-color: var(--surface-hover);
+  color: var(--primary);
+}
+.btn-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* 窗口主体 */
+.win-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 设置和档案的通用表单项 */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+input[type="text"], input[type="password"], select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: none;
+  background-color: var(--primary);
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: filter 0.2s;
+}
+.btn:active {
+  filter: brightness(0.9);
+}
+.btn-outline {
+  background-color: transparent;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+}
+.btn-danger-outline {
+  background-color: transparent;
+  border: 1.5px solid var(--danger);
+  color: var(--danger);
+}
+
+/* 设置特定的布局 */
+.settings-nav {
+  display: flex;
+  background-color: var(--surface-hover);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.settings-nav .nav-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.settings-nav .nav-tab.active {
+  background-color: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.settings-panel {
+  display: none;
+}
+.settings-panel.active {
+  display: block;
+}
+
+.preset-row, .model-row {
+  display: flex;
+  gap: 8px;
+}
+.preset-row select, .model-row select {
+  flex: 1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.data-status-card {
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+/* 档案库底部切换栏 */
+.archive-tabs {
+  height: 58px;
+  background-color: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.tab-item {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 60px;
+}
+.tab-item svg {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 2px;
+}
+.tab-item span {
+  font-size: 10px;
+  font-weight: 500;
+}
+.tab-item.active {
+  color: var(--primary);
+}
+
+/* 模态框遮罩层样式 */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: flex-end; /* 在手机端从底部弹出卡片 */
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal {
+  background-color: var(--bg-main);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  width: 100%;
+  max-height: 85%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+  padding-bottom: 24px;
+}
+.modal-overlay.active .modal {
+  transform: translateY(0);
+}
+.modal-header {
+  padding: 16px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 档案卡片列表 */
+.archive-main {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.archive-card {
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--primary-light);
+  margin-right: 12px;
+}
+.card-info {
+  flex: 1;
+}
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.card-group {
+  font-size: 11px;
+  color: var(--primary);
+  background-color: var(--primary-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.card-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.avatar-type-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.avatar-type-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
